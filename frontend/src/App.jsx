@@ -1755,7 +1755,7 @@ function App() {
                   className="teachoff-input"
                   value={teachoffName}
                   onChange={(event) => setTeachoffName(event.target.value)}
-                  placeholder="Your name for the board"
+                  placeholder="Your name"
                   maxLength={24}
                 />
 

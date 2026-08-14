@@ -1709,6 +1709,7 @@ details.misconceptions-panel .misconceptions-list {
 
 .teachoff-input,
 .join-input {
+  min-width: 200px;
   padding: 11px 16px;
   border: 1px solid #d8d0c4;
   border-radius: 999px;
