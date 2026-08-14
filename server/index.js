@@ -57,19 +57,12 @@ app.post("/api/grade", async (req, res) => {
         point,
         understood: false,
         reason: "The student did not say anything about this.",
-        teacher: "",
       })),
       summary: "Grandma didn't hear an explanation yet.",
     });
   }
 
   const pointList = points.map((point, i) => `${i + 1}. ${point}`).join("\n");
-
-  const grandmaText = transcript
-    .filter((line) => line.source !== "user")
-    .map((line) => line.message)
-    .filter(Boolean)
-    .join("\n");
 
   const prompt = `A student tried to explain "${topicName}" to a grandmother who knows nothing about the subject.
 
@@ -78,26 +71,14 @@ Here is everything the student said:
 ${studentText}
 ---
 
-Here is what Grandma said back:
----
-${grandmaText}
----
-
 For each learning point below, decide whether the student GENUINELY explained the idea in a way a beginner could follow. Saying a keyword is not enough — they must actually convey the concept.
 
 ${pointList}
 
-For any point the student did NOT get across, a teacher then explains it properly.
-The teacher is a separate person from Grandma: warm, plain-spoken, and he never
-scolds. He explains the idea itself in two or three sentences a beginner could
-follow, using an everyday comparison. If Grandma reached for an analogy during the
-lesson, he builds on hers rather than inventing a new one. Leave the teacher's
-explanation empty for points the student already got across.
-
 Respond with JSON only, in exactly this shape:
 {
   "results": [
-    { "point": "<the learning point, copied exactly>", "understood": true or false, "reason": "<one short sentence, addressed to the student as Grandma would say it>", "teacher": "<the teacher's explanation, or an empty string if understood>" }
+    { "point": "<the learning point, copied exactly>", "understood": true or false, "reason": "<one short sentence, addressed to the student as Grandma would say it>" }
   ],
   "summary": "<two sentences in Grandma's warm voice about how well they explained it overall>"
 }`;
@@ -123,9 +104,8 @@ Respond with JSON only, in exactly this shape:
                     point: { type: "string" },
                     understood: { type: "boolean" },
                     reason: { type: "string" },
-                    teacher: { type: "string" },
                   },
-                  required: ["point", "understood", "reason", "teacher"],
+                  required: ["point", "understood", "reason"],
                   additionalProperties: false,
                 },
               },
