@@ -1734,17 +1734,18 @@ function App() {
 
             {FEATURES.misconceptionAttack &&
               selectedTopic.misconceptions.length > 0 && (
-                <div className="misconceptions-panel">
-                  <div className="misconceptions-title">
-                    WHAT BEGINNERS USUALLY GET WRONG
-                  </div>
+                <details className="misconceptions-panel">
+                  <summary className="misconceptions-title">
+                    WHAT BEGINNERS USUALLY GET WRONG (
+                    {selectedTopic.misconceptions.length})
+                  </summary>
 
                   <ul className="misconceptions-list">
                     {selectedTopic.misconceptions.map((m) => (
                       <li key={m}>{m}</li>
                     ))}
                   </ul>
-                </div>
+                </details>
               )}
 
             {/* The celebration is for full coverage, but the way out of the
