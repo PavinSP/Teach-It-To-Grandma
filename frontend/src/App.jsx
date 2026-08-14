@@ -6,6 +6,22 @@ const AGENT_ID = "agent_4301m009ej3eew6sgp492ky9s4dj";
 
 const GRADING_API = import.meta.env.VITE_GRADING_API || "http://localhost:3001";
 
+// Characters are data so new ones only need an image dropped into public/
+// and a row added here. `voiceId` overrides the agent's default voice; leave
+// it null to use whatever the ElevenLabs agent is configured with.
+const GRANDMAS = [
+  {
+    id: "rachel",
+    name: "Grandma Rachel",
+    accent: "Southern US",
+    image: "/grandma.png",
+    voiceId: null,
+  },
+  // Add more here once their artwork is in public/, e.g.
+  // { id: "priya", name: "Grandma Priya", accent: "Indian English",
+  //   image: "/grandma-priya.png", voiceId: "<elevenlabs voice id>" },
+];
+
 const topics = [
   {
     id: "recursion",
@@ -224,6 +240,7 @@ function App() {
   const [showRecap, setShowRecap] = useState(false);
   const [aiGrade, setAiGrade] = useState(null);
   const [isGrading, setIsGrading] = useState(false);
+  const [grandma, setGrandma] = useState(GRANDMAS[0]);
   const transcriptEndRef = useRef(null);
 
   useEffect(() => {
@@ -270,6 +287,10 @@ function App() {
           topic: selectedTopic.name,
           topicDescription: selectedTopic.description,
         },
+        // Only override the agent's voice when a character specifies one.
+        ...(grandma.voiceId
+          ? { overrides: { tts: { voiceId: grandma.voiceId } } }
+          : {}),
       });
     } catch (err) {
       console.error("Could not start conversation:", err);
@@ -355,6 +376,30 @@ function App() {
             Choose something you know. Then try to teach it to someone
             who knows absolutely nothing about it.
           </p>
+
+          {GRANDMAS.length > 1 && (
+            <div className="grandma-picker">
+              <h2>Choose your Grandma</h2>
+
+              <div className="grandma-options">
+                {GRANDMAS.map((option) => (
+                  <button
+                    key={option.id}
+                    className={`grandma-option ${
+                      grandma.id === option.id ? "selected" : ""
+                    }`}
+                    onClick={() => setGrandma(option)}
+                  >
+                    <img src={option.image} alt={option.name} />
+                    <div className="grandma-option-name">{option.name}</div>
+                    <div className="grandma-option-accent">
+                      {option.accent}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <h2>Choose a topic</h2>
 
@@ -461,6 +506,17 @@ function App() {
                     <div>
                       <strong>{result.point}</strong>
                       <p>{result.reason}</p>
+
+                      {result.teacher && (
+                        <div className="teacher-note">
+                          <div className="teacher-label">
+                            <span className="teacher-avatar">🎓</span>
+                            THE TEACHER
+                          </div>
+
+                          <p>{result.teacher}</p>
+                        </div>
+                      )}
                     </div>
                   </li>
                 ))}
@@ -594,8 +650,8 @@ function App() {
                 }`}
             >
               <img
-                src="/grandma.png"
-                alt="Grandma"
+                src={grandma.image}
+                alt={grandma.name}
               />
             </div>
 
