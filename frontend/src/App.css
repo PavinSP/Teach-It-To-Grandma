@@ -275,19 +275,19 @@ h2 {
   height: 180px;
   margin-left: auto;
   transition: transform 0.3s ease;
-
-  /* Make the JPEG's white background blend with the page */
-  mix-blend-mode: multiply;
 }
 
 .grandma-character img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
 
-  /* Prevent the white JPEG background from appearing as a hard box */
-  mix-blend-mode: multiply;
+  /* The peep avatars carry their character colour as a baked background,
+     so they crop to the same circle the glyph avatars use. The multiply
+     blend that served the old white-background JPEG would tint that
+     colour — it's gone with the JPEG. */
+  border-radius: 50%;
 }
 
 .grandma-character.speaking {
@@ -1449,7 +1449,8 @@ h2 {
 .character-card-face {
   width: 56px;
   height: 56px;
-  object-fit: contain;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .character-card-glyph {

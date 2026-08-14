@@ -268,3 +268,21 @@ the toggles aren't live. The designed fallback is "everyone is Grandma",
 never a crash. Voice IDs came from the user's My Voices (Jessica, Chris,
 Daniel, George, Bill); a wrong ID fails the session with the error naming
 the character.
+
+## Session 14 — Character portraits
+
+The user supplied five downloaded images; on inspection two were PNGtree
+watermarked previews (unlicensed, watermarks baked in), one was a JPEG with
+the transparency checkerboard baked into its pixels, one clashed with Mia's
+voice and pronouns (a boy), and collectively they spanned five art styles.
+All five deleted.
+
+Replaced with a consistent set generated from **Open Peeps** (Pablo Stanley,
+CC0 — no attribution required) via DiceBear's API, composed per character
+rather than random-seeded: grey bun + glasses for Grandma, afro-puffs for
+Mia, flat-top grin for Sam, glasses for Marcus, goatee + aviators for
+Victor, bald + moustache + old face for Professor Ellis. Each carries its
+character's palette colour as a baked background, cropped to a circle in
+CSS. The legacy `mix-blend-mode: multiply` (which served the old
+white-background grandma.jpeg and would have tinted the baked colours) is
+removed; `grandma.png` stays in the repo unused as the mascot.
