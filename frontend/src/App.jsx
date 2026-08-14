@@ -224,6 +224,11 @@ function App() {
     },
   });
 
+  // Declared directly after the conversation object: effect dependency
+  // arrays evaluate during render in body order, and a const referenced
+  // before its declaration is a ReferenceError — a blank page, not a warning.
+  const isConnected = conversation.status === "connected";
+
   // Everything the explain-back feature accumulates. Cleared wherever a
   // lesson ends, so the next one never inherits the last one's recall.
   const resetRecall = () => {
@@ -862,7 +867,6 @@ function App() {
     );
   }
 
-  const isConnected = conversation.status === "connected";
 
   const progress = calculateProgress(selectedTopic, messages);
   const completedCount = progress.filter(Boolean).length;
