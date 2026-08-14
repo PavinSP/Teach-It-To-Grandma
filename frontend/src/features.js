@@ -52,6 +52,11 @@ const DEFAULTS = {
   // to test): the riskiest feature in the plan, because it makes the AI wrong
   // on purpose in front of people.
   misconceptionAmbush: false,
+
+  // #8 — the recap quotes your best sentence back, turns "what to improve"
+  // into one concrete action, and shows the listener's real stuck-moments
+  // instead of substring-matched guesses.
+  richNotes: true,
 };
 
 function resolve(defaults) {

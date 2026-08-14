@@ -334,3 +334,30 @@ is absent entirely (the schema is assembled per-request).
 **Transcript hygiene**: the on-screen "she's about to get something wrong"
 beat is a `source:"system"` row — rendered as a centred stage note, excluded
 from grading payloads, keyword coverage, and the recap's quote lists.
+
+## Session 17 — Rich notes (#8)
+
+The recap upgrade the plan ranked "do first" and we leapfrogged. Three
+additions to `/api/grade`, all verified server-side before display:
+
+**"Your strongest moment"** — the model copies the student's single best
+sentence verbatim into a quote card, with one line on why it worked. The
+quote is checked against the transcript; a paraphrase is dropped to empty
+and the card simply doesn't render.
+
+**"What to improve" now leads with one concrete action** — "Define technical
+terms in plain language BEFORE using them", never a restated point label.
+
+**"Where ___ needed help" shows real stumbles.** Previously seven hardcoded
+substrings (`"what exactly"`, `"what does"`…) matched against her lines —
+when she phrased things differently the card fell back to "no major
+questions", making good lessons look like the feature failed. Now the model
+picks up to 3 actual stuck-moments from the listener's own lines (passed to
+the prompt as a separate labelled section — the per-point grading paragraph
+still reads only the student's words), each verbatim-verified with the
+stuck term as a chip. The old substring path survives as the fallback when
+the AI grade hasn't arrived.
+
+Verified with a staged exchange: strongest moment verbatim, practiceThis an
+action, both stumbles verbatim with correct terms; a monologue returns an
+empty stumble list; the character path (Mia) carries all three fields.

@@ -251,6 +251,15 @@ app.post("/api/grade", async (req, res) => {
     .filter(Boolean)
     .join("\n");
 
+  // The listener's side of the exchange — used only to pick out the
+  // moments where they got stuck, never to judge the points.
+  const listenerText = transcript
+    .filter((line) => line.source === "ai")
+    .map((line) => line.message)
+    .filter(Boolean)
+    .slice(-15)
+    .join("\n");
+
   if (!studentText.trim()) {
     return res.json({
       results: points.map((point) => ({
@@ -258,7 +267,10 @@ app.post("/api/grade", async (req, res) => {
         understood: false,
         reason: "The student did not say anything about this.",
       })),
-      summary: "Grandma didn't hear an explanation yet.",
+      summary: `${listenerName} didn't hear an explanation yet.`,
+      strongestMoment: { quote: "", why: "" },
+      practiceThis: "",
+      stumbles: [],
     });
   }
 
@@ -281,6 +293,17 @@ Also report three teaching moments, each with the student's exact words as evide
 - "usedGoodAnalogy": did the student give a genuine analogy that maps onto the concept? The filler word "like" on its own is not an analogy — there must be an actual comparison doing explanatory work.
 
 For each moment, copy the student's exact phrase into "quote" when it happened, or leave "quote" empty when it did not.
+
+Also pick the single best sentence the student actually said — the moment their teaching was at its clearest — and copy it VERBATIM into "strongestMoment.quote", with one short line in "strongestMoment.why" saying why it worked. If nothing stands out, leave both empty.
+
+In "practiceThis", give ONE concrete action for next time — something they could do, like "Say what a gradient IS before you say what it does." Never restate a learning point as a topic name.
+
+Here is what the listener said during the lesson:
+---
+${listenerText || "(the listener said nothing)"}
+---
+
+In "stumbles", list up to 3 moments where the listener had to stop and ask what something meant or how it worked: copy the listener's question VERBATIM into "grandmaQuote", and put the single word or short phrase they were stuck on into "aboutTerm". Only real stops count — ordinary curiosity is not a stumble. Empty list if there were none.
 ${
   ambushedMisconception
     ? `\nMid-lesson, the listener deliberately claimed the following false belief to the student, as a test: "${ambushedMisconception}". In "misconceptionHandling", report whether the student noticed the claim was wrong ("noticed"), whether they explained why and gave the right version ("corrected"), and copy their exact correcting words into "quote" (empty if they never did). Agreeing with the claim, or ignoring it, counts as neither.\n`
@@ -297,7 +320,10 @@ Respond with JSON only, in exactly this shape:
     "simplifiedJargon": { "happened": true or false, "quote": "<their exact words, or empty>" },
     "selfCorrected": { "happened": true or false, "quote": "<their exact words, or empty>" },
     "usedGoodAnalogy": { "happened": true or false, "quote": "<their exact words, or empty>" }
-  }${
+  },
+  "strongestMoment": { "quote": "<the student's exact sentence, or empty>", "why": "<one line, or empty>" },
+  "practiceThis": "<one concrete action>",
+  "stumbles": [ { "grandmaQuote": "<the listener's exact question>", "aboutTerm": "<the word they were stuck on>" } ]${
     ambushedMisconception
       ? `,\n  "misconceptionHandling": { "noticed": true or false, "corrected": true or false, "quote": "<their exact correcting words, or empty>" }`
       : ""
@@ -308,7 +334,7 @@ Respond with JSON only, in exactly this shape:
     const completion = await client.chat.completions.create({
       model: MODEL,
       // Note: TitanomGPT silently ignores max_tokens — it wants this name.
-      max_completion_tokens: 1400,
+      max_completion_tokens: 1700,
       messages: [{ role: "user", content: prompt }],
       response_format: {
         type: "json_schema",
@@ -369,6 +395,28 @@ Respond with JSON only, in exactly this shape:
                 ],
                 additionalProperties: false,
               },
+              strongestMoment: {
+                type: "object",
+                properties: {
+                  quote: { type: "string" },
+                  why: { type: "string" },
+                },
+                required: ["quote", "why"],
+                additionalProperties: false,
+              },
+              practiceThis: { type: "string" },
+              stumbles: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    grandmaQuote: { type: "string" },
+                    aboutTerm: { type: "string" },
+                  },
+                  required: ["grandmaQuote", "aboutTerm"],
+                  additionalProperties: false,
+                },
+              },
               ...(ambushedMisconception
                 ? {
                     misconceptionHandling: {
@@ -388,6 +436,9 @@ Respond with JSON only, in exactly this shape:
               "results",
               "summary",
               "moments",
+              "strongestMoment",
+              "practiceThis",
+              "stumbles",
               ...(ambushedMisconception ? ["misconceptionHandling"] : []),
             ],
             additionalProperties: false,
@@ -422,6 +473,29 @@ Respond with JSON only, in exactly this shape:
       }
     } else {
       graded.moments = null;
+    }
+
+    {
+      const said = studentText.toLowerCase();
+      const heard = listenerText.toLowerCase();
+
+      if (
+        graded.strongestMoment &&
+        graded.strongestMoment.quote &&
+        !said.includes(graded.strongestMoment.quote.toLowerCase())
+      ) {
+        graded.strongestMoment = { quote: "", why: "" };
+      }
+
+      graded.stumbles = (graded.stumbles ?? [])
+        .filter(
+          (st) =>
+            st &&
+            typeof st.grandmaQuote === "string" &&
+            st.grandmaQuote &&
+            heard.includes(st.grandmaQuote.toLowerCase())
+        )
+        .slice(0, 3);
     }
 
     if (graded.misconceptionHandling) {

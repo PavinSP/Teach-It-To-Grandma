@@ -1159,6 +1159,22 @@ function App() {
             </section>
           )}
 
+          {FEATURES.richNotes && aiGrade?.strongestMoment?.quote && (
+            <section className="recap-card strongest-card">
+              <div className="recap-icon">💬</div>
+
+              <h2>Your strongest moment</h2>
+
+              <blockquote className="strongest-quote">
+                “{aiGrade.strongestMoment.quote}”
+              </blockquote>
+
+              {aiGrade.strongestMoment.why && (
+                <p className="strongest-why">{aiGrade.strongestMoment.why}</p>
+              )}
+            </section>
+          )}
+
           <div className="recap-grid">
             <section className="recap-card">
               <div className="recap-icon">✓</div>
@@ -1181,6 +1197,12 @@ function App() {
 
               <h2>What to improve</h2>
 
+              {FEATURES.richNotes && aiGrade?.practiceThis && (
+                <p className="practice-this">
+                  🎯 {aiGrade.practiceThis}
+                </p>
+              )}
+
               {unclearPoints.length > 0 ? (
                 <ul>
                   {unclearPoints.map((point) => (
@@ -1200,7 +1222,20 @@ function App() {
 
             <h2>Where {who} needed help</h2>
 
-            {recap.clarificationMessages.length > 0 ? (
+            {FEATURES.richNotes && aiGrade?.stumbles?.length > 0 ? (
+              <ul className="stumble-list">
+                {aiGrade.stumbles.map((stumble, index) => (
+                  <li key={index}>
+                    “{stumble.grandmaQuote}”
+                    {stumble.aboutTerm && (
+                      <span className="stumble-term">
+                        {stumble.aboutTerm}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : recap.clarificationMessages.length > 0 ? (
               <ul>
                 {recap.clarificationMessages
                   .slice(0, 3)
