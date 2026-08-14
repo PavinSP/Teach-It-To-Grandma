@@ -262,19 +262,31 @@ For each learning point below, decide whether the student GENUINELY explained th
 
 ${pointList}
 
+Also report three teaching moments, each with the student's exact words as evidence:
+- "simplifiedJargon": did the student replace a technical term with plain language, either unprompted or after being asked what a word meant?
+- "selfCorrected": did the student catch and fix their own mistake mid-explanation?
+- "usedGoodAnalogy": did the student give a genuine analogy that maps onto the concept? The filler word "like" on its own is not an analogy — there must be an actual comparison doing explanatory work.
+
+For each moment, copy the student's exact phrase into "quote" when it happened, or leave "quote" empty when it did not.
+
 Respond with JSON only, in exactly this shape:
 {
   "results": [
     { "point": "<the learning point, copied exactly>", "understood": true or false, "reason": "<one short sentence, addressed to the student as Grandma would say it>" }
   ],
-  "summary": "<two sentences in Grandma's warm voice about how well they explained it overall>"
+  "summary": "<two sentences in Grandma's warm voice about how well they explained it overall>",
+  "moments": {
+    "simplifiedJargon": { "happened": true or false, "quote": "<their exact words, or empty>" },
+    "selfCorrected": { "happened": true or false, "quote": "<their exact words, or empty>" },
+    "usedGoodAnalogy": { "happened": true or false, "quote": "<their exact words, or empty>" }
+  }
 }`;
 
   try {
     const completion = await client.chat.completions.create({
       model: MODEL,
       // Note: TitanomGPT silently ignores max_tokens — it wants this name.
-      max_completion_tokens: 1024,
+      max_completion_tokens: 1400,
       messages: [{ role: "user", content: prompt }],
       response_format: {
         type: "json_schema",
@@ -297,8 +309,46 @@ Respond with JSON only, in exactly this shape:
                 },
               },
               summary: { type: "string" },
+              moments: {
+                type: "object",
+                properties: {
+                  simplifiedJargon: {
+                    type: "object",
+                    properties: {
+                      happened: { type: "boolean" },
+                      quote: { type: "string" },
+                    },
+                    required: ["happened", "quote"],
+                    additionalProperties: false,
+                  },
+                  selfCorrected: {
+                    type: "object",
+                    properties: {
+                      happened: { type: "boolean" },
+                      quote: { type: "string" },
+                    },
+                    required: ["happened", "quote"],
+                    additionalProperties: false,
+                  },
+                  usedGoodAnalogy: {
+                    type: "object",
+                    properties: {
+                      happened: { type: "boolean" },
+                      quote: { type: "string" },
+                    },
+                    required: ["happened", "quote"],
+                    additionalProperties: false,
+                  },
+                },
+                required: [
+                  "simplifiedJargon",
+                  "selfCorrected",
+                  "usedGoodAnalogy",
+                ],
+                additionalProperties: false,
+              },
             },
-            required: ["results", "summary"],
+            required: ["results", "summary", "moments"],
             additionalProperties: false,
           },
         },
@@ -311,7 +361,29 @@ Respond with JSON only, in exactly this shape:
       throw new Error("Model returned no content");
     }
 
-    res.json(JSON.parse(raw));
+    const graded = JSON.parse(raw);
+
+    // A moment's quote is shown to the student as their own words, so it has
+    // to actually be their own words. A paraphrase the model invented gets
+    // dropped; the moment itself survives without its quote.
+    if (graded.moments && typeof graded.moments === "object") {
+      const said = studentText.toLowerCase();
+
+      for (const moment of Object.values(graded.moments)) {
+        if (
+          moment &&
+          typeof moment.quote === "string" &&
+          moment.quote &&
+          !said.includes(moment.quote.toLowerCase())
+        ) {
+          moment.quote = "";
+        }
+      }
+    } else {
+      graded.moments = null;
+    }
+
+    res.json(graded);
   } catch (err) {
     console.error("Grading failed:", err);
     res.status(502).json({ error: "Grading failed." });

@@ -187,3 +187,40 @@ is the "render what already exists" half only; the harder half (b) — having
 Grandma voice one mid-conversation via a dashboard prompt edit — is
 deliberately deferred, per D1 in `PLAN.md`, until the shared-prompt
 coordination question is settled.
+
+## Session 12 — Feynman Score and XP (#40 + #25)
+
+The completion band: a score, itemised XP, and a running total on the recap.
+
+**D3 settled: the score is computed, never model-emitted.** `feynmanScore()`
+in `frontend/src/progression.js` is 70% AI-judged understanding, 15% keyword
+coverage, 15% how little Grandma had to interrupt — every input a boolean an
+engineer can point at, so identical lessons always score identically. The
+weighting makes a vague 4/4-coverage explanation land around 15-30, which is
+the product's own argument expressed as arithmetic.
+
+**D5 held: understanding XP comes from `aiGrade`, never the keyword bar.**
+Coverage earns its own visibly smaller award (+100 for saying it, up to +300
+for being understood). Celebration copy derives from the score — under 40 it
+says "Grandma is still lost, darling" with the same prominence as a win. The
+band renders a skeleton while grading runs; celebrating before the grade
+lands can congratulate a failure.
+
+**F7 shipped with it**: `/api/grade` now reports three teaching moments
+(simplified jargon, self-corrected, used a real analogy), each with the
+student's verbatim quote — verified server-side against the transcript, same
+pattern as #9, so a paraphrase the model invented is dropped rather than
+shown as the student's words. The filler word "like" was explicitly tested
+and does not count as an analogy.
+
+**Pay-out is once per attempt**: an id minted at Finish (only when none is in
+flight, so double-clicks can't mint twice) and a commit effect that refuses
+ids it has already paid. Grading outage → coverage-only XP with "Grandma
+couldn't mark this one" — understanding is never inferred from keywords to
+paper over the outage. Storage failures (missing, corrupt JSON, wrong types,
+quota) all tested to degrade to a fresh default instead of a blank page.
+
+**Tested**: 16 unit cases across score/verdict/XP branches, a live contract
+test (real grade response → 620 XP with verbatim quotes), storage-failure
+matrix, flags, smoke test. One arithmetic dispute during testing was mine,
+not the code's (36.25 rounds to 36, not 37).

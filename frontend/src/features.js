@@ -34,6 +34,10 @@ const DEFAULTS = {
   challengeCards: true,
   // #38(a) — render the misconceptions that were already being generated.
   misconceptionAttack: true,
+
+  // #40 + #25 — the Feynman Score and itemised XP on the recap. The score
+  // is computed from booleans, never asked from the model.
+  progression: true,
 };
 
 function resolve(defaults) {

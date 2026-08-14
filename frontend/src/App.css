@@ -1287,3 +1287,117 @@ h2 {
   flex-direction: column;
   gap: 6px;
 }
+
+/* -----------------------------
+   Feynman Score + XP (#40, #25)
+----------------------------- */
+
+.completion-band {
+  margin: 22px 0 26px;
+  padding: 20px 24px;
+  border: 1px solid #e6ded2;
+  border-radius: 14px;
+  background: #fffdf8;
+}
+
+.score-pending {
+  margin: 0;
+  color: #746c62;
+  font-style: italic;
+}
+
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.feynman-score {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  color: #fff;
+}
+
+.score-good {
+  background: #2f7a4f;
+}
+
+.score-mid {
+  background: #c98a2b;
+}
+
+.score-low {
+  background: #9c3327;
+}
+
+.score-number {
+  font-size: 34px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-denom {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.score-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+  margin-bottom: 4px;
+}
+
+.score-verdict {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.score-unavailable {
+  margin: 0 0 14px;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.xp-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.xp-list li {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.xp-amount {
+  flex-shrink: 0;
+  min-width: 46px;
+  font-weight: 800;
+  color: #2f7a4f;
+  font-variant-numeric: tabular-nums;
+}
+
+.xp-quote {
+  opacity: 0.6;
+  font-size: 14px;
+}
+
+.xp-total {
+  padding-top: 12px;
+  border-top: 1px solid #e6ded2;
+  font-size: 15px;
+}
+
+.xp-running {
+  opacity: 0.6;
+}

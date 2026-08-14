@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useConversation } from "@elevenlabs/react";
 import { FEATURES } from "./features";
+import {
+  feynmanScore,
+  verdictForScore,
+  bandForScore,
+  xpForLesson,
+  loadProfile,
+  commitLessonXp,
+} from "./progression";
 import "./App.css";
 
 const AGENT_ID = "agent_8901kzzhzexhe2qt3903amp09nnq";
@@ -141,9 +149,19 @@ function App() {
   const [challengeError, setChallengeError] = useState("");
   const [usedChallengeIds, setUsedChallengeIds] = useState([]);
   const [challengeSentNotice, setChallengeSentNotice] = useState("");
+  const [lessonXp, setLessonXp] = useState(null);
+  const [displayScore, setDisplayScore] = useState(null);
+  const [profileXp, setProfileXp] = useState(() =>
+    FEATURES.progression ? loadProfile().xp : null
+  );
   const transcriptEndRef = useRef(null);
   // Her next reply after we ask is the recall itself — catch it as it lands.
   const pendingRecallRef = useRef(false);
+  // One lesson attempt = one XP award. The id is minted once per attempt
+  // (double-clicking Finish must not mint twice), and the commit effect
+  // refuses to run for an id it has already paid out.
+  const lessonIdRef = useRef(null);
+  const committedRef = useRef(null);
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -207,6 +225,92 @@ function App() {
     setChallengeSentNotice("");
   };
 
+  // Each lesson attempt scores once. Nulling the id means "no attempt in
+  // flight", so a stale recap can never pay out again.
+  const resetProgression = () => {
+    setLessonXp(null);
+    setDisplayScore(null);
+    lessonIdRef.current = null;
+  };
+
+  // Pays out exactly once per lesson attempt, and only after grading has
+  // settled — celebrating before the grade lands can congratulate a failure.
+  useEffect(() => {
+    if (!FEATURES.progression || !showRecap || isGrading || !selectedTopic) {
+      return;
+    }
+
+    if (!lessonIdRef.current || committedRef.current === lessonIdRef.current) {
+      return;
+    }
+
+    committedRef.current = lessonIdRef.current;
+
+    const saidAnything = messages.some(
+      (m) => m.source === "user" && m.message && m.meta !== "prompt"
+    );
+
+    const progressNow = calculateProgress(selectedTopic, messages);
+    const coveredCount = progressNow.filter(Boolean).length;
+
+    const xp = xpForLesson({
+      results: aiGrade?.results ?? null,
+      moments: aiGrade?.moments ?? null,
+      coveredCount,
+      totalPoints: progressNow.length,
+      saidAnything,
+    });
+
+    if (!xp) {
+      return;
+    }
+
+    const score = feynmanScore({
+      understoodCount: aiGrade?.results
+        ? aiGrade.results.filter((r) => r.understood).length
+        : null,
+      coveredCount,
+      totalPoints: progressNow.length,
+      clarificationCount: generateRecap(selectedTopic, progressNow, messages)
+        .clarificationMessages.length,
+    });
+
+    setLessonXp({ ...xp, score });
+    setProfileXp(commitLessonXp(xp.total).xp);
+  }, [showRecap, isGrading, aiGrade, selectedTopic, messages]);
+
+  // The score counts up over ~800ms — unless the viewer asked for reduced
+  // motion, in which case it lands immediately.
+  useEffect(() => {
+    if (lessonXp?.score === null || lessonXp?.score === undefined) {
+      setDisplayScore(null);
+      return;
+    }
+
+    const target = lessonXp.score;
+
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+      setDisplayScore(target);
+      return;
+    }
+
+    let frame;
+    const startedAt = performance.now();
+
+    const tick = (now) => {
+      const t = Math.min((now - startedAt) / 800, 1);
+      setDisplayScore(Math.round(target * t));
+
+      if (t < 1) {
+        frame = requestAnimationFrame(tick);
+      }
+    };
+
+    frame = requestAnimationFrame(tick);
+
+    return () => cancelAnimationFrame(frame);
+  }, [lessonXp]);
+
   const startConversation = async () => {
     try {
       setError("");
@@ -243,6 +347,12 @@ function App() {
     try {
       if (conversation.status === "connected") {
         await conversation.endSession();
+      }
+
+      // Mint once per attempt — a second click of Finish finds the id
+      // already set and the commit effect pays out nothing extra.
+      if (!lessonIdRef.current) {
+        lessonIdRef.current = crypto.randomUUID();
       }
 
       setShowRecap(true);
@@ -426,6 +536,7 @@ function App() {
       setMessages([]);
       setAiGrade(null);
       resetRecall();
+      resetProgression();
     } catch (err) {
       console.error("Could not build challenge:", err);
       setChallengeError("Could not put together a challenge right now.");
@@ -468,6 +579,7 @@ function App() {
       resetRecall();
       resetChallenge();
       resetChallengeCards();
+      resetProgression();
     } catch (err) {
       console.error("Could not build lesson:", err);
 
@@ -615,6 +727,68 @@ function App() {
             Here's what Grandma understood from your lesson on{" "}
             <strong>{selectedTopic.name}</strong>.
           </p>
+
+          {FEATURES.progression && isGrading && !lessonXp && (
+            <section className="completion-band">
+              <p className="score-pending">
+                Grandma is marking your lesson…
+              </p>
+            </section>
+          )}
+
+          {FEATURES.progression && lessonXp && (
+            <section className="completion-band">
+              {lessonXp.score !== null ? (
+                <div className="score-row">
+                  <div
+                    className={`feynman-score score-${bandForScore(
+                      lessonXp.score
+                    )}`}
+                  >
+                    <span className="score-number">
+                      {displayScore ?? lessonXp.score}
+                    </span>
+                    <span className="score-denom">/ 100</span>
+                  </div>
+
+                  <div>
+                    <div className="score-label">FEYNMAN SCORE</div>
+                    <div className="score-verdict">
+                      {verdictForScore(lessonXp.score)}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="score-unavailable">
+                  Grandma couldn't mark this one — XP for coverage only.
+                </p>
+              )}
+
+              <ul className="xp-list">
+                {lessonXp.events.map((event) => (
+                  <li key={event.label}>
+                    <span className="xp-amount">+{event.xp}</span>
+
+                    <span className="xp-what">
+                      {event.label}
+                      {event.quote && (
+                        <em className="xp-quote"> — “{event.quote}”</em>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="xp-total">
+                <strong>+{lessonXp.total} XP</strong>
+                {profileXp !== null && (
+                  <span className="xp-running">
+                    {" "}· {profileXp} XP total in this browser
+                  </span>
+                )}
+              </div>
+            </section>
+          )}
 
           <div className="grandma-verdict">
             <div className="grandma-verdict-avatar">👵</div>
@@ -873,6 +1047,7 @@ function App() {
               resetRecall();
               resetChallenge();
       resetChallengeCards();
+      resetProgression();
             }}      >
             ← Teach something else
           </button>
@@ -896,6 +1071,7 @@ function App() {
             resetRecall();
       resetChallenge();
       resetChallengeCards();
+      resetProgression();
           }}
         >
           ← Teach something else
