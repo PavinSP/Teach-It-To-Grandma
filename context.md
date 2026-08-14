@@ -416,3 +416,18 @@ one machine; every run is graded identically and lands on one board.
 - The creator's own run posts with their already-computed Feynman Score;
   the joiner's posts automatically when their attempt commits (inside the
   once-per-attempt guard, so double-Finish can't double-post).
+
+## Session 20 — Achievements (#27)
+
+Eight badges on the completion band: earned ones lit with a NEW tag, locked
+ones dimmed with their unlock condition as the tooltip. Every condition is
+a boolean over existing data — moments, grade, computed score, ambush
+verdict — and "a vague lesson earns nothing" is an explicit unit test, not
+a hope. Already-earned badges never re-fire; cross-lesson counters
+(analogies in 3 lessons, ten 75+ scores) accumulate in the localStorage
+profile.
+
+Two things the plan got to update: Myth Buster was marked impossible when
+the plan was written — the ambush (#11) made it real, catching the
+deliberate lie unlocks it. And Speed Teacher brought the first session
+clock (mic's first press stamps the attempt).
