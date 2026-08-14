@@ -1,3 +1,6 @@
+> **The stage script lives in [DEMO.md](DEMO.md).** This file is the older
+> quiet-room test material, kept for reference.
+
 # Quiet-Room Test Scripts
 
 Read each script out loud to Grandma, roughly in order. Each one is written to hit all 4 checklist points for that topic so you can confirm the progress bar reaches 4/4 and "Grandma's Notes" generates a sane recap.
