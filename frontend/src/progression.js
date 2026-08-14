@@ -29,12 +29,14 @@ export function feynmanScore({
 
 // The celebration copy derives from the score — a failing lesson gets told
 // so, with the same prominence as a win. A game that congratulates you for
-// failing is worse than no game.
-export function verdictForScore(score) {
-  if (score >= 85) return "Grandma really got it.";
-  if (score >= 60) return "Grandma mostly followed you.";
-  if (score >= 40) return "Grandma got some of it.";
-  return "Grandma is still lost, darling.";
+// failing is worse than no game. Only Grandma gets to say "darling".
+export function verdictForScore(score, who = "Grandma") {
+  if (score >= 85) return `${who} really got it.`;
+  if (score >= 60) return `${who} mostly followed you.`;
+  if (score >= 40) return `${who} got some of it.`;
+  return who === "Grandma"
+    ? "Grandma is still lost, darling."
+    : `${who} is still lost.`;
 }
 
 export function bandForScore(score) {

@@ -9,6 +9,7 @@ import {
   loadProfile,
   commitLessonXp,
 } from "./progression";
+import { CHARACTERS, buildPersonaPrompt } from "./characters";
 import "./App.css";
 
 const AGENT_ID = "agent_8901kzzhzexhe2qt3903amp09nnq";
@@ -70,7 +71,7 @@ function calculateProgress(topic, messages) {
     return matchedKeywords.length >= check.required;
   });
 }
-function generateRecap(topic, progress, messages) {
+function generateRecap(topic, progress, messages, who = "Grandma") {
   const grandmaMessages = messages
     .filter((message) => message.source !== "user")
     .map((message) => message.message || "")
@@ -111,13 +112,13 @@ function generateRecap(topic, progress, messages) {
 
   if (completedPoints.length === topic.points.length) {
     verdict =
-      "You explained all the key ideas clearly enough for Grandma to follow. Well done, darling!";
+      `You explained all the key ideas clearly enough for ${who} to follow. Well done${who === "Grandma" ? ", darling" : ""}!`;
   } else if (completedPoints.length >= 2) {
     verdict =
-      "You're getting there, darling. Grandma understood several important ideas, but a few parts could be clearer.";
+      `You're getting there${who === "Grandma" ? ", darling" : ""}. ${who} understood several important ideas, but a few parts could be clearer.`;
   } else {
     verdict =
-      "That's a good start, darling. A few important ideas still need a little more explaining.";
+      `That's a good start${who === "Grandma" ? ", darling" : ""}. A few important ideas still need a little more explaining.`;
   }
 
   return {
@@ -154,6 +155,9 @@ function App() {
   const [profileXp, setProfileXp] = useState(() =>
     FEATURES.progression ? loadProfile().xp : null
   );
+  // Deliberately NOT reset when the topic changes — a student who picked the
+  // Expert stays with the Expert across lessons until they choose otherwise.
+  const [character, setCharacter] = useState(CHARACTERS[0]);
   const transcriptEndRef = useRef(null);
   // Her next reply after we ask is the recall itself — catch it as it lands.
   const pendingRecallRef = useRef(false);
@@ -162,6 +166,14 @@ function App() {
   // refuses to run for an id it has already paid out.
   const lessonIdRef = useRef(null);
   const committedRef = useRef(null);
+
+  // With the picker off, every derived name resolves to Grandma and the app
+  // reads exactly as it did before characters existed.
+  const activeCharacter = FEATURES.characterPicker ? character : CHARACTERS[0];
+  const who = activeCharacter.shortName;
+  const whoUpper = who.toUpperCase();
+  const subj = activeCharacter.subj;
+  const obj = activeCharacter.obj;
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -196,7 +208,7 @@ function App() {
 
     onError: (message) => {
       console.error("ElevenLabs error:", message);
-      setError("Something went wrong connecting to Grandma.");
+      setError(`Something went wrong connecting to ${who}.`);
     },
   });
 
@@ -271,7 +283,7 @@ function App() {
         : null,
       coveredCount,
       totalPoints: progressNow.length,
-      clarificationCount: generateRecap(selectedTopic, progressNow, messages)
+      clarificationCount: generateRecap(selectedTopic, progressNow, messages, who)
         .clarificationMessages.length,
     });
 
@@ -322,16 +334,42 @@ function App() {
 
       await conversation.startSession({
         agentId: AGENT_ID,
+        // Kept regardless of character — the dashboard's own Grandma prompt
+        // still reads these, and that prompt is the fallback if the
+        // override toggles turn out to be off.
         dynamicVariables: {
           topic: selectedTopic.name,
           topicDescription: selectedTopic.description,
         },
+        ...(FEATURES.characterPicker
+          ? {
+              overrides: {
+                agent: {
+                  prompt: {
+                    prompt: buildPersonaPrompt(activeCharacter, selectedTopic),
+                  },
+                  // Each character's distinct greeting doubles as the
+                  // override canary: hear the wrong one, and you know the
+                  // dashboard toggles aren't live.
+                  firstMessage: activeCharacter.firstMessage.replace(
+                    "{topic}",
+                    selectedTopic.name
+                  ),
+                },
+                // Sent only when set — an explicit null is a rejected
+                // payload, not a fallback.
+                ...(activeCharacter.voiceId
+                  ? { tts: { voiceId: activeCharacter.voiceId } }
+                  : {}),
+              },
+            }
+          : {}),
       });
     } catch (err) {
       console.error("Could not start conversation:", err);
 
       setError(
-        "Could not start the microphone or connect to Grandma."
+        `Could not start the microphone or connect to ${who}.`
       );
     }
   };
@@ -386,6 +424,15 @@ function App() {
           topicName: selectedTopic.name,
           points: selectedTopic.points,
           transcript: messages.filter((m) => m.meta !== "prompt"),
+          ...(FEATURES.characterPicker
+            ? {
+                character: {
+                  name: activeCharacter.shortName,
+                  audience: activeCharacter.audience,
+                  gradingStance: activeCharacter.gradingStance,
+                },
+              }
+            : {}),
         }),
       });
 
@@ -428,8 +475,9 @@ function App() {
           topicName: selectedTopic.name,
           points: selectedTopic.points,
           transcript: messages.filter((m) => m.meta !== "prompt"),
-          // If she already said it out loud, analyse those exact words.
+          // If the listener already said it out loud, analyse those words.
           grandmaRecall: recallText || undefined,
+          ...(FEATURES.characterPicker ? { characterName: who } : {}),
         }),
       });
 
@@ -455,7 +503,7 @@ function App() {
     }
 
     const ask =
-      "Grandma, before I go — can you tell me back what you understood, in your own words?";
+      `${who}, before I go — can you tell me back what you understood, in your own words?`;
 
     setAskedForRecall(true);
     pendingRecallRef.current = true;
@@ -481,7 +529,7 @@ function App() {
     );
 
     setUsedChallengeIds((previous) => [...previous, card.id]);
-    setChallengeSentNotice("Challenge sent — Grandma will ask you next.");
+    setChallengeSentNotice(`Challenge sent — ${who} will ask you next.`);
     setTimeout(() => setChallengeSentNotice(""), 6000);
   };
 
@@ -513,6 +561,7 @@ function App() {
           transcript: priorTranscript,
           unexplainedTerms: explainBack?.unexplainedTerms ?? [],
           priorWeakness: null,
+          ...(FEATURES.characterPicker ? { characterName: who } : {}),
         }),
       });
 
@@ -610,6 +659,44 @@ function App() {
             who knows absolutely nothing about it.
           </p>
 
+          {FEATURES.characterPicker && CHARACTERS.length > 1 && (
+            <>
+              <h2>Who are you teaching?</h2>
+
+              <div className="character-grid">
+                {CHARACTERS.map((c) => (
+                  <button
+                    key={c.id}
+                    className={`character-card ${
+                      character.id === c.id ? "selected" : ""
+                    }`}
+                    onClick={() => setCharacter(c)}
+                    disabled={isBuildingLesson}
+                  >
+                    {c.image ? (
+                      <img
+                        className="character-card-face"
+                        src={c.image}
+                        alt=""
+                      />
+                    ) : (
+                      <span
+                        className="character-card-glyph"
+                        style={{ background: c.color }}
+                      >
+                        {c.glyph}
+                      </span>
+                    )}
+
+                    <span className="character-card-name">{c.role}</span>
+                    <span className="character-card-level">{c.difficulty}</span>
+                    <span className="character-card-hook">{c.hook}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
           <h2>What do you want to teach?</h2>
 
           <form
@@ -639,7 +726,7 @@ function App() {
 
           {isBuildingLesson && (
             <p className="topic-status">
-              Working out what Grandma would need to hear…
+              Working out what {who} would need to hear…
             </p>
           )}
 
@@ -715,7 +802,7 @@ function App() {
     return (
       <main className="app">
         <section className="recap-page">
-          <div className="eyebrow">GRANDMA'S NOTES</div>
+          <div className="eyebrow">{whoUpper}'S NOTES</div>
 
           <h1>
             {gotEverythingAcross
@@ -724,14 +811,14 @@ function App() {
           </h1>
 
           <p className="recap-subtitle">
-            Here's what Grandma understood from your lesson on{" "}
+            Here's what {who} understood from your lesson on{" "}
             <strong>{selectedTopic.name}</strong>.
           </p>
 
           {FEATURES.progression && isGrading && !lessonXp && (
             <section className="completion-band">
               <p className="score-pending">
-                Grandma is marking your lesson…
+                {who} is marking your lesson…
               </p>
             </section>
           )}
@@ -754,13 +841,13 @@ function App() {
                   <div>
                     <div className="score-label">FEYNMAN SCORE</div>
                     <div className="score-verdict">
-                      {verdictForScore(lessonXp.score)}
+                      {verdictForScore(lessonXp.score, who)}
                     </div>
                   </div>
                 </div>
               ) : (
                 <p className="score-unavailable">
-                  Grandma couldn't mark this one — XP for coverage only.
+                  {who} couldn't mark this one — XP for coverage only.
                 </p>
               )}
 
@@ -791,18 +878,18 @@ function App() {
           )}
 
           <div className="grandma-verdict">
-            <div className="grandma-verdict-avatar">👵</div>
+            <div className="grandma-verdict-avatar">{activeCharacter.glyph}</div>
 
             <div>
               <div className="grandma-verdict-label">
-                GRANDMA SAYS
+                {whoUpper} SAYS
               </div>
 
               <p>{aiGrade?.summary || recap.verdict}</p>
 
               {isGrading && (
                 <p className="grading-status">
-                  Grandma is thinking it over…
+                  {who} is thinking it over…
                 </p>
               )}
             </div>
@@ -812,7 +899,7 @@ function App() {
             <section className="recap-card ai-grade-card">
               <div className="recap-icon">🧠</div>
 
-              <h2>Did Grandma really understand?</h2>
+              <h2>Did {who} really understand?</h2>
 
               <ul className="ai-grade-list">
                 {aiGrade.results.map((result) => (
@@ -839,7 +926,7 @@ function App() {
               <div className="recap-icon">🔄</div>
               <h2>Let me see if I understood you</h2>
               <p className="recap-pending">
-                Grandma is working out what she actually took away…
+                {who} is working out what {subj} actually took away…
               </p>
             </section>
           )}
@@ -862,7 +949,7 @@ function App() {
 
                 {aiGrade?.results && (
                   <div className="gap-stat">
-                    <span className="gap-label">Grandma followed</span>
+                    <span className="gap-label">{who} followed</span>
                     <span className="gap-value">
                       {aiGrade.results.filter((r) => r.understood).length} /{" "}
                       {aiGrade.results.length}
@@ -882,8 +969,8 @@ function App() {
               <div className="grandma-recall">
                 <div className="recall-label">
                   {recallText
-                    ? "What Grandma said out loud"
-                    : "What Grandma took away"}
+                    ? `What ${who} said out loud`
+                    : `What ${who} took away`}
                 </div>
 
                 <p>{explainBack.recap}</p>
@@ -939,7 +1026,7 @@ function App() {
             <section className="recap-card">
               <div className="recap-icon">✓</div>
 
-              <h2>What Grandma followed</h2>
+              <h2>What {who} followed</h2>
 
               {clearPoints.length > 0 ? (
                 <ul>
@@ -965,16 +1052,16 @@ function App() {
                 </ul>
               ) : (
                 <p>
-                  Grandma followed every point. That's the whole idea.
+                  {who} followed every point. That's the whole idea.
                 </p>
               )}
             </section>
           </div>
 
           <div className="recap-card conversation-summary">
-            <div className="recap-icon">👵</div>
+            <div className="recap-icon">{activeCharacter.glyph}</div>
 
-            <h2>Where Grandma needed help</h2>
+            <h2>Where {who} needed help</h2>
 
             {recap.clarificationMessages.length > 0 ? (
               <ul>
@@ -994,7 +1081,7 @@ function App() {
               </ul>
             ) : (
               <p>
-                Grandma didn't have any major questions about
+                {who} didn't have any major questions about
                 your explanation.
               </p>
             )}
@@ -1011,7 +1098,7 @@ function App() {
               </p>
             ) : (
               <p>
-                You didn't give Grandma an explanation yet.
+                You didn't give {who} an explanation yet.
               </p>
             )}
           </div>
@@ -1086,6 +1173,11 @@ function App() {
                   {selectedTopic.difficulty}
                 </span>
               )}
+              {FEATURES.characterPicker && (
+                <span className="difficulty-tag">
+                  {activeCharacter.role} · {activeCharacter.difficulty}
+                </span>
+              )}
             </div>
 
             <h1>{selectedTopic.name}</h1>
@@ -1145,13 +1237,23 @@ function App() {
 
           <div className="grandma-wrapper">
             <div
-              className={`grandma-character ${conversation.isSpeaking ? "speaking" : ""
-                }`}
+              className={`grandma-character ${
+                activeCharacter.image ? "" : "glyph-character"
+              } ${conversation.isSpeaking ? "speaking" : ""}`}
             >
-              <img
-                src="/grandma.png"
-                alt="Grandma"
-              />
+              {activeCharacter.image ? (
+                <img
+                  src={activeCharacter.image}
+                  alt={who}
+                />
+              ) : (
+                <span
+                  className="glyph-face"
+                  style={{ background: activeCharacter.color }}
+                >
+                  {activeCharacter.glyph}
+                </span>
+              )}
             </div>
 
             <div
@@ -1159,7 +1261,7 @@ function App() {
                 }`}
             >
               <span className="speaking-dot" />
-              Grandma is speaking
+              {who} is speaking
             </div>
             <div
               className={`listening-indicator ${conversation.isListening && !conversation.isSpeaking
@@ -1168,7 +1270,7 @@ function App() {
                 }`}
             >
               <span className="listening-dot" />
-              Grandma is listening
+              {who} is listening
             </div>
           </div>
         </div>
@@ -1190,12 +1292,11 @@ function App() {
               <div className="transcript">
                 {messages.length === 0 && (
                   <div className="transcript-message grandma-message">
-                    <div className="speaker">GRANDMA</div>
+                    <div className="speaker">{whoUpper}</div>
 
                     <p>
-                      Oh hello, darling! I see you want to teach me about{" "}
-                      {selectedTopic.name}. Go on then, tell Grandma all
-                      about it!
+                      {who} is ready. Press the microphone and start
+                      teaching {obj} about {selectedTopic.name}.
                     </p>
                   </div>
                 )}
@@ -1204,7 +1305,7 @@ function App() {
                   const role =
                     message.source === "user"
                       ? "YOU"
-                      : "GRANDMA";
+                      : whoUpper;
 
                   return (
                     <div
@@ -1241,7 +1342,7 @@ function App() {
 
                   <p>
                     {conversation.status === "connecting"
-                      ? "Connecting to Grandma..."
+                      ? `Connecting to ${who}...`
                       : "Press the microphone and start explaining."}
                   </p>
                 </>
@@ -1283,19 +1384,19 @@ function App() {
                       title="She'll say back what she thinks she understood"
                     >
                       {askedForRecall
-                        ? "👵 Asked — listen to what she got"
-                        : "👵 Ask Grandma what she understood"}
+                        ? `${activeCharacter.glyph} Asked — listen to what ${subj} got`
+                        : `${activeCharacter.glyph} Ask ${who} what ${subj} understood`}
                     </button>
                   )}
 
                   <p>
                     {conversation.isMuted
-                      ? "🔇 Microphone muted — Grandma can't hear you."
+                      ? `🔇 Microphone muted — ${who} can't hear you.`
                       : conversation.isSpeaking
-                        ? "🔊 Grandma is speaking..."
+                        ? `🔊 ${who} is speaking...`
                         : conversation.isListening
-                          ? "🎙️ Grandma is listening..."
-                          : "🎙️ Start teaching Grandma..."}
+                          ? `🎙️ ${who} is listening...`
+                          : `🎙️ Start teaching ${who}...`}
                   </p>
                 </>
               )}
@@ -1364,7 +1465,9 @@ function App() {
 
             {FEATURES.challengeCards && selectedTopic.challenges.length > 0 && (
               <div className="challenge-deck">
-                <div className="challenge-deck-title">CHALLENGE HER</div>
+                <div className="challenge-deck-title">
+                  CHALLENGE {obj.toUpperCase()}
+                </div>
 
                 <div className="challenge-chips">
                   {selectedTopic.challenges.map((card) => {
@@ -1418,7 +1521,7 @@ function App() {
                   <div className="complete-message">
                     <strong>You covered all four points.</strong>
                     <span>
-                      But did Grandma actually follow it? Finish the lesson
+                      But did {who} actually follow it? Finish the lesson
                       and she'll tell you.
                     </span>
                   </div>
@@ -1430,7 +1533,7 @@ function App() {
                   className="finish-button"
                   onClick={finishLesson}
                 >
-                  See Grandma's Notes →
+                  See {who}'s Notes →
                 </button>
               )}
             </div>

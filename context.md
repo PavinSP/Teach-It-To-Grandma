@@ -224,3 +224,47 @@ quota) all tested to degrade to a fresh default instead of a blank page.
 test (real grade response → 620 XP with verbatim quotes), storage-failure
 matrix, flags, smoke test. One arithmetic dispute during testing was mine,
 not the code's (36.25 rounds to 36, not 37).
+
+## Session 13 — Six characters, one agent (#2 + #3 + #36)
+
+The trunk of the character system. Grandma, Mia (curious child), Sam
+(student), Marcus (manager), Victor (expert), and Professor Ellis — all
+played by the one ElevenLabs agent via per-session overrides: system prompt,
+greeting, and voice. Personas live in `frontend/src/characters.js` as data,
+so a personality change is a git commit, not a dashboard edit.
+
+**The shared rules block is the load-bearing part.** Every persona ends with
+an identical NEVER_CHANGES section (learner never teacher, keep your
+knowledge to yourself, 1-2 sentences) — verified byte-identical across all
+six at test time, because the failure mode of "six personalities" is the
+Expert starting to teach.
+
+**#36 is what keeps them from being cosmetic.** Each character carries an
+audience line and a grading stance into `/api/grade` — measured on the same
+transcript: baseline 2/4, Professor 3/4 (coherent, no contradictions — his
+axis), Mia 0/4 (too abstract for a seven-year-old — hers). Different
+characters judge along different axes, not a single difficulty dial.
+`character` stays strictly optional in the request; the no-character
+regression returns the original Grandma behaviour.
+
+**The recall invariant survives personas**: whoever is listening,
+`/api/explainback` keeps the closed world — Victor "knows things" in
+conversation, but his recall may only use the student's words. Re-proved
+both #9 tests (no knowledge leak, no repairing a wrong student) after the
+prompt rewording.
+
+**Every Grandma string went character-aware** — 44 sites swept with
+per-replacement assertions: recap headings, indicators, mic statuses,
+pronouns (CHALLENGE HER → CHALLENGE HIM for the four male-voiced learners),
+avatars (glyph in a coloured circle where there's no art, with the
+mix-blend-mode:multiply legacy scoped back to the Grandma PNG). Verdicts
+drop "darling" for everyone except Grandma.
+
+**Dashboard dependency, stated honestly**: the override toggles (System
+prompt / First message / Voice) were enabled by the user in the ElevenLabs
+Security panel; publish state unconfirmed at build time. The distinct
+greetings are the canary — hear Grandma's greeting after picking Mia, and
+the toggles aren't live. The designed fallback is "everyone is Grandma",
+never a crash. Voice IDs came from the user's My Voices (Jessica, Chris,
+Daniel, George, Bill); a wrong ID fails the session with the error naming
+the character.

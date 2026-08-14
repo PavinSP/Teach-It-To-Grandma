@@ -38,6 +38,10 @@ const DEFAULTS = {
   // #40 + #25 — the Feynman Score and itemised XP on the recap. The score
   // is computed from booleans, never asked from the model.
   progression: true,
+
+  // #2/#3/#36 — six learners, one agent. Off restores single-Grandma exactly:
+  // no overrides are sent at all, so the dashboard prompt runs unmodified.
+  characterPicker: true,
 };
 
 function resolve(defaults) {

@@ -1401,3 +1401,97 @@ h2 {
 .xp-running {
   opacity: 0.6;
 }
+
+/* -----------------------------
+   Characters (#2 / #3 / #36)
+----------------------------- */
+
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  max-width: 980px;
+  margin-bottom: 34px;
+}
+
+.character-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 12px 14px;
+  border: 1px solid #d8d0c4;
+  border-radius: 14px;
+  background: #fffdf8;
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.character-card:hover:not(:disabled) {
+  border-color: #26221d;
+  transform: translateY(-2px);
+}
+
+.character-card.selected {
+  border-color: #26221d;
+  border-width: 2px;
+  padding: 15px 11px 13px; /* keep size stable as the border thickens */
+}
+
+.character-card:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.character-card-face {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.character-card-glyph {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 30px;
+}
+
+.character-card-name {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.character-card-level {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+.character-card-hook {
+  font-size: 12px;
+  opacity: 0.65;
+  line-height: 1.35;
+}
+
+/* The header portrait: a glyph in a coloured circle for characters without
+   art. The legacy Grandma PNG relies on mix-blend-mode: multiply, which
+   would muddy any coloured element — so glyph avatars opt back out of it. */
+.grandma-character.glyph-character {
+  mix-blend-mode: normal;
+}
+
+.glyph-face {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 64px;
+  mix-blend-mode: normal;
+}

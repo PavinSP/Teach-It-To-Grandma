@@ -224,13 +224,25 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
 // Judges whether the student genuinely explained each learning point,
 // as opposed to merely saying the right keywords.
 app.post("/api/grade", async (req, res) => {
-  const { topicName, points, transcript } = req.body ?? {};
+  // `character` is strictly optional — a client that doesn't send it gets
+  // the original Grandma behaviour, unchanged.
+  const { topicName, points, transcript, character } = req.body ?? {};
 
   if (!topicName || !Array.isArray(points) || !Array.isArray(transcript)) {
     return res
       .status(400)
       .json({ error: "Expected { topicName, points[], transcript[] }." });
   }
+
+  // Who was being taught, and how strictly they mark (#36). Without this,
+  // choosing a harder character changes the questions but not the verdict —
+  // which would make the characters cosmetic.
+  const listenerName = character?.name || "Grandma";
+  const audience =
+    character?.audience || "a grandmother who knows nothing about the subject";
+  const stanceLine = character?.gradingStance
+    ? `\nGrade to this standard: ${character.gradingStance}\n`
+    : "";
 
   const studentText = transcript
     .filter((line) => line.source === "user")
@@ -251,15 +263,15 @@ app.post("/api/grade", async (req, res) => {
 
   const pointList = points.map((point, i) => `${i + 1}. ${point}`).join("\n");
 
-  const prompt = `A student tried to explain "${topicName}" to a grandmother who knows nothing about the subject.
+  const prompt = `A student tried to explain "${topicName}" to ${audience}.
 
 Here is everything the student said:
 ---
 ${studentText}
 ---
 
-For each learning point below, decide whether the student GENUINELY explained the idea in a way a beginner could follow. Saying a keyword is not enough — they must actually convey the concept.
-
+For each learning point below, decide whether the student GENUINELY explained the idea in a way that listener could follow. Saying a keyword is not enough — they must actually convey the concept.
+${stanceLine}
 ${pointList}
 
 Also report three teaching moments, each with the student's exact words as evidence:
@@ -272,9 +284,9 @@ For each moment, copy the student's exact phrase into "quote" when it happened, 
 Respond with JSON only, in exactly this shape:
 {
   "results": [
-    { "point": "<the learning point, copied exactly>", "understood": true or false, "reason": "<one short sentence, addressed to the student as Grandma would say it>" }
+    { "point": "<the learning point, copied exactly>", "understood": true or false, "reason": "<one short sentence, addressed to the student in ${listenerName}'s own voice>" }
   ],
-  "summary": "<two sentences in Grandma's warm voice about how well they explained it overall>",
+  "summary": "<two sentences in ${listenerName}'s own voice about how well they explained it overall>",
   "moments": {
     "simplifiedJargon": { "happened": true or false, "quote": "<their exact words, or empty>" },
     "selfCorrected": { "happened": true or false, "quote": "<their exact words, or empty>" },
@@ -394,7 +406,13 @@ Respond with JSON only, in exactly this shape:
 // student's own words. She is not allowed to repair a broken explanation,
 // because the broken version is exactly what the student needs to see.
 app.post("/api/explainback", async (req, res) => {
-  const { topicName, points, transcript, grandmaRecall } = req.body ?? {};
+  const { topicName, points, transcript, grandmaRecall, characterName } =
+    req.body ?? {};
+  // Whoever is listening, the recall stays a closed world: they may only
+  // use the student's own words. The Expert "knows things", but his recall
+  // must not — otherwise the honesty invariant (the gap IS the product)
+  // dies the moment a knowledgeable character is picked.
+  const listener = characterName || "Grandma";
 
   if (!topicName || !Array.isArray(points) || !Array.isArray(transcript)) {
     return res
@@ -412,7 +430,10 @@ app.post("/api/explainback", async (req, res) => {
 
   if (!studentText.trim()) {
     return res.json({
-      recap: "You haven't told me anything yet, darling.",
+      recap:
+        listener === "Grandma"
+          ? "You haven't told me anything yet, darling."
+          : "You haven't told me anything yet.",
       points: points.map((point) => ({
         point,
         recalled: "missing",
@@ -431,7 +452,7 @@ app.post("/api/explainback", async (req, res) => {
   const spoken = typeof grandmaRecall === "string" && grandmaRecall.trim();
 
   const recallInstruction = spoken
-    ? `You are Grandma. A student has just finished explaining "${topicName}" to you, and you have already said back what you understood. Here is what you said:
+    ? `You are ${listener}. A student has just finished explaining "${topicName}" to you, and you have already said back what you understood. Here is what you said:
 ---
 ${grandmaRecall.trim()}
 ---
@@ -442,7 +463,7 @@ ${studentText}
 ---
 
 Copy your own words above into "recap" exactly as they are. Do not rewrite them.`
-    : `You are Grandma. You know nothing whatsoever about "${topicName}". You have no education in this subject. Everything you know about it is what this student just told you, and it is written between the markers below. Nothing outside the markers exists to you.
+    : `You are ${listener}. For this exercise you know nothing whatsoever about "${topicName}" beyond what this student just told you — whatever you might know in real life, none of it exists here. Everything you know about it is written between the markers below. Nothing outside the markers exists to you.
 
 ---
 ${studentText}
@@ -536,8 +557,15 @@ Finally, in "unexplainedTerms", list every word the student used but never expla
 // jargon specifically, builds a banned-word list the student can be held to
 // on a re-run — enforced live, client-side, against words they used.
 app.post("/api/challenge", async (req, res) => {
-  const { topicName, points, transcript, unexplainedTerms, priorWeakness } =
-    req.body ?? {};
+  const {
+    topicName,
+    points,
+    transcript,
+    unexplainedTerms,
+    priorWeakness,
+    characterName,
+  } = req.body ?? {};
+  const coach = characterName || "Grandma";
 
   if (!topicName || !Array.isArray(points) || !Array.isArray(transcript)) {
     return res
@@ -568,7 +596,7 @@ app.post("/api/challenge", async (req, res) => {
     ? `\nThis student's recurring weakness across recent sessions has been "${priorWeakness}". Prefer targeting that again unless this transcript clearly points somewhere else.`
     : "";
 
-  const prompt = `A student just tried to explain "${topicName}" to a grandmother who knows nothing about the subject.
+  const prompt = `A student just tried to explain "${topicName}" to a listener called ${coach}.
 
 Here is everything the student said:
 ---
@@ -585,7 +613,7 @@ Then design a short re-run challenge that specifically targets that weakness. If
 Respond with JSON only, in exactly this shape:
 {
   "weakness": "jargon" | "missing-steps" | "no-examples" | "too-abstract",
-  "diagnosis": "<one or two sentences, addressed to the student as Grandma would say it, naming the actual pattern>",
+  "diagnosis": "<one or two sentences, addressed to the student in ${coach}'s own voice, naming the actual pattern>",
   "challengeTitle": "<a short punchy name for the re-run, 2-5 words>",
   "instruction": "<one sentence telling the student what to do differently this time>",
   "bannedTerms": ["<word actually used above>", "..."],
