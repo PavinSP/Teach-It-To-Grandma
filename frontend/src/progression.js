@@ -133,13 +133,23 @@ export function loadProfile() {
   return { v: 1, xp: 0, lessons: 0 };
 }
 
-export function commitLessonXp(earned) {
+export function commitLessonXp(earned, extras = {}) {
   const profile = loadProfile();
 
   const updated = {
     ...profile,
     xp: profile.xp + earned,
     lessons: profile.lessons + 1,
+    analogyLessons:
+      (profile.analogyLessons ?? 0) + (extras.hadAnalogy ? 1 : 0),
+    strongScores:
+      (profile.strongScores ?? 0) + (extras.strongScore ? 1 : 0),
+    achievements: {
+      ...(profile.achievements ?? {}),
+      ...Object.fromEntries(
+        (extras.newAchievements ?? []).map((id) => [id, Date.now()])
+      ),
+    },
   };
 
   try {
@@ -149,4 +159,103 @@ export function commitLessonXp(earned) {
   }
 
   return updated;
+}
+
+// -------------------------------------------------------------------------
+// Achievements (#27). Every condition is a boolean over data that already
+// exists — nothing here is awarded on vibes, and a vague lesson earns
+// nothing. Myth Buster was impossible when the plan was written (nothing
+// ever stated a misconception); the ambush changed that.
+
+export const ACHIEVEMENTS = [
+  {
+    id: "jargon-slayer",
+    icon: "🗣️",
+    name: "Jargon Slayer",
+    how: "Swap a technical term for plain language when asked",
+  },
+  {
+    id: "approved",
+    icon: "✅",
+    name: "Fully Followed",
+    how: "Every point understood, at most one interruption",
+  },
+  {
+    id: "deep-thinker",
+    icon: "🧠",
+    name: "Deep Thinker",
+    how: "Give five of their questions a real answer",
+  },
+  {
+    id: "perfect",
+    icon: "🎯",
+    name: "Perfect Explanation",
+    how: "Score 95 or higher",
+  },
+  {
+    id: "speed-teacher",
+    icon: "🔥",
+    name: "Speed Teacher",
+    how: "Every point understood in under three minutes",
+  },
+  {
+    id: "myth-buster",
+    icon: "🧨",
+    name: "Myth Buster",
+    how: "Catch them confidently stating a false belief",
+  },
+  {
+    id: "analogy-master",
+    icon: "🪄",
+    name: "Analogy Master",
+    how: "A genuine analogy in three different lessons",
+  },
+  {
+    id: "feynman-master",
+    icon: "🏆",
+    name: "Feynman Master",
+    how: "Ten lessons scoring 75 or higher",
+  },
+];
+
+// Returns the ids newly earned by this lesson — already-earned ones never
+// re-fire. `profile` supplies the cross-lesson counters.
+export function evaluateAchievements(lesson, profile) {
+  const {
+    results,
+    moments,
+    score,
+    clarificationCount,
+    durationMs,
+    mythCaught,
+    deepAnswers,
+  } = lesson;
+
+  const allUnderstood =
+    Array.isArray(results) &&
+    results.length > 0 &&
+    results.every((r) => r.understood);
+
+  const hadAnalogy = Boolean(moments?.usedGoodAnalogy?.happened);
+  const analogyLessons = (profile.analogyLessons ?? 0) + (hadAnalogy ? 1 : 0);
+  const strongScores =
+    (profile.strongScores ?? 0) + (score !== null && score >= 75 ? 1 : 0);
+
+  const conditions = {
+    "jargon-slayer": Boolean(moments?.simplifiedJargon?.happened),
+    approved: allUnderstood && (clarificationCount ?? 99) <= 1,
+    "deep-thinker": (deepAnswers ?? 0) >= 5,
+    perfect: score !== null && score >= 95,
+    "speed-teacher":
+      allUnderstood && durationMs !== null && durationMs < 180000,
+    "myth-buster": Boolean(mythCaught),
+    "analogy-master": analogyLessons >= 3,
+    "feynman-master": strongScores >= 10,
+  };
+
+  const already = profile.achievements ?? {};
+
+  return ACHIEVEMENTS.filter(
+    (a) => conditions[a.id] && !already[a.id]
+  ).map((a) => a.id);
 }

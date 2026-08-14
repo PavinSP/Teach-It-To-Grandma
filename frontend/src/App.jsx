@@ -8,6 +8,8 @@ import {
   xpForLesson,
   loadProfile,
   commitLessonXp,
+  ACHIEVEMENTS,
+  evaluateAchievements,
 } from "./progression";
 import { CHARACTERS, buildPersonaPrompt, DIRECTOR } from "./characters";
 import "./App.css";
@@ -153,6 +155,7 @@ function App() {
   const [usedChallengeIds, setUsedChallengeIds] = useState([]);
   const [challengeSentNotice, setChallengeSentNotice] = useState("");
   const [lessonXp, setLessonXp] = useState(null);
+  const [newAchievements, setNewAchievements] = useState([]);
   const [displayScore, setDisplayScore] = useState(null);
   const [profileXp, setProfileXp] = useState(() =>
     FEATURES.progression ? loadProfile().xp : null
@@ -184,6 +187,8 @@ function App() {
   // refuses to run for an id it has already paid out.
   const lessonIdRef = useRef(null);
   const committedRef = useRef(null);
+  // When the mic first opened for this attempt — Speed Teacher's clock.
+  const sessionStartedAtRef = useRef(null);
 
   // With the picker off, every derived name resolves to Grandma and the app
   // reads exactly as it did before characters existed.
@@ -282,7 +287,9 @@ function App() {
   const resetProgression = () => {
     setLessonXp(null);
     setDisplayScore(null);
+    setNewAchievements([]);
     lessonIdRef.current = null;
+    sessionStartedAtRef.current = null;
   };
 
   // Pays out exactly once per lesson attempt, and only after grading has
@@ -328,7 +335,57 @@ function App() {
     });
 
     setLessonXp({ ...xp, score });
-    setProfileXp(commitLessonXp(xp.total).xp);
+
+    // A "real answer" to one of their questions: her question mark followed
+    // by fifteen or more of the student's words.
+    let deepAnswers = 0;
+
+    for (let i = 0; i < messages.length - 1; i++) {
+      const q = messages[i];
+      const a = messages[i + 1];
+
+      if (
+        q.source === "ai" &&
+        q.message?.includes("?") &&
+        a.source === "user" &&
+        a.meta !== "prompt" &&
+        (a.message || "").split(/\s+/).length >= 15
+      ) {
+        deepAnswers++;
+      }
+    }
+
+    const earned = FEATURES.achievements
+      ? evaluateAchievements(
+          {
+            results: aiGrade?.results ?? null,
+            moments: aiGrade?.moments ?? null,
+            score,
+            clarificationCount: generateRecap(
+              selectedTopic,
+              progressNow,
+              messages,
+              who
+            ).clarificationMessages.length,
+            durationMs: sessionStartedAtRef.current
+              ? Date.now() - sessionStartedAtRef.current
+              : null,
+            mythCaught: Boolean(aiGrade?.misconceptionHandling?.corrected),
+            deepAnswers,
+          },
+          loadProfile()
+        )
+      : [];
+
+    setNewAchievements(earned);
+
+    setProfileXp(
+      commitLessonXp(xp.total, {
+        hadAnalogy: Boolean(aiGrade?.moments?.usedGoodAnalogy?.happened),
+        strongScore: score !== null && score >= 75,
+        newAchievements: earned,
+      }).xp
+    );
 
     if (FEATURES.teachOff && teachoff && score !== null) {
       postTeachoffRun(teachoff.code, teachoff.player, score);
@@ -412,6 +469,10 @@ function App() {
       await navigator.mediaDevices.getUserMedia({
         audio: true,
       });
+
+      if (!sessionStartedAtRef.current) {
+        sessionStartedAtRef.current = Date.now();
+      }
 
       await conversation.startSession({
         agentId: AGENT_ID,
@@ -1158,6 +1219,29 @@ function App() {
                   </span>
                 )}
               </div>
+
+              {FEATURES.achievements && (
+                <div className="achievement-strip">
+                  {ACHIEVEMENTS.map((a) => {
+                    const isNew = newAchievements.includes(a.id);
+                    const owned =
+                      isNew || Boolean(loadProfile().achievements?.[a.id]);
+
+                    return (
+                      <span
+                        key={a.id}
+                        className={`achievement-chip ${
+                          owned ? "owned" : "locked"
+                        } ${isNew ? "fresh" : ""}`}
+                        title={a.how}
+                      >
+                        {a.icon} {a.name}
+                        {isNew && <em className="achievement-new">NEW</em>}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           )}
 

@@ -58,6 +58,10 @@ const DEFAULTS = {
   // instead of substring-matched guesses.
   richNotes: true,
 
+  // #27 — badges earned from booleans that already exist; a vague lesson
+  // earns nothing, and locked ones show their condition instead of hiding.
+  achievements: true,
+
   // #34 — several people teach the SAME stored lesson in turn, one board.
   // Same machine, sequential — the only multiplayer that honestly works
   // without deployment.

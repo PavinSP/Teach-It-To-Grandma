@@ -1813,3 +1813,54 @@ details.misconceptions-panel .misconceptions-list {
   color: #9c3327;
   font-size: 14px;
 }
+
+/* -----------------------------
+   Achievements (#27)
+----------------------------- */
+
+.achievement-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e6ded2;
+}
+
+.achievement-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  border: 1px solid #d8d0c4;
+  background: #fffdf8;
+  cursor: default;
+}
+
+.achievement-chip.locked {
+  opacity: 0.38;
+  filter: grayscale(1);
+}
+
+.achievement-chip.owned {
+  border-color: #2f7a4f;
+}
+
+.achievement-chip.fresh {
+  background: rgba(47, 122, 79, 0.09);
+  animation: achievement-pop 0.5s ease;
+}
+
+.achievement-new {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  color: #2f7a4f;
+}
+
+@keyframes achievement-pop {
+  0% { transform: scale(0.8); }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
