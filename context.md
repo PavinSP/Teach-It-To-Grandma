@@ -286,3 +286,16 @@ character's palette colour as a baked background, cropped to a circle in
 CSS. The legacy `mix-blend-mode: multiply` (which served the old
 white-background grandma.jpeg and would have tinted the baked colours) is
 removed; `grandma.png` stays in the repo unused as the mascot.
+
+## Session 15 — Voice-only mode (#18)
+
+A toggle that hides the transcript and the whole progress sidebar
+mid-lesson: just the character, the mic, and one line of copy. Everything
+still records and grades identically — `voiceOnlyActive` is referenced only
+at render sites, never in state or data logic, so the recap is byte-identical
+between modes.
+
+The one landmine PLAN.md called out is handled: the usual finish button
+lives inside the sidebar this mode removes, so the voice-only stage renders
+its own, visible from the first real student message. It's a view
+preference, not session state — survives topic changes, resets nothing.

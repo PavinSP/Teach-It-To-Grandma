@@ -158,6 +158,9 @@ function App() {
   // Deliberately NOT reset when the topic changes — a student who picked the
   // Expert stays with the Expert across lessons until they choose otherwise.
   const [character, setCharacter] = useState(CHARACTERS[0]);
+  // #18 — a view preference, not session state: it survives lesson changes
+  // and never touches what gets recorded or graded.
+  const [voiceOnly, setVoiceOnly] = useState(false);
   const transcriptEndRef = useRef(null);
   // Her next reply after we ask is the recall itself — catch it as it lands.
   const pendingRecallRef = useRef(false);
@@ -174,6 +177,7 @@ function App() {
   const whoUpper = who.toUpperCase();
   const subj = activeCharacter.subj;
   const obj = activeCharacter.obj;
+  const voiceOnlyActive = FEATURES.voiceOnly && voiceOnly;
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -1286,9 +1290,41 @@ function App() {
           </div>
         )}
 
-        <div className="session-layout">
+        {FEATURES.voiceOnly && (
+          <button
+            className="voice-only-toggle"
+            onClick={() => setVoiceOnly((v) => !v)}
+          >
+            {voiceOnlyActive ? "🗒️ Show the panels" : "🎙️ Voice only"}
+          </button>
+        )}
+
+        <div className={`session-layout ${voiceOnlyActive ? "voice-only" : ""}`}>
           <section className="conversation">
             <div>
+              {voiceOnlyActive ? (
+                /* Pure conversation: everything still records and grades
+                   exactly as normal — only the rendering is hidden. The
+                   finish button must live here, because the usual one
+                   sits inside the panel this mode removes. */
+                <div className="voice-only-stage">
+                  <p className="voice-only-line">
+                    Just talk. {who} will tell you what {subj} understood
+                    at the end.
+                  </p>
+
+                  {messages.some(
+                    (m) => m.source === "user" && m.meta !== "prompt"
+                  ) && (
+                    <button
+                      className="finish-button"
+                      onClick={finishLesson}
+                    >
+                      Finish lesson →
+                    </button>
+                  )}
+                </div>
+              ) : (
               <div className="transcript">
                 {messages.length === 0 && (
                   <div className="transcript-message grandma-message">
@@ -1322,6 +1358,7 @@ function App() {
                 })}
                 <div ref={transcriptEndRef} />
               </div>
+              )}
               {error && (
                 <div className="error-message">
                   {error}
@@ -1403,6 +1440,7 @@ function App() {
             </div>
           </section>
 
+          {!voiceOnlyActive && (
           <aside className="progress">
             <div className="progress-title">
               POINTS MENTIONED
@@ -1538,6 +1576,7 @@ function App() {
               )}
             </div>
           </aside>
+          )}
         </div>
       </section>
     </main>

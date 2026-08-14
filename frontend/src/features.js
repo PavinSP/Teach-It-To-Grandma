@@ -42,6 +42,10 @@ const DEFAULTS = {
   // #2/#3/#36 — six learners, one agent. Off restores single-Grandma exactly:
   // no overrides are sent at all, so the dashboard prompt runs unmodified.
   characterPicker: true,
+
+  // #18 — hide the transcript and checklist mid-lesson; pure conversation,
+  // results only at the end. State keeps accumulating, only rendering changes.
+  voiceOnly: true,
 };
 
 function resolve(defaults) {
