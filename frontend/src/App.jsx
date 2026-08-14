@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useConversation } from "@elevenlabs/react";
 import "./App.css";
 
-const AGENT_ID = "agent_4301m009ej3eew6sgp492ky9s4dj";
+const AGENT_ID = "agent_8901kzzhzexhe2qt3903amp09nnq";
 
 const GRADING_API = import.meta.env.VITE_GRADING_API || "http://localhost:3001";
 

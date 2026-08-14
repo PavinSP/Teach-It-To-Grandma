@@ -591,6 +591,43 @@ That distinction is worth holding.
 
 ---
 
+## #50 The ultimate learning loop — where we actually are
+
+Not a feature. It's the loop the other forty-nine produce, which makes it the honest
+completeness check: every step below either works today or names the feature that would
+make it work.
+
+| Loop step | Status |
+|---|---|
+| Choose any topic | **works** (1.1) |
+| Choose your learner | missing — **#2** (built once, reverted) |
+| AI generates concepts | **works** (1.2) |
+| …and challenges | missing — **#39** |
+| You teach | **works** — the voice loop |
+| AI character reacts | **works** — she challenges jargon and gaps live |
+| You adapt your explanation | happens, but **isn't measured** — needs F1, then **#6** |
+| AI evaluates | **works** (`/api/grade`) |
+| → Progress | keyword coverage only; the real version is **#7** |
+| → Feedback | **works** — Grandma's Notes, ~70% (**#8**) |
+| → XP | missing — **#25** |
+| → Grandma's Notes | **works** (**#8**) |
+| → Level up | missing — **#24** |
+| → Identify weakness | missing — **#22** |
+| → Unlock characters | missing — **#26** (recommended off for demos) |
+| → Personalized practice | missing — **#22**, cross-session via **#37** |
+| Teach again | **works** (**#41**) |
+
+**Seven of sixteen steps work.** The loop's left branch — progress, XP, levels, unlocks —
+is entirely unbuilt, and it's the branch D5 warns can cost more than it earns. The right
+branch — feedback, notes, weakness, practice — is half built and is where the product's
+actual argument lives.
+
+The one step that works but isn't *visible* is "you adapt your explanation". The student
+does adapt, live, every time Grandma pushes back — and nothing currently records it,
+because `/api/grade` never sees her turns. That's F1, and it's an hour.
+
+---
+
 ## Recommended order
 
 **Do first — improves what exists, near-zero risk (~1.5h)**
