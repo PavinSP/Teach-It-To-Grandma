@@ -64,6 +64,63 @@ Checklist: buyers create demand · sellers create supply · price affects both �
 
 ---
 
+# Vague scripts (the demo moment)
+
+These deliberately hit every keyword while explaining nothing. The keyword
+checklist should still reach **4/4**, but the AI grader should say Grandma
+didn't actually understand. That contrast is the thing worth showing judges.
+
+Requires the grading server running (`cd server && npm run dev`).
+
+## Recursion — vague
+
+> So recursion is basically when a function calls itself. There's a base case, and that's the stopping condition, so it doesn't go on forever or infinite. It's a really useful technique. For example, like factorial — that's a classic example of recursion.
+
+Every checklist keyword is present, but: never says what a function *is*, never says what the base case actually checks, never walks through a single step of factorial. Circular too — "recursion is a recursive technique."
+
+## Neural Networks — vague
+
+> A neural network takes some inputs, and the data passes through layers. Each connection has weights that influence things. Then it learns by adjusting the weights during training. That's basically how it works.
+
+Names every component in the right order without saying what any of them do. "Influence things" and "that's basically how it works" are the tells.
+
+## Mitosis — vague
+
+> So in mitosis the cell prepares for division. The DNA gets copied, then the chromosomes separate, and you end up with two daughter cells. It's the process cells use to divide.
+
+Reads like a memorised sequence. Never explains *why* DNA must be copied first, or what separating the chromosomes accomplishes.
+
+## Supply & Demand — vague
+
+> Buyers create demand and sellers create supply. Price affects both of them. Then supply and demand reach equilibrium, which is the balance point. That's the basic economics of it.
+
+States four definitions without a single causal link — never says which way prices move when demand rises, or why equilibrium is stable.
+
+---
+
+## What to expect
+
+Measured against the live grader:
+
+| Vague script | Keyword grader | AI grader |
+|---|---|---|
+| Recursion | 4 / 4 | 2 / 4 understood |
+| Neural Networks | 4 / 4 | **0 / 4 understood** |
+| Mitosis | 4 / 4 | 2 / 4 understood |
+| Supply & Demand | 4 / 4 | varies |
+
+**Use Neural Networks for the demo** — it produces the sharpest contrast
+(4/4 keywords, 0/4 real understanding). Mitosis is the weakest, since reciting
+the correct sequence reads as partial understanding on its own.
+
+If both graders agree on the vague script, the AI call probably failed — check
+the server is up on :3001 and look at the browser console.
+
+Grandma will likely interrupt mid-way to challenge the vagueness (the agent is
+interruptible). That's good demo material — let her, then continue.
+
+---
+
 ## Test checklist per topic
 
 - [ ] Select topic → Grandma greets with topic-aware first message
