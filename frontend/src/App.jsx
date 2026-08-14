@@ -197,8 +197,12 @@ function App() {
       setError("");
     },
 
-    onDisconnect: () => {
-      console.log("Disconnected from Grandma");
+    onDisconnect: (details) => {
+      console.log("Disconnected:", details?.reason, details);
+
+      if (details?.reason === "error") {
+        setError(`The call to ${who} dropped unexpectedly.`);
+      }
     },
 
     onMessage: (message) => {
@@ -218,8 +222,8 @@ function App() {
       ]);
     },
 
-    onError: (message) => {
-      console.error("ElevenLabs error:", message);
+    onError: (message, context) => {
+      console.error("ElevenLabs error:", message, context);
       setError(`Something went wrong connecting to ${who}.`);
     },
   });
@@ -426,9 +430,19 @@ function App() {
     } catch (err) {
       console.error("Could not start conversation:", err);
 
-      setError(
-        `Could not start the microphone or connect to ${who}.`
-      );
+      if (err?.name === "NotAllowedError") {
+        setError(
+          "Microphone blocked — click the padlock in the address bar, allow the microphone, then try again."
+        );
+      } else if (err?.name === "NotFoundError") {
+        setError(
+          "No microphone found — plug one in or check the input settings."
+        );
+      } else {
+        setError(
+          `Could not connect to ${who}. Check the connection and try again.`
+        );
+      }
     }
   };
 
@@ -867,6 +881,10 @@ function App() {
     );
   }
 
+
+  const lastSpeakerWasStudent =
+    [...messages].reverse().find((m) => m.source !== "system")?.source ===
+    "user";
 
   const progress = calculateProgress(selectedTopic, messages);
   const completedCount = progress.filter(Boolean).length;
@@ -1612,9 +1630,11 @@ function App() {
                       ? `🔇 Microphone muted — ${who} can't hear you.`
                       : conversation.isSpeaking
                         ? `🔊 ${who} is speaking...`
-                        : conversation.isListening
-                          ? `🎙️ ${who} is listening...`
-                          : `🎙️ Start teaching ${who}...`}
+                        : lastSpeakerWasStudent
+                          ? `💭 ${who} is thinking...`
+                          : conversation.isListening
+                            ? `🎙️ ${who} is listening...`
+                            : `🎙️ Start teaching ${who}...`}
                   </p>
                 </>
               )}

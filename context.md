@@ -361,3 +361,24 @@ the AI grade hasn't arrived.
 Verified with a staged exchange: strongest moment verbatim, practiceThis an
 action, both stumbles verbatim with correct terms; a monologue returns an
 empty stumble list; the character path (Mia) carries all three fields.
+
+## Session 18 — Voice-call polish (#44)
+
+Three error-path fixes, deliberately unflagged (a kill switch on an error
+handler is a liability, per PLAN.md):
+
+**A blocked microphone now says so** — `NotAllowedError` gets "click the
+padlock in the address bar", `NotFoundError` gets "no microphone found",
+and only genuine connection failures get the connection message. The
+blocked-mic case is the most likely failure when anyone new opens the app,
+and its fix is a browser permission no generic error would ever lead them to.
+
+**A deliberate hang-up is no longer logged like a crash** — `onDisconnect`
+reads the SDK's `reason` (verified in the type: "error" | "agent" | "user")
+and only surfaces a banner for "error".
+
+**The silence before her reply has a state** — when the last real
+conversational line is the student's, the mic status reads "💭 ___ is
+thinking..." instead of looking frozen. System stage-notes are skipped in
+that derivation, since they land right after a student turn and would mask
+it.
