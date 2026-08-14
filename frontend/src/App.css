@@ -1166,3 +1166,124 @@ h2 {
   font-size: 13px;
   opacity: 0.55;
 }
+
+/* -----------------------------
+   Topic analysis (#20)
+----------------------------- */
+
+.topic-analysis {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.analysis-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.analysis-label {
+  font-size: 13px;
+  opacity: 0.65;
+  min-width: 110px;
+}
+
+.meter-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.meter-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(38, 34, 29, 0.15);
+}
+
+.meter-dot.filled {
+  background: #b0522e;
+}
+
+.prereq-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.prereq-chip {
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: rgba(38, 34, 29, 0.06);
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+/* -----------------------------
+   Challenge deck (#39) & misconceptions (#38a)
+----------------------------- */
+
+.challenge-deck,
+.misconceptions-panel {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #e6ded2;
+}
+
+.challenge-deck-title,
+.misconceptions-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+  margin-bottom: 10px;
+}
+
+.challenge-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.challenge-chip {
+  padding: 10px 14px;
+  text-align: left;
+  border: 1px solid #d8d0c4;
+  border-radius: 10px;
+  background: #fffdf8;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.challenge-chip:hover:not(:disabled) {
+  border-color: #26221d;
+}
+
+.challenge-chip:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.challenge-chip.used {
+  text-decoration: line-through;
+}
+
+.challenge-sent-notice {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.misconceptions-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+  opacity: 0.8;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

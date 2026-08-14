@@ -27,6 +27,13 @@ const DEFAULTS = {
   // #22 — a re-run targeting whatever specifically went wrong last time.
   // For jargon, the banned words are enforced live in the sidebar.
   weaknessTraining: true,
+
+  // #20 — concept density, prerequisites, alongside the existing difficulty.
+  topicAnalysis: true,
+  // #39 — topic-specific challenges Grandma can be asked to pose mid-lesson.
+  challengeCards: true,
+  // #38(a) — render the misconceptions that were already being generated.
+  misconceptionAttack: true,
 };
 
 function resolve(defaults) {

@@ -154,3 +154,36 @@ Verified: a jargon-heavy neural-networks explanation correctly diagnosed
 explanation missing a worked example correctly diagnosed `no-examples` with
 an empty banned list (no live enforcement for non-jargon weaknesses, by
 design — there's nothing to check a word against).
+
+## Session 11 — Topic analysis, challenge cards, misconceptions rendered (#20 + #39 + #38a)
+
+Third and fourth features off `PLAN.md`, grouped as the plan suggested — one
+prompt paragraph and one schema bump on `/api/lesson`, three visible results.
+
+**This is the one endpoint every lesson depends on**, so both new fields are
+defensively defaulted after parsing (`analysis` to `null`, `challenges`
+filtered and capped at 3) rather than trusted — the json_schema `required`
+list is advisory, not enforced, so a malformed response degrades to "nothing
+extra to show" instead of a 502 on the landing page.
+
+**#20 discriminates for real, not just on paper.** Tested against topics
+picked to be unambiguous either way: "how a doorbell works" came back
+Beginner/Medium/Low, "general relativity" came back Advanced/High/High. A
+bicycle-balance topic returned High concept density on both meters at first,
+which looked like a rubber-stamp until checked against a genuinely simple
+comparison — bicycles really do involve several interacting forces, so it
+was a correct reading, not a discrimination failure.
+
+**#39's challenges use `sendContextualUpdate`, never `sendUserMessage`** —
+confirmed the send path never calls `setMessages`, so an accepted challenge
+can't leak into the transcript as a fake `YOU` line the way an injected
+`sendUserMessage` would. Because contextual updates don't force a turn, the
+button shows "Challenge sent — Grandma will ask you next" immediately, so the
+one-beat delay before she actually asks reads as intent, not a broken button.
+
+**#38(a) is just rendering** — `misconceptions` has been generated and
+carried on every lesson since session 8 with nothing ever reading it. This
+is the "render what already exists" half only; the harder half (b) — having
+Grandma voice one mid-conversation via a dashboard prompt edit — is
+deliberately deferred, per D1 in `PLAN.md`, until the shared-prompt
+coordination question is settled.

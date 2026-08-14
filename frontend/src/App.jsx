@@ -32,6 +32,8 @@ function toLesson(generated) {
       required: point.required,
     })),
     misconceptions: generated.misconceptions ?? [],
+    analysis: generated.analysis ?? null,
+    challenges: generated.challenges ?? [],
   };
 }
 
@@ -137,6 +139,8 @@ function App() {
   const [challenge, setChallenge] = useState(null);
   const [isBuildingChallenge, setIsBuildingChallenge] = useState(false);
   const [challengeError, setChallengeError] = useState("");
+  const [usedChallengeIds, setUsedChallengeIds] = useState([]);
+  const [challengeSentNotice, setChallengeSentNotice] = useState("");
   const transcriptEndRef = useRef(null);
   // Her next reply after we ask is the recall itself — catch it as it lands.
   const pendingRecallRef = useRef(false);
@@ -194,6 +198,13 @@ function App() {
     setChallenge(null);
     setIsBuildingChallenge(false);
     setChallengeError("");
+  };
+
+  // #39's deck belongs to the topic that generated it — cleared whenever
+  // the topic changes, not when a lesson merely restarts.
+  const resetChallengeCards = () => {
+    setUsedChallengeIds([]);
+    setChallengeSentNotice("");
   };
 
   const startConversation = async () => {
@@ -346,6 +357,24 @@ function App() {
     ]);
   };
 
+  // A contextual update never forces a turn — she'll act on it once she
+  // next speaks, which may be a beat after the student stops talking. The
+  // on-screen confirmation is what turns that unavoidable delay into intent
+  // rather than a button that looks like it did nothing.
+  const sendChallengeCard = (card) => {
+    if (!isConnected || usedChallengeIds.includes(card.id)) {
+      return;
+    }
+
+    conversation.sendContextualUpdate(
+      `The student has accepted a challenge. On your next turn, ask them this in your own words, in one short sentence, without explaining why you are asking: ${card.instruction}`
+    );
+
+    setUsedChallengeIds((previous) => [...previous, card.id]);
+    setChallengeSentNotice("Challenge sent — Grandma will ask you next.");
+    setTimeout(() => setChallengeSentNotice(""), 6000);
+  };
+
   // Diagnoses the one weakness that actually showed up, then sends the
   // student back into the same lesson to fix specifically that. For a
   // jargon diagnosis, the banned words get enforced live in the sidebar.
@@ -438,6 +467,7 @@ function App() {
       setShowRecap(false);
       resetRecall();
       resetChallenge();
+      resetChallengeCards();
     } catch (err) {
       console.error("Could not build lesson:", err);
 
@@ -842,6 +872,7 @@ function App() {
               setLessonError("");
               resetRecall();
               resetChallenge();
+      resetChallengeCards();
             }}      >
             ← Teach something else
           </button>
@@ -864,6 +895,7 @@ function App() {
             setLessonError("");
             resetRecall();
       resetChallenge();
+      resetChallengeCards();
           }}
         >
           ← Teach something else
@@ -883,6 +915,56 @@ function App() {
             <h1>{selectedTopic.name}</h1>
 
             <p>{selectedTopic.description}</p>
+
+            {FEATURES.topicAnalysis && selectedTopic.analysis && (
+              <div className="topic-analysis">
+                <div className="analysis-meter">
+                  <span className="analysis-label">Concept density</span>
+                  <span className="meter-dots">
+                    {["Low", "Medium", "High"].map((level, i) => (
+                      <span
+                        key={level}
+                        className={`meter-dot ${
+                          ["Low", "Medium", "High"].indexOf(
+                            selectedTopic.analysis.conceptDensity
+                          ) >= i
+                            ? "filled"
+                            : ""
+                        }`}
+                      />
+                    ))}
+                  </span>
+                </div>
+
+                <div className="analysis-meter">
+                  <span className="analysis-label">Prerequisites</span>
+                  <span className="meter-dots">
+                    {["Low", "Medium", "High"].map((level, i) => (
+                      <span
+                        key={level}
+                        className={`meter-dot ${
+                          ["Low", "Medium", "High"].indexOf(
+                            selectedTopic.analysis.prerequisites
+                          ) >= i
+                            ? "filled"
+                            : ""
+                        }`}
+                      />
+                    ))}
+                  </span>
+                </div>
+
+                {selectedTopic.analysis.prerequisiteNotes.length > 0 && (
+                  <div className="prereq-chips">
+                    {selectedTopic.analysis.prerequisiteNotes.map((note) => (
+                      <span className="prereq-chip" key={note}>
+                        {note}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="grandma-wrapper">
@@ -1103,6 +1185,49 @@ function App() {
                 )}
               </div>
             )}
+
+            {FEATURES.challengeCards && selectedTopic.challenges.length > 0 && (
+              <div className="challenge-deck">
+                <div className="challenge-deck-title">CHALLENGE HER</div>
+
+                <div className="challenge-chips">
+                  {selectedTopic.challenges.map((card) => {
+                    const used = usedChallengeIds.includes(card.id);
+
+                    return (
+                      <button
+                        key={card.id}
+                        className={`challenge-chip ${used ? "used" : ""}`}
+                        onClick={() => sendChallengeCard(card)}
+                        disabled={used || !isConnected}
+                        title={card.instruction}
+                      >
+                        {card.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {challengeSentNotice && (
+                  <p className="challenge-sent-notice">{challengeSentNotice}</p>
+                )}
+              </div>
+            )}
+
+            {FEATURES.misconceptionAttack &&
+              selectedTopic.misconceptions.length > 0 && (
+                <div className="misconceptions-panel">
+                  <div className="misconceptions-title">
+                    WHAT BEGINNERS USUALLY GET WRONG
+                  </div>
+
+                  <ul className="misconceptions-list">
+                    {selectedTopic.misconceptions.map((m) => (
+                      <li key={m}>{m}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
             {/* The celebration is for full coverage, but the way out of the
                 lesson is not — an explanation that misses a keyword must

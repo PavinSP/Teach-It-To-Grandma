@@ -57,12 +57,16 @@ For each of those, list the words or short phrases a student would almost certai
 
 Also name the misconceptions beginners most often hold about this topic.
 
+Also assess the topic itself. "conceptDensity" is how many distinct ideas a beginner has to hold in their head at once — Low, Medium, or High. "prerequisites" is how much they need to already know before any of this can land — Low, Medium, or High. List 2-3 concrete things they'd need to already know in "prerequisiteNotes" (an empty list if there really are none).
+
+Also write three challenges that would test whether a student really understands this topic rather than just reciting it. Each one must name a specific concept from the points above, not a generic instruction — "explain the learning rate without saying 'step'" is good, "explain it more simply" is not. Give each an id ("c1", "c2", "c3"), a kind (one of: analogy, five_year_old, no_jargon, real_world, opposite), a short label under 5 words for a button, and an instruction naming what Grandma should ask for.
+
 If the topic is too vague to teach, or is not a real subject, set "ok" to false and say why in "problem" — otherwise set "ok" to true and leave "problem" empty.`;
 
   try {
     const completion = await client.chat.completions.create({
       model: MODEL,
-      max_completion_tokens: 1500,
+      max_completion_tokens: 1900,
       messages: [{ role: "user", content: prompt }],
       response_format: {
         type: "json_schema",
@@ -100,6 +104,52 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
                 },
               },
               misconceptions: { type: "array", items: { type: "string" } },
+              analysis: {
+                type: "object",
+                properties: {
+                  conceptDensity: {
+                    type: "string",
+                    enum: ["Low", "Medium", "High"],
+                  },
+                  prerequisites: {
+                    type: "string",
+                    enum: ["Low", "Medium", "High"],
+                  },
+                  prerequisiteNotes: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                },
+                required: [
+                  "conceptDensity",
+                  "prerequisites",
+                  "prerequisiteNotes",
+                ],
+                additionalProperties: false,
+              },
+              challenges: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    kind: {
+                      type: "string",
+                      enum: [
+                        "analogy",
+                        "five_year_old",
+                        "no_jargon",
+                        "real_world",
+                        "opposite",
+                      ],
+                    },
+                    label: { type: "string" },
+                    instruction: { type: "string" },
+                  },
+                  required: ["id", "kind", "label", "instruction"],
+                  additionalProperties: false,
+                },
+              },
             },
             required: [
               "ok",
@@ -109,6 +159,8 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
               "difficulty",
               "points",
               "misconceptions",
+              "analysis",
+              "challenges",
             ],
             additionalProperties: false,
           },
@@ -147,6 +199,20 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
         required: Math.min(Math.max(1, point.required ?? 1), keywords.length),
       };
     });
+
+    // These are additive to a screen that must never fail because of them,
+    // so a malformed or missing value degrades to "nothing to show" rather
+    // than breaking the response.
+    lesson.analysis =
+      lesson.analysis && typeof lesson.analysis === "object"
+        ? lesson.analysis
+        : null;
+
+    lesson.challenges = Array.isArray(lesson.challenges)
+      ? lesson.challenges.filter(
+          (c) => c && typeof c.label === "string" && typeof c.instruction === "string"
+        ).slice(0, 3)
+      : [];
 
     res.json(lesson);
   } catch (err) {
