@@ -394,12 +394,30 @@ function App() {
     messages
   );
   if (showRecap) {
+    // Once Grandma has judged the explanation, her verdict is the one that
+    // counts — the keyword lists only stand in until it arrives.
+    const gradedClear = aiGrade?.results
+      ?.filter((result) => result.understood)
+      .map((result) => result.point);
+
+    const gradedUnclear = aiGrade?.results
+      ?.filter((result) => !result.understood)
+      .map((result) => result.point);
+
+    const clearPoints = gradedClear ?? recap.completedPoints;
+    const unclearPoints = gradedUnclear ?? recap.missingPoints;
+    const gotEverythingAcross = unclearPoints.length === 0;
+
     return (
       <main className="app">
         <section className="recap-page">
           <div className="eyebrow">GRANDMA'S NOTES</div>
 
-          <h1>Well done, darling.</h1>
+          <h1>
+            {gotEverythingAcross
+              ? "Well done, darling."
+              : "Let's go over that again, darling."}
+          </h1>
 
           <p className="recap-subtitle">
             Here's what Grandma understood from your lesson on{" "}
@@ -454,16 +472,16 @@ function App() {
             <section className="recap-card">
               <div className="recap-icon">✓</div>
 
-              <h2>What you explained</h2>
+              <h2>What Grandma followed</h2>
 
-              {recap.completedPoints.length > 0 ? (
+              {clearPoints.length > 0 ? (
                 <ul>
-                  {recap.completedPoints.map((point) => (
+                  {clearPoints.map((point) => (
                     <li key={point}>{point}</li>
                   ))}
                 </ul>
               ) : (
-                <p>No key points were completed.</p>
+                <p>Nothing came across clearly yet.</p>
               )}
             </section>
 
@@ -472,16 +490,15 @@ function App() {
 
               <h2>What to improve</h2>
 
-              {recap.missingPoints.length > 0 ? (
+              {unclearPoints.length > 0 ? (
                 <ul>
-                  {recap.missingPoints.map((point) => (
+                  {unclearPoints.map((point) => (
                     <li key={point}>{point}</li>
                   ))}
                 </ul>
               ) : (
                 <p>
-                  You covered all the key points. Grandma
-                  understands!
+                  Grandma followed every point. That's the whole idea.
                 </p>
               )}
             </section>

@@ -3,23 +3,28 @@ import { dirname, join } from "node:path";
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
 // The key lives in the project root .env, one level up from server/.
 dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), "..", ".env") });
 
 const PORT = process.env.PORT || 3001;
 
-const apiKey = process.env.ANTHROPIC_API_KEY;
+// TitanomGPT is OpenAI-compatible, so the OpenAI SDK works against it
+// once the base URL is swapped.
+const TITANOM_BASE_URL = "https://api.deutschlandgpt.de/v2";
+const MODEL = process.env.GRADING_MODEL || "claude-4.5-sonnet";
+
+const apiKey = process.env.TITANOM_API_KEY;
 
 if (!apiKey) {
   console.error(
-    "Missing ANTHROPIC_API_KEY. Add it to titanom-hack-2026/.env before starting the server."
+    "Missing TITANOM_API_KEY. Add it to titanom-hack-2026/.env before starting the server."
   );
   process.exit(1);
 }
 
-const anthropic = new Anthropic({ apiKey });
+const client = new OpenAI({ apiKey, baseURL: TITANOM_BASE_URL });
 
 const app = express();
 app.use(cors());
@@ -79,22 +84,47 @@ Respond with JSON only, in exactly this shape:
 }`;
 
   try {
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-5",
-      max_tokens: 1024,
+    const completion = await client.chat.completions.create({
+      model: MODEL,
+      // Note: TitanomGPT silently ignores max_tokens — it wants this name.
+      max_completion_tokens: 1024,
       messages: [{ role: "user", content: prompt }],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "grading",
+          schema: {
+            type: "object",
+            properties: {
+              results: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    point: { type: "string" },
+                    understood: { type: "boolean" },
+                    reason: { type: "string" },
+                  },
+                  required: ["point", "understood", "reason"],
+                  additionalProperties: false,
+                },
+              },
+              summary: { type: "string" },
+            },
+            required: ["results", "summary"],
+            additionalProperties: false,
+          },
+        },
+      },
     });
 
-    const raw = message.content
-      .filter((block) => block.type === "text")
-      .map((block) => block.text)
-      .join("");
+    const raw = completion.choices?.[0]?.message?.content;
 
-    // The model is told to return bare JSON, but strip fences just in case.
-    const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
-    const parsed = JSON.parse(cleaned);
+    if (!raw) {
+      throw new Error("Model returned no content");
+    }
 
-    res.json(parsed);
+    res.json(JSON.parse(raw));
   } catch (err) {
     console.error("Grading failed:", err);
     res.status(502).json({ error: "Grading failed." });
