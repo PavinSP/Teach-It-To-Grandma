@@ -2,6 +2,11 @@
 
 Read each script out loud to Grandma, roughly in order. Each one is written to hit all 4 checklist points for that topic so you can confirm the progress bar reaches 4/4 and "Grandma's Notes" generates a sane recap.
 
+> **These were written against the old fixed topics.** Topics are now typed in
+> and their checklists are generated per lesson, so the wording of the points —
+> and the exact scores below — will vary run to run. Type the topic name to use
+> a script; treat the numbers as indicative, not exact.
+
 ---
 
 ## 1. Recursion
@@ -100,7 +105,7 @@ States four definitions without a single causal link — never says which way pr
 
 ## What to expect
 
-Measured against the live grader:
+Measured against the live grader, back when checklists were fixed:
 
 | Vague script | Keyword grader | AI grader |
 |---|---|---|
@@ -109,9 +114,14 @@ Measured against the live grader:
 | Mitosis | 4 / 4 | 2 / 4 understood |
 | Supply & Demand | 4 / 4 | varies |
 
-**Use Neural Networks for the demo** — it produces the sharpest contrast
-(4/4 keywords, 0/4 real understanding). Mitosis is the weakest, since reciting
-the correct sequence reads as partial understanding on its own.
+**Use Neural Networks for the demo** — it produced the sharpest contrast.
+Mitosis is the weakest, since reciting the correct sequence reads as partial
+understanding on its own.
+
+Now that checklists are generated per lesson these exact splits will drift, but
+the effect holds: jargon reliably fills the coverage bar while the AI grader
+marks the same answer down. Do a dry run of whichever topic you plan to demo
+and check the contrast is still sharp before you rely on it.
 
 If both graders agree on the vague script, the AI call probably failed — check
 the server is up on :3001 and look at the browser console.

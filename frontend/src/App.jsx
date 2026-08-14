@@ -6,131 +6,33 @@ const AGENT_ID = "agent_4301m009ej3eew6sgp492ky9s4dj";
 
 const GRADING_API = import.meta.env.VITE_GRADING_API || "http://localhost:3001";
 
-const topics = [
-  {
-    id: "recursion",
-    name: "Recursion",
-    description: "Explain how a function can call itself.",
-    points: [
-      "A function calls itself",
-      "There is a stopping condition",
-      "Why the stopping condition matters",
-      "A concrete example",
-    ],
-    checks: [
-      {
-        keywords: ["function", "call", "itself"],
-        required: 3,
-      },
-      {
-        keywords: ["base case", "stopping condition"],
-        required: 1,
-      },
-      {
-        keywords: ["stop", "end", "terminate", "infinite", "forever"],
-        required: 1,
-      },
-      {
-        keywords: ["example", "like", "imagine", "for example"],
-        context: [
-          "recursion",
-          "recursive",
-          "function",
-          "base case",
-          "call itself",
-        ],
-        required: 1,
-      },
-    ],
-  },
-  {
-    id: "neural-networks",
-    name: "Neural Networks",
-    description: "Explain the basic idea behind a neural network.",
-    points: [
-      "Inputs are provided",
-      "Information passes through layers",
-      "Weights influence the output",
-      "The model learns by adjusting weights",
-    ],
-    checks: [
-      {
-        keywords: ["input", "inputs", "data"],
-        required: 1,
-      },
-      {
-        keywords: ["layer", "layers", "passes through"],
-        required: 1,
-      },
-      {
-        keywords: ["weight", "weights", "influence"],
-        required: 1,
-      },
-      {
-        keywords: ["learn", "learning", "adjust", "training"],
-        required: 1,
-      },
-    ],
-  },
-  {
-    id: "mitosis",
-    name: "Mitosis",
-    description: "Explain how one cell becomes two.",
-    points: [
-      "The cell prepares to divide",
-      "DNA is copied",
-      "Chromosomes are separated",
-      "Two daughter cells are produced",
-    ],
-    checks: [
-      {
-        keywords: ["cell", "prepare", "prepares", "division"],
-        required: 1,
-      },
-      {
-        keywords: ["DNA", "copy", "copied", "duplicate"],
-        required: 1,
-      },
-      {
-        keywords: ["chromosome", "chromosomes", "separate", "separated"],
-        required: 1,
-      },
-      {
-        keywords: ["two", "daughter", "cells"],
-        required: 1,
-      },
-    ],
-  },
-  {
-    id: "supply-demand",
-    name: "Supply & Demand",
-    description: "Explain how supply and demand affect prices.",
-    points: [
-      "Buyers create demand",
-      "Sellers create supply",
-      "Price affects both",
-      "Supply and demand affect equilibrium",
-    ],
-    checks: [
-      {
-        keywords: ["buyer", "buyers", "demand"],
-        required: 1,
-      },
-      {
-        keywords: ["seller", "sellers", "supply"],
-        required: 1,
-      },
-      {
-        keywords: ["price", "prices", "affect"],
-        required: 1,
-      },
-      {
-        keywords: ["equilibrium", "balance", "supply", "demand"],
-        required: 1,
-      },
-    ],
-  },
+// Starting points, not limits — any topic can be typed in.
+const SUGGESTED_TOPICS = [
+  "Neural networks",
+  "Backpropagation",
+  "Gradient descent",
+  "Overfitting",
+  "Transformers and attention",
+  "Convolutional neural networks",
+  "Embeddings",
+  "Reinforcement learning",
 ];
+
+// The server returns points as objects; the rest of the app wants the
+// labels and the keyword checks separately.
+function toLesson(generated) {
+  return {
+    name: generated.name,
+    description: generated.description,
+    difficulty: generated.difficulty,
+    points: generated.points.map((point) => point.label),
+    checks: generated.points.map((point) => ({
+      keywords: point.keywords,
+      required: point.required,
+    })),
+    misconceptions: generated.misconceptions ?? [],
+  };
+}
 
 function calculateProgress(topic, messages) {
   const studentText = messages
@@ -224,6 +126,9 @@ function App() {
   const [showRecap, setShowRecap] = useState(false);
   const [aiGrade, setAiGrade] = useState(null);
   const [isGrading, setIsGrading] = useState(false);
+  const [topicInput, setTopicInput] = useState("");
+  const [isBuildingLesson, setIsBuildingLesson] = useState(false);
+  const [lessonError, setLessonError] = useState("");
   const transcriptEndRef = useRef(null);
 
   useEffect(() => {
@@ -337,7 +242,51 @@ function App() {
     } finally {
       setIsGrading(false);
     }
-  }; if (!selectedTopic) {
+  };
+
+  // Any topic the student types becomes a lesson: the server decides what
+  // has to be covered for a beginner to actually follow it.
+  const startLesson = async (topic) => {
+    const wanted = topic.trim();
+
+    if (!wanted || isBuildingLesson) {
+      return;
+    }
+
+    setIsBuildingLesson(true);
+    setLessonError("");
+
+    try {
+      const response = await fetch(`${GRADING_API}/api/lesson`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: wanted }),
+      });
+
+      const body = await response.json();
+
+      if (!response.ok) {
+        setLessonError(body.error || "Could not build a lesson for that.");
+        return;
+      }
+
+      setSelectedTopic(toLesson(body));
+      setMessages([]);
+      setError("");
+      setAiGrade(null);
+      setShowRecap(false);
+    } catch (err) {
+      console.error("Could not build lesson:", err);
+
+      setLessonError(
+        "Could not reach the lesson server. Is it running on port 3001?"
+      );
+    } finally {
+      setIsBuildingLesson(false);
+    }
+  };
+
+  if (!selectedTopic) {
     return (
       <main className="app">
         <section className="hero">
@@ -352,29 +301,61 @@ function App() {
           </h1>
 
           <p className="subtitle">
-            Choose something you know. Then try to teach it to someone
+            Name anything you know. Then try to teach it to someone
             who knows absolutely nothing about it.
           </p>
 
-          <h2>Choose a topic</h2>
+          <h2>What do you want to teach?</h2>
 
-          <div className="topic-grid">
-            {topics.map((topic) => (
+          <form
+            className="topic-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              startLesson(topicInput);
+            }}
+          >
+            <input
+              className="topic-input"
+              value={topicInput}
+              onChange={(event) => setTopicInput(event.target.value)}
+              placeholder="Backpropagation, embeddings, why transformers replaced RNNs…"
+              disabled={isBuildingLesson}
+              autoFocus
+            />
+
+            <button
+              className="topic-submit"
+              type="submit"
+              disabled={isBuildingLesson || !topicInput.trim()}
+            >
+              {isBuildingLesson ? "Preparing…" : "Teach it →"}
+            </button>
+          </form>
+
+          {isBuildingLesson && (
+            <p className="topic-status">
+              Working out what Grandma would need to hear…
+            </p>
+          )}
+
+          {lessonError && (
+            <p className="error-message topic-error">{lessonError}</p>
+          )}
+
+          <div className="topic-suggestions">
+            <span className="topic-suggestions-label">Or try</span>
+
+            {SUGGESTED_TOPICS.map((topic) => (
               <button
-                key={topic.id}
-                className="topic-card"
+                key={topic}
+                className="topic-chip"
+                disabled={isBuildingLesson}
                 onClick={() => {
-                  setSelectedTopic(topic);
-                  setShowRecap(false);
-                  setMessages([]);
-                  setError("");
-                  setAiGrade(null);
-                }}            >
-                <div className="topic-name">{topic.name}</div>
-
-                <div className="topic-description">
-                  {topic.description}
-                </div>
+                  setTopicInput(topic);
+                  startLesson(topic);
+                }}
+              >
+                {topic}
               </button>
             ))}
           </div>
@@ -556,8 +537,10 @@ function App() {
               setMessages([]);
               setError("");
               setAiGrade(null);
+              setTopicInput("");
+              setLessonError("");
             }}      >
-            ← Start another lesson
+            ← Teach something else
           </button>
         </section>
       </main>
@@ -574,14 +557,23 @@ function App() {
             }
 
             setSelectedTopic(null);
+            setTopicInput("");
+            setLessonError("");
           }}
         >
-          ← Choose another topic
+          ← Teach something else
         </button>
 
         <div className="session-header">
           <div>
-            <div className="eyebrow">YOUR LESSON</div>
+            <div className="eyebrow">
+              YOUR LESSON
+              {selectedTopic.difficulty && (
+                <span className="difficulty-tag">
+                  {selectedTopic.difficulty}
+                </span>
+              )}
+            </div>
 
             <h1>{selectedTopic.name}</h1>
 

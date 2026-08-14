@@ -34,6 +34,127 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
 
+// Turns any topic the student types into a lesson: what they should cover,
+// how hard it is, and what people usually get wrong about it.
+app.post("/api/lesson", async (req, res) => {
+  const topic = (req.body?.topic ?? "").trim();
+
+  if (!topic) {
+    return res.status(400).json({ error: "Expected { topic }." });
+  }
+
+  if (topic.length > 120) {
+    return res.status(400).json({ error: "That topic is too long." });
+  }
+
+  const prompt = `A student wants to teach "${topic}" to someone who knows nothing about it, to find out whether they really understand it themselves.
+
+Build the lesson plan.
+
+Choose the 4 things the student must get across for a beginner to genuinely follow this topic. Pick the ideas the topic actually turns on, not trivia — if someone explained all 4 well, a beginner should walk away understanding it. Order them so each one builds on the last. Write each as a short noun phrase a student would recognise, like "Weights influence the output" or "Why the stopping condition matters".
+
+For each of those, list the words or short phrases a student would almost certainly say while covering that ground. These only detect whether the subject came up at all, so favour the obvious, common wording, include plural and verb forms, and set "required" to how many of them must appear — usually 1, or 2 when a single word would be too easy to hit by accident.
+
+Also name the misconceptions beginners most often hold about this topic.
+
+If the topic is too vague to teach, or is not a real subject, set "ok" to false and say why in "problem" — otherwise set "ok" to true and leave "problem" empty.`;
+
+  try {
+    const completion = await client.chat.completions.create({
+      model: MODEL,
+      max_completion_tokens: 1500,
+      messages: [{ role: "user", content: prompt }],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "lesson",
+          schema: {
+            type: "object",
+            properties: {
+              ok: { type: "boolean" },
+              problem: { type: "string" },
+              name: {
+                type: "string",
+                description: "The topic, tidied into a display name",
+              },
+              description: {
+                type: "string",
+                description:
+                  "One sentence telling the student what to explain, e.g. 'Explain how a function can call itself.'",
+              },
+              difficulty: {
+                type: "string",
+                description: "Beginner, Intermediate or Advanced",
+              },
+              points: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    label: { type: "string" },
+                    keywords: { type: "array", items: { type: "string" } },
+                    required: { type: "number" },
+                  },
+                  required: ["label", "keywords", "required"],
+                  additionalProperties: false,
+                },
+              },
+              misconceptions: { type: "array", items: { type: "string" } },
+            },
+            required: [
+              "ok",
+              "problem",
+              "name",
+              "description",
+              "difficulty",
+              "points",
+              "misconceptions",
+            ],
+            additionalProperties: false,
+          },
+        },
+      },
+    });
+
+    const raw = completion.choices?.[0]?.message?.content;
+
+    if (!raw) {
+      throw new Error("Model returned no content");
+    }
+
+    const lesson = JSON.parse(raw);
+
+    if (!lesson.ok) {
+      return res.status(422).json({
+        error: lesson.problem || "That topic can't be taught as a lesson.",
+      });
+    }
+
+    if (!Array.isArray(lesson.points) || lesson.points.length === 0) {
+      throw new Error("Model returned no learning points");
+    }
+
+    // A point whose `required` exceeds its keyword count could never be
+    // ticked, which would strand the progress bar for the whole lesson.
+    lesson.points = lesson.points.map((point) => {
+      const keywords = (point.keywords ?? [])
+        .map((keyword) => String(keyword).trim())
+        .filter(Boolean);
+
+      return {
+        label: point.label,
+        keywords,
+        required: Math.min(Math.max(1, point.required ?? 1), keywords.length),
+      };
+    });
+
+    res.json(lesson);
+  } catch (err) {
+    console.error("Lesson generation failed:", err);
+    res.status(502).json({ error: "Could not build a lesson for that topic." });
+  }
+});
+
 // Judges whether the student genuinely explained each learning point,
 // as opposed to merely saying the right keywords.
 app.post("/api/grade", async (req, res) => {

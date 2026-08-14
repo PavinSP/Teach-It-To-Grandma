@@ -58,3 +58,35 @@ Built the one feature the original plan kept postponing: LLM-based grading that 
 **Verified**: server health check OK, live grading call returned sensible strict results (rejected points where keywords were present but the explanation assumed prior knowledge — exactly the intended Feynman behavior), production build passes.
 
 **Dev now needs two processes**: `cd server && npm run dev` (3001) and `cd frontend && npm run dev` (5173). Documented in `server/README.md`.
+
+## Session 8 — TitanomGPT, honest labelling, then any-topic lessons
+
+**Grading moved to TitanomGPT** (DeutschlandGPT, the sponsor's API) at
+`https://api.deutschlandgpt.de/v2` — OpenAI-compatible, so it uses the OpenAI
+SDK with a swapped base URL. Note their API silently ignores `max_tokens`
+(wants `max_completion_tokens`) and supports `json_schema`, which replaced the
+JSON fence-stripping hack. Key is `TITANOM_API_KEY` in the root `.env`.
+Two earlier 403s were a teammate's key, not a format problem.
+
+**Stopped the UI claiming understanding it hadn't measured.** The keyword
+checklist reports *coverage*, so a vague answer could fill it to 4/4 while
+Grandma was still asking what the words meant. "YOUR PROGRESS" → "POINTS
+MENTIONED", "Grandma understands!" → "You covered all four points", and the
+recap now derives its headings and point lists from the AI grade when present,
+with keyword results as fallback. The keyword grader filling on vague input is
+the strawman the AI knocks down — that contrast is the demo, not a bug.
+
+**Any topic + generated lessons** (feature 1.1–1.4 of the 50-feature vision in
+`ChatGPT-Change Claude Email Antigravity-*.md`). The four hardcoded topics are
+gone; the landing page takes free text plus AI/ML suggestion chips. New
+`POST /api/lesson` sends the topic to TitanomGPT and gets back the four things
+worth covering, keywords for live coverage detection, a difficulty, and the
+misconceptions beginners hold (stored, unused so far — they're the input for
+the Misconception Attack feature). Nonsense topics are rejected with a reason.
+`toLesson()` in `App.jsx` flattens the response into the `{points, checks}`
+shape the existing progress and recap code already expected, so nothing
+downstream changed. `required` is clamped to the keyword count, since a point
+needing more keywords than it has could never tick.
+
+**Reverted before this**: the Teacher character and the swappable-Grandma
+picker (commit 83bbb1a, reverted in 7906baa). Recoverable from history.
