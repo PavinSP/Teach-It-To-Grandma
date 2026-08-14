@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useConversation } from "@elevenlabs/react";
+import { FEATURES } from "./features";
 import "./App.css";
 
 const AGENT_ID = "agent_8901kzzhzexhe2qt3903amp09nnq";
@@ -36,7 +37,7 @@ function toLesson(generated) {
 
 function calculateProgress(topic, messages) {
   const studentText = messages
-    .filter((message) => message.source === "user")
+    .filter((message) => message.source === "user" && message.meta !== "prompt")
     .map((message) => message.message || "")
     .join(" ")
     .toLowerCase();
@@ -66,7 +67,7 @@ function generateRecap(topic, progress, messages) {
     .filter(Boolean);
 
   const userMessages = messages
-    .filter((message) => message.source === "user")
+    .filter((message) => message.source === "user" && message.meta !== "prompt")
     .map((message) => message.message || "")
     .filter(Boolean);
 
@@ -129,7 +130,13 @@ function App() {
   const [topicInput, setTopicInput] = useState("");
   const [isBuildingLesson, setIsBuildingLesson] = useState(false);
   const [lessonError, setLessonError] = useState("");
+  const [explainBack, setExplainBack] = useState(null);
+  const [isExplaining, setIsExplaining] = useState(false);
+  const [recallText, setRecallText] = useState("");
+  const [askedForRecall, setAskedForRecall] = useState(false);
   const transcriptEndRef = useRef(null);
+  // Her next reply after we ask is the recall itself — catch it as it lands.
+  const pendingRecallRef = useRef(false);
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -148,6 +155,14 @@ function App() {
     onMessage: (message) => {
       console.log("Conversation message:", message);
 
+      // If we just asked her to say back what she understood, her next reply
+      // is that answer — keep it so the recap can analyse her real words
+      // rather than generating a second version that might disagree.
+      if (pendingRecallRef.current && message.source !== "user") {
+        pendingRecallRef.current = false;
+        setRecallText(message.message ?? "");
+      }
+
       setMessages((previous) => [
         ...previous,
         message,
@@ -159,6 +174,16 @@ function App() {
       setError("Something went wrong connecting to Grandma.");
     },
   });
+
+  // Everything the explain-back feature accumulates. Cleared wherever a
+  // lesson ends, so the next one never inherits the last one's recall.
+  const resetRecall = () => {
+    setExplainBack(null);
+    setIsExplaining(false);
+    setRecallText("");
+    setAskedForRecall(false);
+    pendingRecallRef.current = false;
+  };
 
   const startConversation = async () => {
     try {
@@ -200,6 +225,7 @@ function App() {
 
       setShowRecap(true);
       gradeWithAI();
+      explainBackWithAI();
     } catch (err) {
       console.error("Could not finish lesson:", err);
       setError("Could not finish the lesson cleanly.");
@@ -227,7 +253,7 @@ function App() {
         body: JSON.stringify({
           topicName: selectedTopic.name,
           points: selectedTopic.points,
-          transcript: messages,
+          transcript: messages.filter((m) => m.meta !== "prompt"),
         }),
       });
 
@@ -242,6 +268,71 @@ function App() {
     } finally {
       setIsGrading(false);
     }
+  };
+
+  // Asks Grandma to repeat back what she absorbed, using only the student's
+  // own words. Runs alongside grading and never blocks the recap.
+  const explainBackWithAI = async () => {
+    if (!FEATURES.explainBack) {
+      return;
+    }
+
+    const saidAnything = messages.some(
+      (message) =>
+        message.source === "user" && message.message && message.meta !== "prompt"
+    );
+
+    if (!saidAnything) {
+      return;
+    }
+
+    setIsExplaining(true);
+
+    try {
+      const response = await fetch(`${GRADING_API}/api/explainback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topicName: selectedTopic.name,
+          points: selectedTopic.points,
+          transcript: messages.filter((m) => m.meta !== "prompt"),
+          // If she already said it out loud, analyse those exact words.
+          grandmaRecall: recallText || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Explain-back returned ${response.status}`);
+      }
+
+      setExplainBack(await response.json());
+    } catch (err) {
+      // The rest of the recap stands on its own without this.
+      console.error("Explain-back unavailable:", err);
+    } finally {
+      setIsExplaining(false);
+    }
+  };
+
+  // The live version: she answers out loud, in her own voice, before the
+  // call ends. The prompt is tagged so it never counts as the student's
+  // explanation when the transcript is graded.
+  const askGrandmaToRecall = () => {
+    if (askedForRecall || conversation.status !== "connected") {
+      return;
+    }
+
+    const ask =
+      "Grandma, before I go — can you tell me back what you understood, in your own words?";
+
+    setAskedForRecall(true);
+    pendingRecallRef.current = true;
+    conversation.sendUserMessage(ask);
+
+    setMessages((previous) => [
+      ...previous,
+      { source: "user", message: ask, meta: "prompt" },
+    ]);
   };
 
   // Any topic the student types becomes a lesson: the server decides what
@@ -275,6 +366,7 @@ function App() {
       setError("");
       setAiGrade(null);
       setShowRecap(false);
+      resetRecall();
     } catch (err) {
       console.error("Could not build lesson:", err);
 
@@ -449,6 +541,107 @@ function App() {
             </section>
           )}
 
+          {FEATURES.explainBack && isExplaining && !explainBack && (
+            <section className="recap-card">
+              <div className="recap-icon">🔄</div>
+              <h2>Let me see if I understood you</h2>
+              <p className="recap-pending">
+                Grandma is working out what she actually took away…
+              </p>
+            </section>
+          )}
+
+          {FEATURES.explainBack && explainBack && (
+            <section className="recap-card explainback-card">
+              <div className="recap-icon">🔄</div>
+
+              <h2>Let me see if I understood you</h2>
+
+              {/* Counts, with their denominators visible. Coverage is what
+                  you said; the other two are what actually landed. */}
+              <div className="gap-scoreboard">
+                <div className="gap-stat">
+                  <span className="gap-label">You covered</span>
+                  <span className="gap-value">
+                    {progress.filter(Boolean).length} / {selectedTopic.points.length}
+                  </span>
+                </div>
+
+                {aiGrade?.results && (
+                  <div className="gap-stat">
+                    <span className="gap-label">Grandma followed</span>
+                    <span className="gap-value">
+                      {aiGrade.results.filter((r) => r.understood).length} /{" "}
+                      {aiGrade.results.length}
+                    </span>
+                  </div>
+                )}
+
+                <div className="gap-stat">
+                  <span className="gap-label">She could repeat back</span>
+                  <span className="gap-value">
+                    {explainBack.points.filter((p) => p.recalled === "correct").length}{" "}
+                    / {explainBack.points.length}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grandma-recall">
+                <div className="recall-label">
+                  {recallText
+                    ? "What Grandma said out loud"
+                    : "What Grandma took away"}
+                </div>
+
+                <p>{explainBack.recap}</p>
+              </div>
+
+              <ul className="recall-list">
+                {explainBack.points.map((point) => (
+                  <li key={point.point} className={`recall-${point.recalled}`}>
+                    <span className="recall-mark">
+                      {point.recalled === "correct"
+                        ? "✓"
+                        : point.recalled === "garbled"
+                          ? "◐"
+                          : "○"}
+                    </span>
+
+                    <div>
+                      <strong>{point.point}</strong>
+
+                      {point.grandmaSaid && (
+                        <p className="recall-said">“{point.grandmaSaid}”</p>
+                      )}
+
+                      {point.gap && <p className="recall-gap">{point.gap}</p>}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              {explainBack.unexplainedTerms.length > 0 && (
+                <div className="unexplained">
+                  <div className="recall-label">
+                    Words you used but never explained
+                  </div>
+
+                  <div className="term-chips">
+                    {explainBack.unexplainedTerms.map((term) => (
+                      <span className="term-chip" key={term}>
+                        {term}
+                      </span>
+                    ))}
+                  </div>
+
+                  <p className="recall-footnote">
+                    Every word above came from your own explanation.
+                  </p>
+                </div>
+              )}
+            </section>
+          )}
+
           <div className="recap-grid">
             <section className="recap-card">
               <div className="recap-icon">✓</div>
@@ -539,6 +732,7 @@ function App() {
               setAiGrade(null);
               setTopicInput("");
               setLessonError("");
+              resetRecall();
             }}      >
             ← Teach something else
           </button>
@@ -559,6 +753,7 @@ function App() {
             setSelectedTopic(null);
             setTopicInput("");
             setLessonError("");
+            resetRecall();
           }}
         >
           ← Teach something else
@@ -698,6 +893,21 @@ function App() {
                       ⏹️ End conversation
                     </button>
                   </div>
+
+                  {/* Asking her out loud is optional — the written version on
+                      the recap does not depend on it. */}
+                  {FEATURES.spokenRecall && (
+                    <button
+                      className="recall-button"
+                      onClick={askGrandmaToRecall}
+                      disabled={askedForRecall}
+                      title="She'll say back what she thinks she understood"
+                    >
+                      {askedForRecall
+                        ? "👵 Asked — listen to what she got"
+                        : "👵 Ask Grandma what she understood"}
+                    </button>
+                  )}
 
                   <p>
                     {conversation.isMuted

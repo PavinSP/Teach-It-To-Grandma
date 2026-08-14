@@ -919,3 +919,153 @@ h2 {
     padding: 18px;
   }
 }
+/* -----------------------------
+   Explain-back (#9)
+----------------------------- */
+
+.recall-button {
+  margin-top: 14px;
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid #d8d0c4;
+  border-radius: 999px;
+  background: #fffdf8;
+  color: #4a443c;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.recall-button:hover:not(:disabled) {
+  border-color: #26221d;
+}
+
+.recall-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.recap-pending {
+  color: #746c62;
+  font-style: italic;
+}
+
+.gap-scoreboard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.gap-stat {
+  flex: 1;
+  min-width: 130px;
+  padding: 14px 16px;
+  border: 1px solid #e6ded2;
+  border-radius: 12px;
+  background: #fffdf8;
+}
+
+.gap-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+}
+
+.gap-value {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.grandma-recall {
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: rgba(38, 34, 29, 0.04);
+  margin-bottom: 20px;
+}
+
+.grandma-recall p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.recall-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 8px;
+}
+
+.recall-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.recall-list li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.recall-mark {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 13px;
+  background: rgba(38, 34, 29, 0.08);
+}
+
+.recall-correct .recall-mark {
+  background: #2f7a4f;
+  color: #fff;
+}
+
+.recall-garbled .recall-mark {
+  background: #c98a2b;
+  color: #fff;
+}
+
+.recall-said {
+  margin: 4px 0 0;
+  font-style: italic;
+  opacity: 0.75;
+}
+
+.recall-gap {
+  margin: 4px 0 0;
+  font-size: 14px;
+  opacity: 0.65;
+}
+
+.term-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.term-chip {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(176, 58, 46, 0.1);
+  color: #9c3327;
+  font-size: 14px;
+}
+
+.recall-footnote {
+  margin: 10px 0 0;
+  font-size: 13px;
+  opacity: 0.55;
+}

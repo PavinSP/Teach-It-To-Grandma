@@ -90,3 +90,35 @@ needing more keywords than it has could never tick.
 
 **Reverted before this**: the Teacher character and the swappable-Grandma
 picker (commit 83bbb1a, reverted in 7906baa). Recoverable from history.
+
+## Session 9 — Grandma explains it back (#9)
+
+The first feature off `PLAN.md`. She says back what she absorbed, using only
+the student's own words, and the recap shows what survived.
+
+**The design decision**: she recalls, she does not explain. A correct
+explanation from Grandma teaches the student nothing; a faithfully broken one
+shows them exactly where their teaching failed. `POST /api/explainback` gives
+the model a closed world — the student's lines between markers, and nothing
+else exists to it — plus a rule that wrong things stay wrong.
+
+Rule 6 was added after testing. With rules 1-5 she held a false explanation
+("backpropagation makes the error bigger") but closed with "usually you'd want
+errors to get smaller" — common-sense reasoning that happened to supply the
+exact point the student had missed. She may now say she is confused; she may
+not say what the right answer would look like.
+
+`unexplainedTerms` is filtered server-side against the transcript, so a term
+she claims went undefined must actually be a word the student said. That turns
+"trust the persona prompt" into a checkable property.
+
+**The spoken half** (`spokenRecall`, separately killable) asks her live via
+`sendUserMessage`, before `finishLesson` ends the session — nothing can make
+her speak on the recap page. Her answer is then fed back into the analysis as
+`grandmaRecall`, so the written version can't contradict what the room just
+heard. The injected prompt is tagged `meta:"prompt"` and filtered out of
+grading, live coverage, and the recap's "your explanation" — otherwise our own
+line would be graded as the student's words.
+
+**Measured**: a jargon-dense but technically correct explanation of overfitting
+scored 0/4 recalled with five undefined terms.

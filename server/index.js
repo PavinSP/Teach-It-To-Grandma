@@ -252,6 +252,148 @@ Respond with JSON only, in exactly this shape:
   }
 });
 
+// Grandma says back what she thinks she understood — using nothing but the
+// student's own words. She is not allowed to repair a broken explanation,
+// because the broken version is exactly what the student needs to see.
+app.post("/api/explainback", async (req, res) => {
+  const { topicName, points, transcript, grandmaRecall } = req.body ?? {};
+
+  if (!topicName || !Array.isArray(points) || !Array.isArray(transcript)) {
+    return res
+      .status(400)
+      .json({ error: "Expected { topicName, points[], transcript[] }." });
+  }
+
+  // Lines tagged as prompts are ours, not the student's — they must never be
+  // treated as part of the explanation.
+  const studentText = transcript
+    .filter((line) => line.source === "user" && line.meta !== "prompt")
+    .map((line) => line.message)
+    .filter(Boolean)
+    .join("\n");
+
+  if (!studentText.trim()) {
+    return res.json({
+      recap: "You haven't told me anything yet, darling.",
+      points: points.map((point) => ({
+        point,
+        recalled: "missing",
+        grandmaSaid: "",
+        gap: "Never mentioned.",
+      })),
+      unexplainedTerms: [],
+    });
+  }
+
+  const pointList = points.map((point, i) => `${i + 1}. ${point}`).join("\n");
+
+  // She may already have said this out loud during the call. If so, analyse
+  // her real words rather than inventing a second version that could
+  // contradict what the student just heard.
+  const spoken = typeof grandmaRecall === "string" && grandmaRecall.trim();
+
+  const recallInstruction = spoken
+    ? `You are Grandma. A student has just finished explaining "${topicName}" to you, and you have already said back what you understood. Here is what you said:
+---
+${grandmaRecall.trim()}
+---
+
+Here is everything the student actually told you:
+---
+${studentText}
+---
+
+Copy your own words above into "recap" exactly as they are. Do not rewrite them.`
+    : `You are Grandma. You know nothing whatsoever about "${topicName}". You have no education in this subject. Everything you know about it is what this student just told you, and it is written between the markers below. Nothing outside the markers exists to you.
+
+---
+${studentText}
+---
+
+In "recap", say back in your own plain words what you think you understood.
+
+Rules you must not break:
+1. Use only what is between the markers. Never add a fact, number, term, or example that is not there.
+2. Never correct the student. Never teach. You could not if you wanted to — you only just heard about this.
+3. If the student used a word without explaining it, keep the word but say plainly that you don't know what it means: "something about a gradient — I don't know what that is, you never said."
+4. If they skipped a step, say the step is missing. Do not guess it.
+5. If your version comes out wrong because their explanation was wrong or unclear, LEAVE IT WRONG. That is the point. Do not fix it.
+6. Do not reason about whether what they told you sounds sensible. Never say what something "usually" is, what you "would expect", or that something seems odd — you have no expectations, because you have never heard of any of this. You may say you are confused; you may not say what the right answer would look like.
+7. Warm and ordinary, about 120 words. No bullet points, no lecturing.`;
+
+  const prompt = `${recallInstruction}
+
+Then, for each learning point below, say whether what you took away is right ("correct"), muddled or only half there ("garbled"), or absent because they never told you ("missing").
+
+${pointList}
+
+Put the words you used for it in "grandmaSaid". In "gap", name what they left out, in one short line — leave it empty when the point is correct.
+
+Finally, in "unexplainedTerms", list every word the student used but never explained to you. Copy those words exactly as the student said them. If they explained everything, return an empty list.`;
+
+  try {
+    const completion = await client.chat.completions.create({
+      model: MODEL,
+      max_completion_tokens: 1200,
+      messages: [{ role: "user", content: prompt }],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "explainback",
+          schema: {
+            type: "object",
+            properties: {
+              recap: { type: "string" },
+              points: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    point: { type: "string" },
+                    recalled: {
+                      type: "string",
+                      enum: ["correct", "garbled", "missing"],
+                    },
+                    grandmaSaid: { type: "string" },
+                    gap: { type: "string" },
+                  },
+                  required: ["point", "recalled", "grandmaSaid", "gap"],
+                  additionalProperties: false,
+                },
+              },
+              unexplainedTerms: { type: "array", items: { type: "string" } },
+            },
+            required: ["recap", "points", "unexplainedTerms"],
+            additionalProperties: false,
+          },
+        },
+      },
+    });
+
+    const raw = completion.choices?.[0]?.message?.content;
+
+    if (!raw) {
+      throw new Error("Model returned no content");
+    }
+
+    const parsed = JSON.parse(raw);
+
+    // Every term she claims the student left undefined has to actually be a
+    // word the student said. Anything else is the model inventing evidence,
+    // and it gets dropped rather than shown.
+    const said = studentText.toLowerCase();
+
+    parsed.unexplainedTerms = (parsed.unexplainedTerms ?? []).filter(
+      (term) => typeof term === "string" && said.includes(term.toLowerCase())
+    );
+
+    res.json(parsed);
+  } catch (err) {
+    console.error("Explain-back failed:", err);
+    res.status(502).json({ error: "Explain-back failed." });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Grading server listening on http://localhost:${PORT}`);
 });
