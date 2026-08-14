@@ -1864,3 +1864,138 @@ details.misconceptions-panel .misconceptions-list {
   60% { transform: scale(1.08); }
   100% { transform: scale(1); }
 }
+
+/* -----------------------------
+   Mirror mode (#10)
+----------------------------- */
+
+.mirror-card {
+  margin-top: 24px;
+}
+
+.mirror-blurb,
+.mirror-intro {
+  margin: 0 0 14px;
+  opacity: 0.8;
+}
+
+.mirror-intro {
+  font-style: italic;
+}
+
+.mirror-instructions {
+  margin: 0 0 14px;
+  font-weight: 600;
+}
+
+.mirror-button {
+  padding: 12px 22px;
+  border: none;
+  border-radius: 999px;
+  background: #26221d;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mirror-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.mirror-claims {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  counter-reset: claim;
+}
+
+.mirror-claims li {
+  counter-increment: claim;
+}
+
+.mirror-claim {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 16px;
+  border: 1px solid #d8d0c4;
+  border-radius: 12px;
+  background: #fffdf8;
+  font-size: 15px;
+  line-height: 1.45;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.mirror-claim::before {
+  content: counter(claim) ".";
+  opacity: 0.4;
+  font-weight: 700;
+}
+
+.mirror-claim-text {
+  flex: 1;
+}
+
+.mirror-claim:hover:not(:disabled) {
+  border-color: #26221d;
+}
+
+.mirror-claim.flagged {
+  border-color: #9c3327;
+  background: rgba(176, 58, 46, 0.05);
+}
+
+.mirror-flag-mark {
+  color: #9c3327;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.mirror-claim:disabled {
+  cursor: default;
+}
+
+.mirror-claim.caught {
+  border-color: #2f7a4f;
+  background: rgba(47, 122, 79, 0.06);
+}
+
+.mirror-claim.missed {
+  border-color: #9c3327;
+  background: rgba(176, 58, 46, 0.08);
+}
+
+.mirror-claim.false-flag {
+  border-color: #c98a2b;
+  background: rgba(201, 138, 43, 0.07);
+}
+
+.mirror-verdict {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.mirror-verdict.caught { color: #2f7a4f; }
+.mirror-verdict.missed { color: #9c3327; }
+.mirror-verdict.false-flag { color: #c98a2b; }
+
+.mirror-why {
+  margin: 6px 0 0 22px;
+  font-size: 13px;
+  opacity: 0.65;
+}
+
+.mirror-score {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}

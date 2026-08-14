@@ -62,6 +62,10 @@ const DEFAULTS = {
   // earns nothing, and locked ones show their condition instead of hiding.
   achievements: true,
 
+  // #10 — the listener retells the topic with planted errors; the student
+  // flags the wrong ones. Scored client-side: we know which were planted.
+  mirrorMode: true,
+
   // #34 — several people teach the SAME stored lesson in turn, one board.
   // Same machine, sequential — the only multiplayer that honestly works
   // without deployment.

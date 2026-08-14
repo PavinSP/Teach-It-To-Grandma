@@ -168,6 +168,13 @@ function App() {
   const [voiceOnly, setVoiceOnly] = useState(false);
   // #11 — the misconception the character was directed to state, if any.
   const [ambush, setAmbush] = useState(null);
+  // #10 — the retelling game: claims, which the student flagged, whether
+  // they've locked their answers in.
+  const [mirror, setMirror] = useState(null);
+  const [mirrorFlags, setMirrorFlags] = useState(new Set());
+  const [mirrorSubmitted, setMirrorSubmitted] = useState(false);
+  const [isBuildingMirror, setIsBuildingMirror] = useState(false);
+  const [mirrorError, setMirrorError] = useState("");
   // #34 — the teach-off this session belongs to, if any: {code, player}.
   const [teachoff, setTeachoff] = useState(null);
   const [teachoffBoard, setTeachoffBoard] = useState(null);
@@ -280,6 +287,14 @@ function App() {
     setTeachoffBoard(null);
     setJoinCode("");
     setJoinError("");
+  };
+
+  const resetMirror = () => {
+    setMirror(null);
+    setMirrorFlags(new Set());
+    setMirrorSubmitted(false);
+    setIsBuildingMirror(false);
+    setMirrorError("");
   };
 
   // Each lesson attempt scores once. Nulling the id means "no attempt in
@@ -783,20 +798,81 @@ function App() {
 
       setChallenge({ ...data, bannedTerms });
 
-      // Back into the same lesson, clean, for the re-run.
+      // Back into the same lesson, clean, for the re-run. The teach-off
+      // deliberately survives: a re-run is another attempt on the same
+      // board, posted under the same name.
       setShowRecap(false);
       setMessages([]);
       setAiGrade(null);
       resetRecall();
       resetProgression();
       resetAmbush();
-      resetTeachoff();
+      resetMirror();
     } catch (err) {
       console.error("Could not build challenge:", err);
       setChallengeError("Could not put together a challenge right now.");
     } finally {
       setIsBuildingChallenge(false);
     }
+  };
+
+  const startMirror = async () => {
+    if (isBuildingMirror || mirror) {
+      return;
+    }
+
+    setIsBuildingMirror(true);
+    setMirrorError("");
+
+    try {
+      const response = await fetch(`${GRADING_API}/api/mirror`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topicName: selectedTopic.name,
+          points: selectedTopic.points,
+          transcript: messages.filter(
+            (m) => m.meta !== "prompt" && m.source !== "system"
+          ),
+          misconceptions: selectedTopic.misconceptions,
+          errorCount: 2,
+          ...(FEATURES.characterPicker ? { characterName: who } : {}),
+        }),
+      });
+
+      const body = await response.json();
+
+      if (!response.ok) {
+        setMirrorError(body.error || "Could not build the retelling.");
+        return;
+      }
+
+      setMirror(body);
+    } catch (err) {
+      console.error("Mirror failed:", err);
+      setMirrorError("Could not reach the server.");
+    } finally {
+      setIsBuildingMirror(false);
+    }
+  };
+
+  const toggleMirrorFlag = (id) => {
+    if (mirrorSubmitted) {
+      return;
+    }
+
+    // A new Set each time — mutating the old one is invisible to React.
+    setMirrorFlags((previous) => {
+      const next = new Set(previous);
+
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+
+      return next;
+    });
   };
 
   const postTeachoffRun = async (code, player, score) => {
@@ -935,6 +1011,7 @@ function App() {
       resetChallengeCards();
       resetAmbush();
       resetTeachoff();
+      resetMirror();
       resetProgression();
     } catch (err) {
       console.error("Could not build lesson:", err);
@@ -1532,6 +1609,136 @@ function App() {
             )}
           </div>
 
+          {FEATURES.mirrorMode && recap.userMessages.length > 0 && (
+            <section className="recap-card mirror-card">
+              <div className="recap-icon">🪞</div>
+
+              <h2>Now check {activeCharacter.obj === "her" ? "her" : "his"} work</h2>
+
+              {!mirror ? (
+                <>
+                  <p className="mirror-blurb">
+                    {who} retells your lesson — with a couple of things
+                    deliberately wrong. Catch them.
+                  </p>
+
+                  <button
+                    className="mirror-button"
+                    onClick={startMirror}
+                    disabled={isBuildingMirror}
+                  >
+                    {isBuildingMirror
+                      ? "Getting the story straight…"
+                      : "🪞 Let's hear it →"}
+                  </button>
+
+                  {mirrorError && (
+                    <p className="error-message">{mirrorError}</p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="mirror-intro">“{mirror.intro}”</p>
+
+                  <p className="mirror-instructions">
+                    {mirrorSubmitted
+                      ? "Here's how you did:"
+                      : `Flag every claim you think is wrong, then lock it in. (${
+                          mirror.claims.filter((c) => c.isWrong).length
+                        } of them are.)`}
+                  </p>
+
+                  <ol className="mirror-claims">
+                    {mirror.claims.map((claim) => {
+                      const flagged = mirrorFlags.has(claim.id);
+
+                      let outcome = "";
+
+                      if (mirrorSubmitted) {
+                        if (claim.isWrong && flagged) outcome = "caught";
+                        else if (claim.isWrong && !flagged) outcome = "missed";
+                        else if (!claim.isWrong && flagged) outcome = "false-flag";
+                        else outcome = "clean";
+                      }
+
+                      return (
+                        <li key={claim.id}>
+                          <button
+                            className={`mirror-claim ${
+                              flagged ? "flagged" : ""
+                            } ${outcome}`}
+                            onClick={() => toggleMirrorFlag(claim.id)}
+                            disabled={mirrorSubmitted}
+                          >
+                            <span className="mirror-claim-text">
+                              {claim.text}
+                            </span>
+
+                            {!mirrorSubmitted && flagged && (
+                              <span className="mirror-flag-mark">
+                                ⚑ that's wrong
+                              </span>
+                            )}
+
+                            {mirrorSubmitted && outcome === "caught" && (
+                              <span className="mirror-verdict caught">
+                                ✓ caught it
+                              </span>
+                            )}
+                            {mirrorSubmitted && outcome === "missed" && (
+                              <span className="mirror-verdict missed">
+                                ✗ this one was wrong — you let it through
+                              </span>
+                            )}
+                            {mirrorSubmitted && outcome === "false-flag" && (
+                              <span className="mirror-verdict false-flag">
+                                ○ this one was actually fine
+                              </span>
+                            )}
+                          </button>
+
+                          {mirrorSubmitted && claim.why && (
+                            <p className="mirror-why">{claim.why}</p>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ol>
+
+                  {!mirrorSubmitted ? (
+                    <button
+                      className="mirror-button"
+                      onClick={() => setMirrorSubmitted(true)}
+                      disabled={mirrorFlags.size === 0}
+                    >
+                      Lock it in →
+                    </button>
+                  ) : (
+                    <p className="mirror-score">
+                      {(() => {
+                        const wrong = mirror.claims.filter((c) => c.isWrong);
+                        const caught = wrong.filter((c) =>
+                          mirrorFlags.has(c.id)
+                        ).length;
+                        const falseFlags = mirror.claims.filter(
+                          (c) => !c.isWrong && mirrorFlags.has(c.id)
+                        ).length;
+
+                        return `You caught ${caught} of ${wrong.length}${
+                          falseFlags === 0
+                            ? " — and didn't flag anything that was fine."
+                            : ` — but flagged ${falseFlags} that ${
+                                falseFlags === 1 ? "was" : "were"
+                              } actually fine.`
+                        }`;
+                      })()}
+                    </p>
+                  )}
+                </>
+              )}
+            </section>
+          )}
+
           {FEATURES.teachOff && !teachoff && lessonXp?.score != null && (
             <section className="recap-card teachoff-card">
               <div className="recap-icon">⚔️</div>
@@ -1638,6 +1845,7 @@ function App() {
       resetChallengeCards();
       resetAmbush();
       resetTeachoff();
+      resetMirror();
       resetProgression();
             }}      >
             ← Teach something else
@@ -1664,6 +1872,8 @@ function App() {
       resetChallengeCards();
       resetAmbush();
       resetProgression();
+      resetTeachoff();
+      resetMirror();
           }}
         >
           ← Teach something else

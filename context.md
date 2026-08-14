@@ -431,3 +431,25 @@ Two things the plan got to update: Myth Buster was marked impossible when
 the plan was written — the ambush (#11) made it real, catching the
 deliberate lie unlocks it. And Speed Teacher brought the first session
 clock (mic's first press stamps the attempt).
+
+## Session 21 — Mirror mode (#10), and two reset defects fixed
+
+**Mirror mode**: after the recap, a "Now check her work" card. The listener
+retells the lesson as exactly 6 one-sentence claims, exactly 2 deliberately
+wrong — planted from the lesson's own misconceptions, reworded into the
+character's voice, never invented about material the student skipped
+(that would be testing them on something they were never given). The
+student flags suspects and locks in; scoring is pure client arithmetic
+since we know which were planted — zero latency, no API on the scoring
+path, `why` lines reveal after submission so every verdict defends itself.
+Counts only, no percentage, per A2. The server retorts 502 if the model
+returns an unplayable board (0 or >3 planted). Fetch fires on the button,
+never at Finish — the recap is never delayed.
+
+**Found while building** — the teach-off session's "3 reset sites"
+replacement had matched `takeChallenge` instead of the back-button:
+a challenge re-run wrongly wiped the board (contradicting the documented
+intent that a re-run is another attempt on it), and backing out of a
+session left the teach-off set (harmless only because startLesson happens
+to reset it on every new-lesson path). Both fixed: re-runs keep the board,
+the back-button clears it.

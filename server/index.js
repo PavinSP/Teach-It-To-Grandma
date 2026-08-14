@@ -793,6 +793,129 @@ Respond with JSON only, in exactly this shape:
   }
 });
 
+// Mirror mode (#10): the listener retells the topic as numbered claims,
+// a fixed number of them deliberately wrong — planted from the lesson's
+// own misconceptions, never from material the student skipped. The client
+// scores the flagging itself (it knows which claims were planted), so
+// this endpoint runs once per game, before it starts.
+app.post("/api/mirror", async (req, res) => {
+  const {
+    topicName,
+    points,
+    transcript,
+    misconceptions,
+    characterName,
+    errorCount,
+  } = req.body ?? {};
+
+  if (!topicName || !Array.isArray(points) || !Array.isArray(transcript)) {
+    return res
+      .status(400)
+      .json({ error: "Expected { topicName, points[], transcript[] }." });
+  }
+
+  const listener = characterName || "Grandma";
+  const wanted = Math.min(Math.max(1, errorCount ?? 2), 3);
+
+  const studentText = transcript
+    .filter((line) => line.source === "user" && line.meta !== "prompt")
+    .map((line) => line.message)
+    .filter(Boolean)
+    .join("\n");
+
+  if (!studentText.trim()) {
+    return res
+      .status(422)
+      .json({ error: "There's nothing to retell yet — teach a lesson first." });
+  }
+
+  const pool = (Array.isArray(misconceptions) ? misconceptions : [])
+    .filter((m) => typeof m === "string" && m.trim())
+    .slice(0, 6);
+
+  const prompt = `You are ${listener}. A student just explained "${topicName}" to you. Here is everything they said:
+---
+${studentText}
+---
+
+Retell the topic back to them as exactly 6 short claims, each one sentence in your own plain voice. Exactly ${wanted} of the claims must be WRONG; the other ${6 - wanted} must be faithful paraphrases of what the student actually said.
+
+The wrong claims must be drawn from these known beginner misconceptions — reworded into your voice, but keeping the same false idea:
+${pool.map((m, i) => `${i + 1}. ${m}`).join("\n")}
+
+Rules:
+- Never invent an error about material the student did not cover — a wrong claim must contradict something they actually taught, or be one of the misconceptions above.
+- Each wrong claim is wrong in ONE specific, correctable way. Nothing arguable, nothing subtle to the point of debate.
+- For every claim, "why" explains in one line what makes it right or wrong. For correct claims, "why" may be one short line confirming the source in the student's words.
+
+Respond with JSON only:
+{
+  "intro": "<one line in ${listener}'s voice offering to tell it back>",
+  "claims": [
+    { "id": "c1", "text": "<the claim>", "isWrong": true or false, "why": "<one line>" }
+  ]
+}`;
+
+  try {
+    const completion = await client.chat.completions.create({
+      model: MODEL,
+      max_completion_tokens: 900,
+      messages: [{ role: "user", content: prompt }],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "mirror",
+          schema: {
+            type: "object",
+            properties: {
+              intro: { type: "string" },
+              claims: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    text: { type: "string" },
+                    isWrong: { type: "boolean" },
+                    why: { type: "string" },
+                  },
+                  required: ["id", "text", "isWrong", "why"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["intro", "claims"],
+            additionalProperties: false,
+          },
+        },
+      },
+    });
+
+    const raw = completion.choices?.[0]?.message?.content;
+
+    if (!raw) {
+      throw new Error("Model returned no content");
+    }
+
+    const parsed = JSON.parse(raw);
+    const claims = Array.isArray(parsed.claims) ? parsed.claims : [];
+    const wrongCount = claims.filter((c) => c.isWrong).length;
+
+    // A game with zero planted errors is unplayable, and one with too many
+    // is unscoreable chaos. Retry once before giving up.
+    if (claims.length < 4 || wrongCount < 1 || wrongCount > 3) {
+      throw new Error(
+        `Model returned ${claims.length} claims with ${wrongCount} wrong`
+      );
+    }
+
+    res.json(parsed);
+  } catch (err) {
+    console.error("Mirror generation failed:", err);
+    res.status(502).json({ error: "Could not build the retelling." });
+  }
+});
+
 // ---------------------------------------------------------------------
 // Teach-off (#34): several people teach the SAME stored lesson in turn.
 // The lesson generator is non-deterministic, so the second player must
