@@ -1427,44 +1427,6 @@ function App() {
             )}
           </div>
 
-          <div className="grandma-wrapper">
-            <div
-              className={`grandma-character ${
-                activeCharacter.image ? "" : "glyph-character"
-              } ${conversation.isSpeaking ? "speaking" : ""}`}
-            >
-              {activeCharacter.image ? (
-                <img
-                  src={activeCharacter.image}
-                  alt={who}
-                />
-              ) : (
-                <span
-                  className="glyph-face"
-                  style={{ background: activeCharacter.color }}
-                >
-                  {activeCharacter.glyph}
-                </span>
-              )}
-            </div>
-
-            <div
-              className={`speaking-indicator ${conversation.isSpeaking ? "visible" : ""
-                }`}
-            >
-              <span className="speaking-dot" />
-              {who} is speaking
-            </div>
-            <div
-              className={`listening-indicator ${conversation.isListening && !conversation.isSpeaking
-                ? "visible"
-                : ""
-                }`}
-            >
-              <span className="listening-dot" />
-              {who} is listening
-            </div>
-          </div>
         </div>
 
         {FEATURES.weaknessTraining && challenge && (
@@ -1488,6 +1450,47 @@ function App() {
         )}
 
         <div className={`session-layout ${voiceOnlyActive ? "voice-only" : ""}`}>
+          <aside className="character-rail">
+            <div
+              className={`grandma-character ${
+                activeCharacter.image ? "" : "glyph-character"
+              } ${conversation.isSpeaking ? "speaking" : ""}`}
+            >
+              {activeCharacter.image ? (
+                <img src={activeCharacter.image} alt={who} />
+              ) : (
+                <span
+                  className="glyph-face"
+                  style={{ background: activeCharacter.color }}
+                >
+                  {activeCharacter.glyph}
+                </span>
+              )}
+            </div>
+
+            <div className="rail-name">{who}</div>
+
+            <div
+              className={`speaking-indicator ${
+                conversation.isSpeaking ? "visible" : ""
+              }`}
+            >
+              <span className="speaking-dot" />
+              {who} is speaking
+            </div>
+
+            <div
+              className={`listening-indicator ${
+                conversation.isListening && !conversation.isSpeaking
+                  ? "visible"
+                  : ""
+              }`}
+            >
+              <span className="listening-dot" />
+              {who} is listening
+            </div>
+          </aside>
+
           <section className="conversation">
             <div>
               {voiceOnlyActive ? (

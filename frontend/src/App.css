@@ -207,7 +207,7 @@ h2 {
 ----------------------------- */
 
 .session {
-  max-width: 1200px;
+  max-width: 1500px;
   margin: 0 auto;
 }
 
@@ -241,8 +241,24 @@ h2 {
 
 .session-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 210px 1fr 330px;
   gap: 24px;
+}
+
+.character-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  padding-top: 12px;
+}
+
+.rail-name {
+  font-weight: 700;
+  font-size: 15px;
 }
 
 .conversation,
@@ -273,9 +289,8 @@ h2 {
 
 .grandma-character {
   position: relative;
-  width: 116px;
-  height: 116px;
-  margin-left: auto;
+  width: 160px;
+  height: 160px;
   transition: transform 0.3s ease;
 }
 
@@ -861,6 +876,18 @@ h2 {
 
   .session-layout {
     grid-template-columns: 1fr;
+  }
+
+  .character-rail {
+    position: static;
+    flex-direction: row;
+    justify-content: center;
+    padding-top: 0;
+  }
+
+  .character-rail .grandma-character {
+    width: 96px;
+    height: 96px;
   }
 
   .progress {
@@ -1524,6 +1551,11 @@ h2 {
   grid-template-columns: 1fr;
   max-width: 640px;
   margin: 0 auto;
+}
+
+.session-layout.voice-only .character-rail {
+  position: static;
+  padding-top: 0;
 }
 
 .voice-only-stage {
