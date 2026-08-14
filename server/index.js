@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import OpenAI from "openai";
+import { createTeachoff, getTeachoff, addRun, rankedRuns } from "./store.js";
 
 // The key lives in the project root .env, one level up from server/.
 dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), "..", ".env") });
@@ -790,6 +791,72 @@ Respond with JSON only, in exactly this shape:
     console.error("Challenge generation failed:", err);
     res.status(502).json({ error: "Could not build a challenge." });
   }
+});
+
+// ---------------------------------------------------------------------
+// Teach-off (#34): several people teach the SAME stored lesson in turn.
+// The lesson generator is non-deterministic, so the second player must
+// fetch player one's exact lesson — regenerating it would make the two
+// scores incomparable.
+
+app.post("/api/teachoff", (req, res) => {
+  const lesson = req.body?.lesson;
+
+  if (!lesson || !Array.isArray(lesson.points) || !lesson.name) {
+    return res.status(400).json({ error: "Expected { lesson }." });
+  }
+
+  const entry = createTeachoff(lesson);
+
+  res.json({ code: entry.code, lesson: entry.lesson });
+});
+
+app.get("/api/teachoff/:code", (req, res) => {
+  const entry = getTeachoff(req.params.code.toUpperCase());
+
+  if (!entry) {
+    return res.status(404).json({ error: "No teach-off with that code." });
+  }
+
+  res.json({
+    code: entry.code,
+    lesson: entry.lesson,
+    runCount: entry.runs.length,
+  });
+});
+
+app.post("/api/teachoff/:code/runs", (req, res) => {
+  const { player, score, understoodCount, totalPoints, summary } =
+    req.body ?? {};
+
+  if (typeof player !== "string" || !player.trim() || typeof score !== "number") {
+    return res.status(400).json({ error: "Expected { player, score }." });
+  }
+
+  const runs = addRun(req.params.code.toUpperCase(), {
+    // Rendered as text by React, but cap and trim it anyway.
+    player: player.trim().slice(0, 24),
+    score: Math.max(0, Math.min(100, Math.round(score))),
+    understoodCount: understoodCount ?? null,
+    totalPoints: totalPoints ?? null,
+    summary: typeof summary === "string" ? summary.slice(0, 200) : "",
+  });
+
+  if (!runs) {
+    return res.status(404).json({ error: "No teach-off with that code." });
+  }
+
+  res.json({ ok: true, runs });
+});
+
+app.get("/api/teachoff/:code/runs", (req, res) => {
+  const entry = getTeachoff(req.params.code.toUpperCase());
+
+  if (!entry) {
+    return res.status(404).json({ error: "No teach-off with that code." });
+  }
+
+  res.json({ code: entry.code, runs: rankedRuns(entry) });
 });
 
 app.listen(PORT, () => {

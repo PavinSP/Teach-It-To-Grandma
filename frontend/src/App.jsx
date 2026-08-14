@@ -165,6 +165,13 @@ function App() {
   const [voiceOnly, setVoiceOnly] = useState(false);
   // #11 — the misconception the character was directed to state, if any.
   const [ambush, setAmbush] = useState(null);
+  // #34 — the teach-off this session belongs to, if any: {code, player}.
+  const [teachoff, setTeachoff] = useState(null);
+  const [teachoffBoard, setTeachoffBoard] = useState(null);
+  const [teachoffName, setTeachoffName] = useState("");
+  const [joinCode, setJoinCode] = useState("");
+  const [joinError, setJoinError] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
   // Two stage directions in one context window produce garbage — every
   // director-channel sender records the student-turn it fired at, and no
   // sender may fire within 2 turns of the last.
@@ -263,6 +270,13 @@ function App() {
     directorTurnRef.current = -99;
   };
 
+  const resetTeachoff = () => {
+    setTeachoff(null);
+    setTeachoffBoard(null);
+    setJoinCode("");
+    setJoinError("");
+  };
+
   // Each lesson attempt scores once. Nulling the id means "no attempt in
   // flight", so a stale recap can never pay out again.
   const resetProgression = () => {
@@ -315,7 +329,12 @@ function App() {
 
     setLessonXp({ ...xp, score });
     setProfileXp(commitLessonXp(xp.total).xp);
-  }, [showRecap, isGrading, aiGrade, selectedTopic, messages]);
+
+    if (FEATURES.teachOff && teachoff && score !== null) {
+      postTeachoffRun(teachoff.code, teachoff.player, score);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showRecap, isGrading, aiGrade, selectedTopic, messages, teachoff]);
 
   // #11 auto-trigger: fires when the 4th student utterance lands — late
   // enough that "I think I've got it now" is plausible, early enough that
@@ -710,11 +729,112 @@ function App() {
       resetRecall();
       resetProgression();
       resetAmbush();
+      resetTeachoff();
     } catch (err) {
       console.error("Could not build challenge:", err);
       setChallengeError("Could not put together a challenge right now.");
     } finally {
       setIsBuildingChallenge(false);
+    }
+  };
+
+  const postTeachoffRun = async (code, player, score) => {
+    try {
+      const response = await fetch(
+        `${GRADING_API}/api/teachoff/${code}/runs`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            player,
+            score,
+            understoodCount: aiGrade?.results
+              ? aiGrade.results.filter((r) => r.understood).length
+              : null,
+            totalPoints: selectedTopic?.points.length ?? null,
+            summary: aiGrade?.summary ?? "",
+          }),
+        }
+      );
+
+      const body = await response.json();
+
+      if (response.ok) {
+        setTeachoffBoard(body.runs);
+      }
+    } catch (err) {
+      // The recap stands without the board.
+      console.error("Could not post teach-off run:", err);
+    }
+  };
+
+  // Creator side: turn the lesson just taught into a shared board, and
+  // post their own already-computed score as the first run.
+  const startTeachoff = async () => {
+    const player = teachoffName.trim();
+
+    if (!player || !selectedTopic || lessonXp?.score == null) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${GRADING_API}/api/teachoff`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lesson: selectedTopic }),
+      });
+
+      const body = await response.json();
+
+      if (!response.ok) {
+        throw new Error(body.error || `Server returned ${response.status}`);
+      }
+
+      setTeachoff({ code: body.code, player });
+      postTeachoffRun(body.code, player, lessonXp.score);
+    } catch (err) {
+      console.error("Could not start teach-off:", err);
+    }
+  };
+
+  // Joiner side: fetch the EXACT stored lesson — never regenerate it, or
+  // the two players' scores stop being comparable.
+  const joinTeachoff = async () => {
+    const code = joinCode.trim().toUpperCase();
+    const player = teachoffName.trim();
+
+    if (!code || !player || isJoining) {
+      return;
+    }
+
+    setIsJoining(true);
+    setJoinError("");
+
+    try {
+      const response = await fetch(`${GRADING_API}/api/teachoff/${code}`);
+      const body = await response.json();
+
+      if (!response.ok) {
+        setJoinError(body.error || "Could not find that teach-off.");
+        return;
+      }
+
+      setSelectedTopic(body.lesson);
+      setTeachoff({ code: body.code, player });
+      setMessages([]);
+      setError("");
+      setAiGrade(null);
+      setShowRecap(false);
+      resetRecall();
+      resetChallenge();
+      resetChallengeCards();
+      resetAmbush();
+      resetProgression();
+    } catch (err) {
+      console.error("Could not join teach-off:", err);
+      setJoinError("Could not reach the server.");
+    } finally {
+      setIsJoining(false);
     }
   };
 
@@ -753,6 +873,7 @@ function App() {
       resetChallenge();
       resetChallengeCards();
       resetAmbush();
+      resetTeachoff();
       resetProgression();
     } catch (err) {
       console.error("Could not build lesson:", err);
@@ -857,6 +978,40 @@ function App() {
 
           {lessonError && (
             <p className="error-message topic-error">{lessonError}</p>
+          )}
+
+          {FEATURES.teachOff && (
+            <div className="teachoff-join">
+              <span className="topic-suggestions-label">
+                Got a Teach-Off code?
+              </span>
+
+              <input
+                className="join-input"
+                value={joinCode}
+                onChange={(event) => setJoinCode(event.target.value)}
+                placeholder="TEACH-XXXX"
+                maxLength={10}
+              />
+
+              <input
+                className="join-input"
+                value={teachoffName}
+                onChange={(event) => setTeachoffName(event.target.value)}
+                placeholder="Your name"
+                maxLength={24}
+              />
+
+              <button
+                className="join-button"
+                onClick={joinTeachoff}
+                disabled={isJoining || !joinCode.trim() || !teachoffName.trim()}
+              >
+                {isJoining ? "Joining…" : "Join →"}
+              </button>
+
+              {joinError && <span className="join-error">{joinError}</span>}
+            </div>
           )}
 
           <div className="topic-suggestions">
@@ -1293,6 +1448,79 @@ function App() {
             )}
           </div>
 
+          {FEATURES.teachOff && !teachoff && lessonXp?.score != null && (
+            <section className="recap-card teachoff-card">
+              <div className="recap-icon">⚔️</div>
+
+              <h2>Think someone can beat that?</h2>
+
+              <p className="teachoff-blurb">
+                They teach the exact same lesson, {who} grades them the same
+                way, one board settles it.
+              </p>
+
+              <div className="teachoff-form">
+                <input
+                  className="teachoff-input"
+                  value={teachoffName}
+                  onChange={(event) => setTeachoffName(event.target.value)}
+                  placeholder="Your name for the board"
+                  maxLength={24}
+                />
+
+                <button
+                  className="teachoff-button"
+                  onClick={startTeachoff}
+                  disabled={!teachoffName.trim()}
+                >
+                  ⚔️ Start a Teach-Off
+                </button>
+              </div>
+            </section>
+          )}
+
+          {FEATURES.teachOff && teachoff && (
+            <section className="recap-card teachoff-card">
+              <div className="recap-icon">⚔️</div>
+
+              <h2>This Teach-Off</h2>
+
+              <p className="teachoff-code-line">
+                Next teacher joins with code{" "}
+                <strong className="teachoff-code">{teachoff.code}</strong> on
+                the start page — same lesson, same judge.
+              </p>
+
+              {teachoffBoard && teachoffBoard.length > 1 ? (
+                <ol className="teachoff-board">
+                  {teachoffBoard.map((run, index) => (
+                    <li
+                      key={`${run.player}-${run.at}`}
+                      className={
+                        run.player === teachoff.player ? "current-player" : ""
+                      }
+                    >
+                      <span className="board-rank">
+                        {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : index + 1}
+                      </span>
+                      <span className="board-player">{run.player}</span>
+                      <span className="board-score">{run.score}</span>
+                      {run.understoodCount !== null && (
+                        <span className="board-detail">
+                          {run.understoodCount}/{run.totalPoints} understood
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="teachoff-first">
+                  You're first on the board. Hand someone the mic.
+                </p>
+              )}
+            </section>
+          )}
+
           {FEATURES.weaknessTraining && recap.userMessages.length > 0 && (
             <div className="challenge-entry">
               <button
@@ -1325,6 +1553,7 @@ function App() {
               resetChallenge();
       resetChallengeCards();
       resetAmbush();
+      resetTeachoff();
       resetProgression();
             }}      >
             ← Teach something else

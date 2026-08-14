@@ -382,3 +382,37 @@ conversational line is the student's, the mic status reads "💭 ___ is
 thinking..." instead of looking frozen. System stage-notes are skipped in
 that derivation, since they land right after a student turn and would mask
 it.
+
+## Session 19 — Teach-off (#34/#29/#31), and the character rail
+
+**Layout first** (user request mid-build): the session sat in a 1200px
+column with dead gutters. The portrait moved out of the header into a
+sticky left rail (portrait, name, speaking/listening), the session widened
+to 1500px, three columns. Also compacted the start-of-lesson view so the
+mic sits above the fold: header text at label size, transcript capped at
+38vh, misconceptions collapsed behind a count. Earlier the mic needed
+scrolling to find.
+
+**Teach-off**: several people teach the SAME stored lesson in sequence on
+one machine; every run is graded identically and lands on one board.
+
+- `server/store.js` — in-memory map mirrored to `server/data/teachoffs.json`
+  (gitignored). **The debounced write was a real bug caught in testing**:
+  runs posted, the 300ms timer still pending, `node --watch` killed the
+  process on a file save — board gone. Persist is now synchronous on every
+  mutation; the retest survives an immediate restart. (`--watch` only
+  restarts on imported modules, so writing the data file doesn't cycle it.)
+- Codes read aloud across a room: `TEACH-XXXX` from an alphabet without
+  0/O/1/I/L. Lowercase entry accepted.
+- FINDING B honoured: the joiner receives the creator's lesson object
+  byte-identical (round-trip verified) — never regenerated, so the scores
+  are comparable. Joining also skips lesson generation entirely: round two
+  starts faster than round one.
+- Ranking: score desc, earlier run wins ties — a later tie never displaces
+  whoever set it.
+- Honesty rules from the plan: the board is titled "This Teach-Off", never
+  "Leaderboard"; a single-run board renders "You're first. Hand someone the
+  mic." instead of a one-row table; no seeded competitors, ever.
+- The creator's own run posts with their already-computed Feynman Score;
+  the joiner's posts automatically when their attempt commits (inside the
+  once-per-attempt guard, so double-Finish can't double-post).

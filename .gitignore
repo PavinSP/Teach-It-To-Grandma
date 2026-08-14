@@ -20,3 +20,4 @@ npm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 .idea
+server/data/

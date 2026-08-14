@@ -57,6 +57,11 @@ const DEFAULTS = {
   // into one concrete action, and shows the listener's real stuck-moments
   // instead of substring-matched guesses.
   richNotes: true,
+
+  // #34 — several people teach the SAME stored lesson in turn, one board.
+  // Same machine, sequential — the only multiplayer that honestly works
+  // without deployment.
+  teachOff: true,
 };
 
 function resolve(defaults) {

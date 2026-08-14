@@ -1687,3 +1687,129 @@ details.misconceptions-panel > summary::-webkit-details-marker {
 details.misconceptions-panel .misconceptions-list {
   margin-top: 10px;
 }
+
+/* -----------------------------
+   Teach-off (#34)
+----------------------------- */
+
+.teachoff-card {
+  margin-top: 24px;
+}
+
+.teachoff-blurb {
+  margin: 0 0 14px;
+  opacity: 0.75;
+}
+
+.teachoff-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.teachoff-input,
+.join-input {
+  padding: 11px 16px;
+  border: 1px solid #d8d0c4;
+  border-radius: 999px;
+  background: #fffdf8;
+  font-size: 14px;
+  outline: none;
+}
+
+.teachoff-input:focus,
+.join-input:focus {
+  border-color: #26221d;
+}
+
+.teachoff-button,
+.join-button {
+  padding: 11px 20px;
+  border: none;
+  border-radius: 999px;
+  background: #26221d;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.teachoff-button:disabled,
+.join-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.teachoff-code-line {
+  margin: 0 0 16px;
+}
+
+.teachoff-code {
+  font-size: 22px;
+  letter-spacing: 0.06em;
+  padding: 3px 12px;
+  border-radius: 8px;
+  background: rgba(38, 34, 29, 0.07);
+}
+
+.teachoff-first {
+  margin: 0;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.teachoff-board {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.teachoff-board li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(38, 34, 29, 0.03);
+}
+
+.teachoff-board li.current-player {
+  background: rgba(47, 122, 79, 0.08);
+  border: 1px solid rgba(47, 122, 79, 0.3);
+}
+
+.board-rank {
+  min-width: 30px;
+}
+
+.board-player {
+  font-weight: 700;
+  flex: 1;
+}
+
+.board-score {
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.board-detail {
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.teachoff-join {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.join-error {
+  color: #9c3327;
+  font-size: 14px;
+}
