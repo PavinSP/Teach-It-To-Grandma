@@ -134,6 +134,9 @@ function App() {
   const [isExplaining, setIsExplaining] = useState(false);
   const [recallText, setRecallText] = useState("");
   const [askedForRecall, setAskedForRecall] = useState(false);
+  const [challenge, setChallenge] = useState(null);
+  const [isBuildingChallenge, setIsBuildingChallenge] = useState(false);
+  const [challengeError, setChallengeError] = useState("");
   const transcriptEndRef = useRef(null);
   // Her next reply after we ask is the recall itself — catch it as it lands.
   const pendingRecallRef = useRef(false);
@@ -183,6 +186,14 @@ function App() {
     setRecallText("");
     setAskedForRecall(false);
     pendingRecallRef.current = false;
+  };
+
+  // Same idea for the weakness-training re-run — a stale challenge from the
+  // last topic must never bleed into the next one.
+  const resetChallenge = () => {
+    setChallenge(null);
+    setIsBuildingChallenge(false);
+    setChallengeError("");
   };
 
   const startConversation = async () => {
@@ -335,6 +346,65 @@ function App() {
     ]);
   };
 
+  // Diagnoses the one weakness that actually showed up, then sends the
+  // student back into the same lesson to fix specifically that. For a
+  // jargon diagnosis, the banned words get enforced live in the sidebar.
+  const takeChallenge = async () => {
+    if (isBuildingChallenge) {
+      return;
+    }
+
+    const priorTranscript = messages.filter((m) => m.meta !== "prompt");
+    const said = priorTranscript
+      .filter((m) => m.source === "user")
+      .map((m) => m.message || "")
+      .join(" ")
+      .toLowerCase();
+
+    setIsBuildingChallenge(true);
+    setChallengeError("");
+
+    try {
+      const response = await fetch(`${GRADING_API}/api/challenge`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topicName: selectedTopic.name,
+          points: selectedTopic.points,
+          transcript: priorTranscript,
+          unexplainedTerms: explainBack?.unexplainedTerms ?? [],
+          priorWeakness: null,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Challenge server returned ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Belt and braces: the server already drops terms the student never
+      // said, but a banned word that can never appear in the transcript
+      // would be an unwinnable, unfair constraint — never trust and render.
+      const bannedTerms = (data.bannedTerms ?? []).filter((term) =>
+        said.includes(term.toLowerCase())
+      );
+
+      setChallenge({ ...data, bannedTerms });
+
+      // Back into the same lesson, clean, for the re-run.
+      setShowRecap(false);
+      setMessages([]);
+      setAiGrade(null);
+      resetRecall();
+    } catch (err) {
+      console.error("Could not build challenge:", err);
+      setChallengeError("Could not put together a challenge right now.");
+    } finally {
+      setIsBuildingChallenge(false);
+    }
+  };
+
   // Any topic the student types becomes a lesson: the server decides what
   // has to be covered for a beginner to actually follow it.
   const startLesson = async (topic) => {
@@ -367,6 +437,7 @@ function App() {
       setAiGrade(null);
       setShowRecap(false);
       resetRecall();
+      resetChallenge();
     } catch (err) {
       console.error("Could not build lesson:", err);
 
@@ -461,6 +532,24 @@ function App() {
   const progress = calculateProgress(selectedTopic, messages);
   const completedCount = progress.filter(Boolean).length;
   const totalCount = progress.length;
+
+  // A banned word turns red the instant it's spoken. Recomputed on every
+  // render from the live transcript — no separate tracking state needed.
+  const bannedHits = new Set();
+
+  if (challenge?.bannedTerms?.length) {
+    const saidSoFar = messages
+      .filter((m) => m.source === "user" && m.meta !== "prompt")
+      .map((m) => m.message || "")
+      .join(" ")
+      .toLowerCase();
+
+    for (const term of challenge.bannedTerms) {
+      if (saidSoFar.includes(term.toLowerCase())) {
+        bannedHits.add(term);
+      }
+    }
+  }
   const recap = generateRecap(
     selectedTopic,
     progress,
@@ -722,6 +811,25 @@ function App() {
               </p>
             )}
           </div>
+
+          {FEATURES.weaknessTraining && recap.userMessages.length > 0 && (
+            <div className="challenge-entry">
+              <button
+                className="challenge-button"
+                onClick={takeChallenge}
+                disabled={isBuildingChallenge}
+              >
+                {isBuildingChallenge
+                  ? "Working out what to target…"
+                  : "🎯 Take the challenge →"}
+              </button>
+
+              {challengeError && (
+                <p className="error-message">{challengeError}</p>
+              )}
+            </div>
+          )}
+
           <button
             className="new-lesson-button"
             onClick={() => {
@@ -733,6 +841,7 @@ function App() {
               setTopicInput("");
               setLessonError("");
               resetRecall();
+              resetChallenge();
             }}      >
             ← Teach something else
           </button>
@@ -754,6 +863,7 @@ function App() {
             setTopicInput("");
             setLessonError("");
             resetRecall();
+      resetChallenge();
           }}
         >
           ← Teach something else
@@ -804,6 +914,17 @@ function App() {
             </div>
           </div>
         </div>
+
+        {FEATURES.weaknessTraining && challenge && (
+          <div className="challenge-banner">
+            <div className="challenge-banner-title">
+              🎯 {challenge.challengeTitle}
+            </div>
+
+            <p className="challenge-diagnosis">{challenge.diagnosis}</p>
+            <p className="challenge-instruction">{challenge.instruction}</p>
+          </div>
+        )}
 
         <div className="session-layout">
           <section className="conversation">
@@ -956,6 +1077,32 @@ function App() {
                 </div>
               );
             })}
+
+            {FEATURES.weaknessTraining && challenge?.bannedTerms?.length > 0 && (
+              <div className="banned-terms-panel">
+                <div className="banned-terms-title">DON'T SAY</div>
+
+                <div className="banned-chips">
+                  {challenge.bannedTerms.map((term) => (
+                    <span
+                      key={term}
+                      className={`banned-chip ${
+                        bannedHits.has(term) ? "hit" : ""
+                      }`}
+                    >
+                      {term}
+                    </span>
+                  ))}
+                </div>
+
+                {bannedHits.size > 0 && (
+                  <p className="banned-hint">
+                    {bannedHits.size} slipped through — that's fine, keep
+                    going.
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* The celebration is for full coverage, but the way out of the
                 lesson is not — an explanation that misses a keyword must

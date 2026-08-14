@@ -1069,3 +1069,100 @@ h2 {
   font-size: 13px;
   opacity: 0.55;
 }
+
+/* -----------------------------
+   Weakness training (#22)
+----------------------------- */
+
+.challenge-entry {
+  margin-top: 18px;
+}
+
+.challenge-button {
+  padding: 13px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  border-radius: 999px;
+  background: #b0522e;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.challenge-button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.challenge-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.challenge-banner {
+  margin: 0 0 18px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(176, 82, 46, 0.35);
+  background: rgba(176, 82, 46, 0.06);
+}
+
+.challenge-banner-title {
+  font-weight: 800;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+.challenge-diagnosis {
+  margin: 0 0 6px;
+  opacity: 0.8;
+}
+
+.challenge-instruction {
+  margin: 0;
+  font-weight: 600;
+}
+
+.banned-terms-panel {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #e6ded2;
+}
+
+.banned-terms-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+  margin-bottom: 10px;
+}
+
+.banned-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.banned-chip {
+  padding: 6px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(176, 58, 46, 0.35);
+  color: #9c3327;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.banned-chip.hit {
+  background: #9c3327;
+  border-color: #9c3327;
+  color: #fff;
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.banned-hint {
+  margin: 10px 0 0;
+  font-size: 13px;
+  opacity: 0.55;
+}

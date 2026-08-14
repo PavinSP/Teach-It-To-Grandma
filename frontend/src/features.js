@@ -23,6 +23,10 @@ const DEFAULTS = {
   // recap, and the riskier live "ask her" button during the call.
   explainBack: true,
   spokenRecall: true,
+
+  // #22 — a re-run targeting whatever specifically went wrong last time.
+  // For jargon, the banned words are enforced live in the sidebar.
+  weaknessTraining: true,
 };
 
 function resolve(defaults) {

@@ -122,3 +122,35 @@ line would be graded as the student's words.
 
 **Measured**: a jargon-dense but technically correct explanation of overfitting
 scored 0/4 recalled with five undefined terms.
+
+## Session 10 — Weakness training (#22)
+
+Second feature off `PLAN.md`. Diagnoses the one thing that actually went wrong
+in a lesson, then sends the student back into the same topic to fix
+specifically that.
+
+**One weakness, not a checklist**: `POST /api/challenge` picks exactly one of
+`jargon | missing-steps | no-examples | too-abstract` from the transcript,
+rather than listing everything wrong — a single named pattern is something a
+student can act on, six caveats aren't.
+
+**Banned terms must be words the student actually said.** For a jargon
+diagnosis the model proposes 3-5 terms; the server strips any that don't
+literally appear in the transcript before responding, and the client repeats
+the same check before rendering. A banned word the student never said would be
+an unwinnable, unenforceable constraint — it could never appear in the
+transcript to flag as a slip.
+
+**Live enforcement is pure re-render, no extra state.** `bannedHits` is
+recomputed every render straight from `messages` — a term shows red and
+struck-through the instant its word appears in what the student just said, no
+polling, no separate tracking array to fall out of sync.
+
+**Reuses #9's `unexplainedTerms`** as one input signal when available, rather
+than re-deriving jargon detection from scratch — the two features compose.
+
+Verified: a jargon-heavy neural-networks explanation correctly diagnosed
+`jargon` with 4 banned terms, all verifiably said; a same-length recursion
+explanation missing a worked example correctly diagnosed `no-examples` with
+an empty banned list (no live enforcement for non-jargon weaknesses, by
+design — there's nothing to check a word against).

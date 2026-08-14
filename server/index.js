@@ -394,6 +394,126 @@ Finally, in "unexplainedTerms", list every word the student used but never expla
   }
 });
 
+// Diagnoses the one weakness that actually shows up in this lesson, and for
+// jargon specifically, builds a banned-word list the student can be held to
+// on a re-run — enforced live, client-side, against words they used.
+app.post("/api/challenge", async (req, res) => {
+  const { topicName, points, transcript, unexplainedTerms, priorWeakness } =
+    req.body ?? {};
+
+  if (!topicName || !Array.isArray(points) || !Array.isArray(transcript)) {
+    return res
+      .status(400)
+      .json({ error: "Expected { topicName, points[], transcript[] }." });
+  }
+
+  const studentText = transcript
+    .filter((line) => line.source === "user" && line.meta !== "prompt")
+    .map((line) => line.message)
+    .filter(Boolean)
+    .join("\n");
+
+  if (!studentText.trim()) {
+    return res.status(422).json({
+      error: "There's nothing to diagnose yet — teach a lesson first.",
+    });
+  }
+
+  const pointList = points.map((point, i) => `${i + 1}. ${point}`).join("\n");
+
+  const terms = Array.isArray(unexplainedTerms) ? unexplainedTerms : [];
+  const termsLine = terms.length
+    ? `\nWords the student used but never defined: ${terms.join(", ")}.`
+    : "";
+
+  const priorLine = priorWeakness
+    ? `\nThis student's recurring weakness across recent sessions has been "${priorWeakness}". Prefer targeting that again unless this transcript clearly points somewhere else.`
+    : "";
+
+  const prompt = `A student just tried to explain "${topicName}" to a grandmother who knows nothing about the subject.
+
+Here is everything the student said:
+---
+${studentText}
+---
+
+The learning points they were meant to cover:
+${pointList}${termsLine}${priorLine}
+
+Diagnose the ONE weakness that best explains where this explanation fell short, choosing exactly one of: "jargon" (leans on technical words without explaining them), "missing-steps" (skips the reasoning between ideas), "no-examples" (stays abstract, never grounds it in something concrete), "too-abstract" (correct but never made tangible).
+
+Then design a short re-run challenge that specifically targets that weakness. If the weakness is "jargon", list 3-5 banned terms the student must avoid on the re-run — every one of these MUST be a word or short phrase the student actually said above, copied exactly. If the weakness is anything else, return an empty bannedTerms list.
+
+Respond with JSON only, in exactly this shape:
+{
+  "weakness": "jargon" | "missing-steps" | "no-examples" | "too-abstract",
+  "diagnosis": "<one or two sentences, addressed to the student as Grandma would say it, naming the actual pattern>",
+  "challengeTitle": "<a short punchy name for the re-run, 2-5 words>",
+  "instruction": "<one sentence telling the student what to do differently this time>",
+  "bannedTerms": ["<word actually used above>", "..."],
+  "successCriterion": "<one sentence describing what success on the re-run looks like>"
+}`;
+
+  try {
+    const completion = await client.chat.completions.create({
+      model: MODEL,
+      max_completion_tokens: 600,
+      messages: [{ role: "user", content: prompt }],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "challenge",
+          schema: {
+            type: "object",
+            properties: {
+              weakness: {
+                type: "string",
+                enum: ["jargon", "missing-steps", "no-examples", "too-abstract"],
+              },
+              diagnosis: { type: "string" },
+              challengeTitle: { type: "string" },
+              instruction: { type: "string" },
+              bannedTerms: { type: "array", items: { type: "string" } },
+              successCriterion: { type: "string" },
+            },
+            required: [
+              "weakness",
+              "diagnosis",
+              "challengeTitle",
+              "instruction",
+              "bannedTerms",
+              "successCriterion",
+            ],
+            additionalProperties: false,
+          },
+        },
+      },
+    });
+
+    const raw = completion.choices?.[0]?.message?.content;
+
+    if (!raw) {
+      throw new Error("Model returned no content");
+    }
+
+    const parsed = JSON.parse(raw);
+
+    // A banned term the student never actually said is an unfair, unwinnable
+    // constraint — it can never be enforced live, since it will never appear
+    // in the transcript to flag.
+    const said = studentText.toLowerCase();
+
+    parsed.bannedTerms = (parsed.bannedTerms ?? []).filter(
+      (term) => typeof term === "string" && said.includes(term.toLowerCase())
+    );
+
+    res.json(parsed);
+  } catch (err) {
+    console.error("Challenge generation failed:", err);
+    res.status(502).json({ error: "Could not build a challenge." });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Grading server listening on http://localhost:${PORT}`);
 });
