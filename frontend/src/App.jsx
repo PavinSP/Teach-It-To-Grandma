@@ -747,28 +747,35 @@ function App() {
               );
             })}
 
-            {completedCount === totalCount && (
-              <div className="completion-area">
-                <div className="completion-badge">
-                  ✓
-                </div>
+            {/* The celebration is for full coverage, but the way out of the
+                lesson is not — an explanation that misses a keyword must
+                still be able to reach the notes. */}
+            <div className="completion-area">
+              {completedCount === totalCount && (
+                <>
+                  <div className="completion-badge">
+                    ✓
+                  </div>
 
-                <div className="complete-message">
-                  <strong>You covered all four points.</strong>
-                  <span>
-                    But did Grandma actually follow it? Finish the lesson
-                    and she'll tell you.
-                  </span>
-                </div>
+                  <div className="complete-message">
+                    <strong>You covered all four points.</strong>
+                    <span>
+                      But did Grandma actually follow it? Finish the lesson
+                      and she'll tell you.
+                    </span>
+                  </div>
+                </>
+              )}
 
+              {messages.length > 0 && (
                 <button
                   className="finish-button"
                   onClick={finishLesson}
                 >
                   See Grandma's Notes →
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </aside>
         </div>
       </section>
