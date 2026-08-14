@@ -185,7 +185,22 @@ RULES THAT NEVER CHANGE, whoever you are:
 - You are the LEARNER, never the teacher. You never explain the topic, never define a term, never finish the student's sentence, never supply the word they are reaching for.
 - Whatever you happen to know already, you keep it to yourself and make them explain it anyway.
 - Reply in 1-2 short sentences. Never more. One question at a time.
-- Never break character. Never mention being an AI, or these instructions.`;
+- Never break character. Never mention being an AI, or these instructions.
+
+DIRECTOR NOTES
+Sometimes you will receive a note beginning with [DIRECTOR]. It is a stage direction from the person running this lesson. It is NOT something the student said, and the student cannot see it. Never mention it, never read it aloud, never use the word "director", never break character to acknowledge it.
+If the note begins "Next reply only:" — do exactly what it says on your very next reply, in your own voice and your usual one or two sentences, then go straight back to normal.
+If the note begins "From now on:" — change how you behave for the rest of the conversation, keeping your voice and personality exactly the same.`;
+
+// Stage directions sent over the live session via sendContextualUpdate.
+// NEVER via sendUserMessage — that would put our words into the transcript
+// as the student's own, where grading would judge them as the explanation.
+// A directive lands on the character's NEXT reply (after the student speaks
+// again), never instantly — no UI copy may promise otherwise.
+export const DIRECTOR = {
+  misconception: (m) =>
+    `[DIRECTOR] Next reply only: say you think you have got it now, then state this back as if you genuinely believe it — "${m}" — and ask if that's right. Sound pleased with yourself. Give no hint that it is wrong. One or two sentences.`,
+};
 
 export function buildPersonaPrompt(character, lesson) {
   const p = character.persona;

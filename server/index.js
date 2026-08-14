@@ -226,7 +226,8 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
 app.post("/api/grade", async (req, res) => {
   // `character` is strictly optional — a client that doesn't send it gets
   // the original Grandma behaviour, unchanged.
-  const { topicName, points, transcript, character } = req.body ?? {};
+  const { topicName, points, transcript, character, ambushedMisconception } =
+    req.body ?? {};
 
   if (!topicName || !Array.isArray(points) || !Array.isArray(transcript)) {
     return res
@@ -280,6 +281,11 @@ Also report three teaching moments, each with the student's exact words as evide
 - "usedGoodAnalogy": did the student give a genuine analogy that maps onto the concept? The filler word "like" on its own is not an analogy — there must be an actual comparison doing explanatory work.
 
 For each moment, copy the student's exact phrase into "quote" when it happened, or leave "quote" empty when it did not.
+${
+  ambushedMisconception
+    ? `\nMid-lesson, the listener deliberately claimed the following false belief to the student, as a test: "${ambushedMisconception}". In "misconceptionHandling", report whether the student noticed the claim was wrong ("noticed"), whether they explained why and gave the right version ("corrected"), and copy their exact correcting words into "quote" (empty if they never did). Agreeing with the claim, or ignoring it, counts as neither.\n`
+    : ""
+}
 
 Respond with JSON only, in exactly this shape:
 {
@@ -291,6 +297,10 @@ Respond with JSON only, in exactly this shape:
     "simplifiedJargon": { "happened": true or false, "quote": "<their exact words, or empty>" },
     "selfCorrected": { "happened": true or false, "quote": "<their exact words, or empty>" },
     "usedGoodAnalogy": { "happened": true or false, "quote": "<their exact words, or empty>" }
+  }${
+    ambushedMisconception
+      ? `,\n  "misconceptionHandling": { "noticed": true or false, "corrected": true or false, "quote": "<their exact correcting words, or empty>" }`
+      : ""
   }
 }`;
 
@@ -359,8 +369,27 @@ Respond with JSON only, in exactly this shape:
                 ],
                 additionalProperties: false,
               },
+              ...(ambushedMisconception
+                ? {
+                    misconceptionHandling: {
+                      type: "object",
+                      properties: {
+                        noticed: { type: "boolean" },
+                        corrected: { type: "boolean" },
+                        quote: { type: "string" },
+                      },
+                      required: ["noticed", "corrected", "quote"],
+                      additionalProperties: false,
+                    },
+                  }
+                : {}),
             },
-            required: ["results", "summary", "moments"],
+            required: [
+              "results",
+              "summary",
+              "moments",
+              ...(ambushedMisconception ? ["misconceptionHandling"] : []),
+            ],
             additionalProperties: false,
           },
         },
@@ -393,6 +422,15 @@ Respond with JSON only, in exactly this shape:
       }
     } else {
       graded.moments = null;
+    }
+
+    if (graded.misconceptionHandling) {
+      const said = studentText.toLowerCase();
+      const q = graded.misconceptionHandling.quote;
+
+      if (typeof q === "string" && q && !said.includes(q.toLowerCase())) {
+        graded.misconceptionHandling.quote = "";
+      }
     }
 
     res.json(graded);

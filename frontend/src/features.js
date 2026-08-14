@@ -46,6 +46,12 @@ const DEFAULTS = {
   // #18 — hide the transcript and checklist mid-lesson; pure conversation,
   // results only at the end. State keeps accumulating, only rendering changes.
   voiceOnly: true,
+
+  // #11 — mid-lesson, the character confidently states a false belief the
+  // student has to catch. Default OFF until proven live (?on=misconceptionAmbush
+  // to test): the riskiest feature in the plan, because it makes the AI wrong
+  // on purpose in front of people.
+  misconceptionAmbush: false,
 };
 
 function resolve(defaults) {
@@ -74,6 +80,21 @@ function resolve(defaults) {
       flags[name] = false;
     } else {
       console.warn(`Unknown feature flag in ?off=: "${name}"`);
+    }
+  }
+
+  // The mirror of ?off= — for features that ship default-off until they've
+  // been proven live. ?safe beats both.
+  const on = (params.get("on") ?? "")
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+
+  for (const name of on) {
+    if (name in flags) {
+      flags[name] = true;
+    } else {
+      console.warn(`Unknown feature flag in ?on=: "${name}"`);
     }
   }
 

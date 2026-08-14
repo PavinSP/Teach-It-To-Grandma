@@ -9,7 +9,7 @@ import {
   loadProfile,
   commitLessonXp,
 } from "./progression";
-import { CHARACTERS, buildPersonaPrompt } from "./characters";
+import { CHARACTERS, buildPersonaPrompt, DIRECTOR } from "./characters";
 import "./App.css";
 
 const AGENT_ID = "agent_8901kzzhzexhe2qt3903amp09nnq";
@@ -73,7 +73,9 @@ function calculateProgress(topic, messages) {
 }
 function generateRecap(topic, progress, messages, who = "Grandma") {
   const grandmaMessages = messages
-    .filter((message) => message.source !== "user")
+    .filter(
+      (message) => message.source !== "user" && message.source !== "system"
+    )
     .map((message) => message.message || "")
     .filter(Boolean);
 
@@ -161,6 +163,12 @@ function App() {
   // #18 — a view preference, not session state: it survives lesson changes
   // and never touches what gets recorded or graded.
   const [voiceOnly, setVoiceOnly] = useState(false);
+  // #11 — the misconception the character was directed to state, if any.
+  const [ambush, setAmbush] = useState(null);
+  // Two stage directions in one context window produce garbage — every
+  // director-channel sender records the student-turn it fired at, and no
+  // sender may fire within 2 turns of the last.
+  const directorTurnRef = useRef(-99);
   const transcriptEndRef = useRef(null);
   // Her next reply after we ask is the recall itself — catch it as it lands.
   const pendingRecallRef = useRef(false);
@@ -241,6 +249,11 @@ function App() {
     setChallengeSentNotice("");
   };
 
+  const resetAmbush = () => {
+    setAmbush(null);
+    directorTurnRef.current = -99;
+  };
+
   // Each lesson attempt scores once. Nulling the id means "no attempt in
   // flight", so a stale recap can never pay out again.
   const resetProgression = () => {
@@ -294,6 +307,42 @@ function App() {
     setLessonXp({ ...xp, score });
     setProfileXp(commitLessonXp(xp.total).xp);
   }, [showRecap, isGrading, aiGrade, selectedTopic, messages]);
+
+  // #11 auto-trigger: fires when the 4th student utterance lands — late
+  // enough that "I think I've got it now" is plausible, early enough that
+  // there's lesson left to correct it in. Shift+M fires it manually, so a
+  // rehearsal never depends on counting turns.
+  useEffect(() => {
+    if (!FEATURES.misconceptionAmbush || ambush) {
+      return;
+    }
+
+    const last = messages[messages.length - 1];
+    const turns = messages.filter(
+      (m) => m.source === "user" && m.meta !== "prompt"
+    ).length;
+
+    if (last?.source === "user" && last.meta !== "prompt" && turns === 4) {
+      fireAmbush();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
+
+  useEffect(() => {
+    if (!FEATURES.misconceptionAmbush) {
+      return;
+    }
+
+    const onKey = (event) => {
+      if (event.shiftKey && event.key.toLowerCase() === "m") {
+        fireAmbush();
+      }
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ambush, isConnected, selectedTopic, messages]);
 
   // The score counts up over ~800ms — unless the viewer asked for reduced
   // motion, in which case it lands immediately.
@@ -427,7 +476,9 @@ function App() {
         body: JSON.stringify({
           topicName: selectedTopic.name,
           points: selectedTopic.points,
-          transcript: messages.filter((m) => m.meta !== "prompt"),
+          transcript: messages.filter(
+            (m) => m.meta !== "prompt" && m.source !== "system"
+          ),
           ...(FEATURES.characterPicker
             ? {
                 character: {
@@ -437,6 +488,7 @@ function App() {
                 },
               }
             : {}),
+          ...(ambush ? { ambushedMisconception: ambush.text } : {}),
         }),
       });
 
@@ -478,7 +530,9 @@ function App() {
         body: JSON.stringify({
           topicName: selectedTopic.name,
           points: selectedTopic.points,
-          transcript: messages.filter((m) => m.meta !== "prompt"),
+          transcript: messages.filter(
+            (m) => m.meta !== "prompt" && m.source !== "system"
+          ),
           // If the listener already said it out loud, analyse those words.
           grandmaRecall: recallText || undefined,
           ...(FEATURES.characterPicker ? { characterName: who } : {}),
@@ -524,10 +578,19 @@ function App() {
   // on-screen confirmation is what turns that unavoidable delay into intent
   // rather than a button that looks like it did nothing.
   const sendChallengeCard = (card) => {
-    if (!isConnected || usedChallengeIds.includes(card.id)) {
+    const turns = messages.filter(
+      (m) => m.source === "user" && m.meta !== "prompt"
+    ).length;
+
+    if (
+      !isConnected ||
+      usedChallengeIds.includes(card.id) ||
+      turns - directorTurnRef.current < 2
+    ) {
       return;
     }
 
+    directorTurnRef.current = turns;
     conversation.sendContextualUpdate(
       `The student has accepted a challenge. On your next turn, ask them this in your own words, in one short sentence, without explaining why you are asking: ${card.instruction}`
     );
@@ -535,6 +598,41 @@ function App() {
     setUsedChallengeIds((previous) => [...previous, card.id]);
     setChallengeSentNotice(`Challenge sent — ${who} will ask you next.`);
     setTimeout(() => setChallengeSentNotice(""), 6000);
+  };
+
+  // #11 — direct the character to state a misconception as if it were their
+  // own conclusion. Fires once per lesson; the student has to catch it.
+  const fireAmbush = () => {
+    const pool = selectedTopic?.misconceptions ?? [];
+    const turns = messages.filter(
+      (m) => m.source === "user" && m.meta !== "prompt"
+    ).length;
+
+    if (
+      ambush ||
+      !isConnected ||
+      pool.length === 0 ||
+      turns - directorTurnRef.current < 2
+    ) {
+      return;
+    }
+
+    const text = pool[0];
+
+    directorTurnRef.current = turns;
+    conversation.sendContextualUpdate(DIRECTOR.misconception(text));
+    setAmbush({ text, firedAtTurn: turns });
+
+    // A visible beat in the transcript, so the moment reads as designed
+    // rather than as the AI hallucinating. Tagged "system": never graded,
+    // never counted as coverage, never sent to the server.
+    setMessages((previous) => [
+      ...previous,
+      {
+        source: "system",
+        message: `${who} is about to get something wrong. Catch ${obj}.`,
+      },
+    ]);
   };
 
   // Diagnoses the one weakness that actually showed up, then sends the
@@ -545,7 +643,9 @@ function App() {
       return;
     }
 
-    const priorTranscript = messages.filter((m) => m.meta !== "prompt");
+    const priorTranscript = messages.filter(
+      (m) => m.meta !== "prompt" && m.source !== "system"
+    );
     const said = priorTranscript
       .filter((m) => m.source === "user")
       .map((m) => m.message || "")
@@ -590,6 +690,7 @@ function App() {
       setAiGrade(null);
       resetRecall();
       resetProgression();
+      resetAmbush();
     } catch (err) {
       console.error("Could not build challenge:", err);
       setChallengeError("Could not put together a challenge right now.");
@@ -632,6 +733,7 @@ function App() {
       resetRecall();
       resetChallenge();
       resetChallengeCards();
+      resetAmbush();
       resetProgression();
     } catch (err) {
       console.error("Could not build lesson:", err);
@@ -925,6 +1027,32 @@ function App() {
             </section>
           )}
 
+          {ambush && aiGrade?.misconceptionHandling && (
+            <section className="recap-card myth-card">
+              <div className="recap-icon">🧨</div>
+
+              <h2>The trap {who} set</h2>
+
+              <p className="myth-claim">
+                Mid-lesson, {who} claimed: “{ambush.text}”
+              </p>
+
+              {aiGrade.misconceptionHandling.corrected ? (
+                <p className="myth-verdict caught">
+                  ✓ You caught it
+                  {aiGrade.misconceptionHandling.quote && (
+                    <em> — “{aiGrade.misconceptionHandling.quote}”</em>
+                  )}
+                </p>
+              ) : (
+                <p className="myth-verdict missed">
+                  ○ {who} walked away still believing it. That false idea
+                  went unchallenged.
+                </p>
+              )}
+            </section>
+          )}
+
           {FEATURES.explainBack && isExplaining && !explainBack && (
             <section className="recap-card">
               <div className="recap-icon">🔄</div>
@@ -1138,6 +1266,7 @@ function App() {
               resetRecall();
               resetChallenge();
       resetChallengeCards();
+      resetAmbush();
       resetProgression();
             }}      >
             ← Teach something else
@@ -1162,6 +1291,7 @@ function App() {
             resetRecall();
       resetChallenge();
       resetChallengeCards();
+      resetAmbush();
       resetProgression();
           }}
         >
@@ -1338,6 +1468,17 @@ function App() {
                 )}
 
                 {messages.map((message, index) => {
+                  if (message.source === "system") {
+                    return (
+                      <div
+                        className="system-message"
+                        key={`${index}-${message.message}`}
+                      >
+                        {message.message}
+                      </div>
+                    );
+                  }
+
                   const role =
                     message.source === "user"
                       ? "YOU"

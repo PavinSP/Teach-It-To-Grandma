@@ -299,3 +299,38 @@ The one landmine PLAN.md called out is handled: the usual finish button
 lives inside the sidebar this mode removes, so the voice-only stage renders
 its own, visible from the first real student message. It's a view
 preference, not session state — survives topic changes, resets nothing.
+
+## Session 16 — Misconception ambush (#11)
+
+The riskiest feature in the plan: mid-lesson, the character confidently
+states one of the lesson's pre-generated misconceptions as if it were their
+own conclusion, and the student has to catch it. Ships **default off** —
+`?on=misconceptionAmbush` to arm it — because it makes the AI wrong on
+purpose in front of people; the flag system gained `?on=` support for
+exactly this staged-rollout case.
+
+**Mechanism**: `sendContextualUpdate` with a `[DIRECTOR]` stage direction,
+never `sendUserMessage` (which would put our words into the graded
+transcript as the student's own). Director Notes ship inside every generated
+persona in `characters.js` — a realisation that removed the dashboard
+dependency, since with the picker on our persona replaces the dashboard
+prompt entirely. The dashboard copy of the block is written in
+`elevenlabs-agent-prompt.md` (committed before any of this, per D1) for the
+`?off=characterPicker` fallback path, not yet pasted into the dashboard.
+
+**Timing**: auto-fires when the 4th student utterance lands; Shift+M fires
+it manually so a rehearsal never depends on counting turns. A shared
+`directorTurnRef` mutex keeps it ≥2 student turns away from any challenge
+card — two stage directions in one context window produce garbage.
+
+**The catch is judged from what we know, not what she said**: the grade
+request carries the exact claim she was directed to make, so the grader
+judges the student's response to a known statement — no need to parse her
+transcript line. Verified: a correction returns noticed+corrected with the
+student's verbatim words (same server-side quote check as everything else);
+agreeing with her returns both false; and with no ambush the response block
+is absent entirely (the schema is assembled per-request).
+
+**Transcript hygiene**: the on-screen "she's about to get something wrong"
+beat is a `source:"system"` row — rendered as a centred stage note, excluded
+from grading payloads, keyword coverage, and the recap's quote lists.
