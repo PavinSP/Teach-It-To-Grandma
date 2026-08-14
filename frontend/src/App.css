@@ -644,6 +644,40 @@ h2 {
 }
 
 /* -----------------------------
+   Mic controls
+----------------------------- */
+
+.mic-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.mic-button.muted {
+  background: rgba(38, 34, 29, 0.35);
+  animation: none;
+}
+
+.end-call-button {
+  padding: 12px 20px;
+  border: 1px solid rgba(38, 34, 29, 0.2);
+  border-radius: 999px;
+  background: transparent;
+  color: #26221d;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.end-call-button:hover {
+  background: rgba(38, 34, 29, 0.06);
+  border-color: rgba(38, 34, 29, 0.35);
+}
+
+/* -----------------------------
    AI grading
 ----------------------------- */
 

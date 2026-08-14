@@ -664,19 +664,40 @@ function App() {
                 </>
               ) : (
                 <>
-                  <button
-                    className="mic-button active"
-                    onClick={stopConversation}
-                  >
-                    ⏹️
-                  </button>
+                  <div className="mic-controls">
+                    <button
+                      className={`mic-button ${
+                        conversation.isMuted ? "muted" : "active"
+                      }`}
+                      onClick={() =>
+                        conversation.setMuted(!conversation.isMuted)
+                      }
+                      title={
+                        conversation.isMuted
+                          ? "Unmute your microphone"
+                          : "Mute your microphone"
+                      }
+                    >
+                      {conversation.isMuted ? "🔇" : "🎙️"}
+                    </button>
+
+                    <button
+                      className="end-call-button"
+                      onClick={stopConversation}
+                      title="End the conversation"
+                    >
+                      ⏹️ End conversation
+                    </button>
+                  </div>
 
                   <p>
-                    {conversation.isSpeaking
-                      ? "🔊 Grandma is speaking..."
-                      : conversation.isListening
-                        ? "🎙️ Grandma is listening..."
-                        : "🎙️ Start teaching Grandma..."}
+                    {conversation.isMuted
+                      ? "🔇 Microphone muted — Grandma can't hear you."
+                      : conversation.isSpeaking
+                        ? "🔊 Grandma is speaking..."
+                        : conversation.isListening
+                          ? "🎙️ Grandma is listening..."
+                          : "🎙️ Start teaching Grandma..."}
                   </p>
                 </>
               )}
