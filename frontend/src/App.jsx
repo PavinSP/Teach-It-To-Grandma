@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useConversation } from "@elevenlabs/react";
 import "./App.css";
 
-const AGENT_ID = "agent_8901kzzhzexhe2qt3903amp09nnq";
+const AGENT_ID = "agent_4301m009ej3eew6sgp492ky9s4dj";
 
 const topics = [
   {
@@ -220,6 +220,11 @@ function App() {
   const [error, setError] = useState("");
   const [messages, setMessages] = useState([]);
   const [showRecap, setShowRecap] = useState(false);
+  const transcriptEndRef = useRef(null);
+
+  useEffect(() => {
+    transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const conversation = useConversation({
     onConnect: () => {
@@ -552,6 +557,7 @@ function App() {
                     </div>
                   );
                 })}
+                <div ref={transcriptEndRef} />
               </div>
               {error && (
                 <div className="error-message">
