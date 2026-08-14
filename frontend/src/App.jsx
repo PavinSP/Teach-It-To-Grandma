@@ -706,7 +706,7 @@ function App() {
 
           <aside className="progress">
             <div className="progress-title">
-              YOUR PROGRESS
+              POINTS MENTIONED
             </div>
 
             <div className="progress-count">
@@ -745,8 +745,11 @@ function App() {
                 </div>
 
                 <div className="complete-message">
-                  <strong>Grandma understands!</strong>
-                  <span>You explained all the key ideas.</span>
+                  <strong>You covered all four points.</strong>
+                  <span>
+                    But did Grandma actually follow it? Finish the lesson
+                    and she'll tell you.
+                  </span>
                 </div>
 
                 <button
