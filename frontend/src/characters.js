@@ -35,6 +35,8 @@ export const CHARACTERS = [
     },
     gradingStance:
       "Judge as a complete beginner. If a sentence needs prior knowledge to parse, it was not explained.",
+    headlineWin: "Well done, darling.",
+    headlineRetry: "Let's go over that again, darling.",
     firstMessage:
       "Oh hello, darling! So you're going to teach me about {topic}? Go on then, Grandma's listening.",
   },
@@ -63,6 +65,8 @@ export const CHARACTERS = [
     },
     gradingStance:
       "Judge as a seven-year-old. If it needs school beyond age seven, it was not explained. Analogies and stories count for a lot.",
+    headlineWin: "You're the best teacher ever!",
+    headlineRetry: "Wait... I'm still confused.",
     firstMessage:
       "Hi hi hi! Are you really going to teach me about {topic}? Okay okay okay — go!",
   },
@@ -90,6 +94,8 @@ export const CHARACTERS = [
     },
     gradingStance:
       "Expect mechanism. Naming a concept without explaining how it works does not count as explained.",
+    headlineWin: "Okay, that actually made sense.",
+    headlineRetry: "I'd still fail the exam on this.",
     firstMessage:
       "Hey! I've got an exam on {topic} coming up, so teach it like I actually need to pass.",
   },
@@ -117,6 +123,8 @@ export const CHARACTERS = [
     },
     gradingStance:
       "Judge on consequences and relevance. If the explanation never says why it matters or what would go wrong without it, it was not explained.",
+    headlineWin: "Good. That's a yes from me.",
+    headlineRetry: "I still don't see the bottom line.",
     firstMessage:
       "Right — {topic}. I've got five minutes before my next meeting. Make it count.",
   },
@@ -144,6 +152,8 @@ export const CHARACTERS = [
     },
     gradingStance:
       "Demand precision. A restatement without the underlying reason does not count as explained. Reward correct handling of edge cases.",
+    headlineWin: "Precise. I'm satisfied.",
+    headlineRetry: "Your assumptions need work.",
     firstMessage:
       "So — {topic}. I know the neighbouring territory well. Convince me you know this one.",
   },
@@ -171,6 +181,8 @@ export const CHARACTERS = [
     },
     gradingStance:
       "Be strict. Contradictions, gaps, or borrowed phrasing without understanding all fail the point. Only a complete, coherent explanation counts.",
+    headlineWin: "A rigorous account. Well done.",
+    headlineRetry: "See me after class.",
     firstMessage:
       "Good day. {topic}, then. I shall be listening carefully — begin when you are ready.",
   },

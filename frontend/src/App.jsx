@@ -892,7 +892,8 @@ function App() {
   const recap = generateRecap(
     selectedTopic,
     progress,
-    messages
+    messages,
+    who
   );
   if (showRecap) {
     // Once Grandma has judged the explanation, her verdict is the one that
@@ -916,8 +917,8 @@ function App() {
 
           <h1>
             {gotEverythingAcross
-              ? "Well done, darling."
-              : "Let's go over that again, darling."}
+              ? activeCharacter.headlineWin
+              : activeCharacter.headlineRetry}
           </h1>
 
           <p className="recap-subtitle">
