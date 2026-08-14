@@ -4,6 +4,8 @@ import "./App.css";
 
 const AGENT_ID = "agent_4301m009ej3eew6sgp492ky9s4dj";
 
+const GRADING_API = import.meta.env.VITE_GRADING_API || "http://localhost:3001";
+
 const topics = [
   {
     id: "recursion",
@@ -220,6 +222,8 @@ function App() {
   const [error, setError] = useState("");
   const [messages, setMessages] = useState([]);
   const [showRecap, setShowRecap] = useState(false);
+  const [aiGrade, setAiGrade] = useState(null);
+  const [isGrading, setIsGrading] = useState(false);
   const transcriptEndRef = useRef(null);
 
   useEffect(() => {
@@ -290,9 +294,48 @@ function App() {
       }
 
       setShowRecap(true);
+      gradeWithAI();
     } catch (err) {
       console.error("Could not finish lesson:", err);
       setError("Could not finish the lesson cleanly.");
+    }
+  };
+
+  // Asks Claude whether the student really explained each point. The recap
+  // renders immediately either way — this only enriches it once it arrives,
+  // so a slow or failed call never blocks the lesson from ending.
+  const gradeWithAI = async () => {
+    const saidAnything = messages.some(
+      (message) => message.source === "user" && message.message
+    );
+
+    if (!saidAnything) {
+      return;
+    }
+
+    setIsGrading(true);
+
+    try {
+      const response = await fetch(`${GRADING_API}/api/grade`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topicName: selectedTopic.name,
+          points: selectedTopic.points,
+          transcript: messages,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Grading server returned ${response.status}`);
+      }
+
+      setAiGrade(await response.json());
+    } catch (err) {
+      // Keyword grading already produced a usable recap, so stay quiet.
+      console.error("AI grading unavailable:", err);
+    } finally {
+      setIsGrading(false);
     }
   }; if (!selectedTopic) {
     return (
@@ -325,6 +368,7 @@ function App() {
                   setShowRecap(false);
                   setMessages([]);
                   setError("");
+                  setAiGrade(null);
                 }}            >
                 <div className="topic-name">{topic.name}</div>
 
@@ -370,9 +414,43 @@ function App() {
                 GRANDMA SAYS
               </div>
 
-              <p>{recap.verdict}</p>
+              <p>{aiGrade?.summary || recap.verdict}</p>
+
+              {isGrading && (
+                <p className="grading-status">
+                  Grandma is thinking it over…
+                </p>
+              )}
             </div>
-          </div>        <div className="recap-grid">
+          </div>
+
+          {aiGrade?.results && (
+            <section className="recap-card ai-grade-card">
+              <div className="recap-icon">🧠</div>
+
+              <h2>Did Grandma really understand?</h2>
+
+              <ul className="ai-grade-list">
+                {aiGrade.results.map((result) => (
+                  <li
+                    key={result.point}
+                    className={result.understood ? "understood" : "unclear"}
+                  >
+                    <span className="ai-grade-mark">
+                      {result.understood ? "✓" : "○"}
+                    </span>
+
+                    <div>
+                      <strong>{result.point}</strong>
+                      <p>{result.reason}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <div className="recap-grid">
             <section className="recap-card">
               <div className="recap-icon">✓</div>
 
@@ -460,6 +538,7 @@ function App() {
               setSelectedTopic(null);
               setMessages([]);
               setError("");
+              setAiGrade(null);
             }}      >
             ← Start another lesson
           </button>

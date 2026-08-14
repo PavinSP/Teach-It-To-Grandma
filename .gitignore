@@ -1,0 +1,22 @@
+# Environment variables — never commit secrets
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules
+
+# Build output
+dist
+dist-ssr
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea

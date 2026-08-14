@@ -644,6 +644,72 @@ h2 {
 }
 
 /* -----------------------------
+   AI grading
+----------------------------- */
+
+.grading-status {
+  margin-top: 8px;
+  font-size: 14px;
+  opacity: 0.65;
+  font-style: italic;
+}
+
+.ai-grade-card {
+  margin-bottom: 18px;
+}
+
+.ai-grade-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ai-grade-list li {
+  display: flex;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(38, 34, 29, 0.08);
+}
+
+.ai-grade-list li:last-child {
+  border-bottom: none;
+}
+
+.ai-grade-mark {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ai-grade-list li.understood .ai-grade-mark {
+  background: #1f7a4d;
+  color: #fff;
+}
+
+.ai-grade-list li.unclear .ai-grade-mark {
+  background: rgba(38, 34, 29, 0.1);
+  color: rgba(38, 34, 29, 0.5);
+}
+
+.ai-grade-list strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.ai-grade-list p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.75;
+  line-height: 1.5;
+}
+
+/* -----------------------------
    Responsive
 ----------------------------- */
 

@@ -38,3 +38,23 @@ Running log of work done on this project via Claude Code, kept separate from `ch
 - User noticed the transcript didn't auto-scroll while talking.
 - Added a `transcriptEndRef` + `useEffect` in `App.jsx` that smooth-scrolls to the latest message whenever `messages` updates, plus an anchor `<div>` at the bottom of the `.transcript` list.
 - Confirmed working by the user.
+
+## Session 6 — Quiet-room test run
+
+- User ran the full quiet-room test (all 4 topics from `script.md`) against the new agent with auto-scroll live. Confirmed working end-to-end.
+- Remaining open items per the ChatGPT export's original end-state: hard-coded transcript greeting placeholder (deferred cleanup), 3-minute demo script/rehearsal never written, smarter AI grading (intentionally out of scope).
+
+## Session 7 — Intelligent AI grading (the long-deferred feature)
+
+Built the one feature the original plan kept postponing: LLM-based grading that judges whether the student *genuinely explained* each point, versus merely saying the keywords.
+
+**Security fix first**: `.env` was tracked by git and the root `.gitignore` was empty. Untracked `.env` (`git rm --cached`) and wrote a real `.gitignore`. The earlier commits contain `.env` but it was empty at the time, so no secret is in history. Verified the built bundle contains zero `sk-ant` occurrences.
+
+**Architecture**:
+- `server/` — small Express server (`index.js`), reads `ANTHROPIC_API_KEY` from the project-root `.env` via dotenv. Endpoint `POST /api/grade` takes `{topicName, points[], transcript[]}`, sends the student's lines to Claude, returns `{results: [{point, understood, reason}], summary}` in Grandma's voice.
+- `frontend/src/App.jsx` — `gradeWithAI()` fires on Finish lesson but **never blocks the recap**; keyword grading still drives the live in-session progress bar and acts as the fallback if the call fails. New state: `aiGrade`, `isGrading`, both reset on topic switch and "Start another lesson". API base URL from `VITE_GRADING_API`, defaults to `http://localhost:3001`.
+- Recap UI: AI summary replaces the keyword verdict in the "GRANDMA SAYS" card when available; new "Did Grandma really understand?" card shows the per-point breakdown with reasons.
+
+**Verified**: server health check OK, live grading call returned sensible strict results (rejected points where keywords were present but the explanation assumed prior knowledge — exactly the intended Feynman behavior), production build passes.
+
+**Dev now needs two processes**: `cd server && npm run dev` (3001) and `cd frontend && npm run dev` (5173). Documented in `server/README.md`.
