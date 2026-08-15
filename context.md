@@ -477,3 +477,16 @@ Deliberately NOT done: the ELEVENLABS voice-token proxy (#45 gap 1). It
 requires an ElevenLabs API key we don't have server-side, changes how the
 demo's one critical connection authenticates, and the plan itself says to
 flip it after the demo, not before.
+
+## Session 23 — Your character (#46, student half)
+
+The user asked for Snapchat-style self-customisation before starting: a
+name and a chosen face. Design call: no male/female toggle — a grid of 12
+Open Peeps faces spanning hair styles, all five available skin tones,
+beards and glasses; you pick the one that looks like you, and no option
+carries a demographic label. Stored in `teachit.you.v1` (same
+corrupt-storage matrix as the profile: 7 unit checks). Where it shows:
+the landing hero (chip with face + name, click to edit), the transcript
+(their name instead of YOU), and the teach-off name fields pre-filled.
+A convenience, never a gate — everything works untouched for someone who
+never sets it up.
