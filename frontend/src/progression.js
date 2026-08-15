@@ -56,6 +56,63 @@ export function headlineBandForScore(score) {
   return "lost";
 }
 
+// The three teaching moments, cheapest first — this is also the order they
+// are listed on the recap. The xp values are the tie-break when the grader
+// hangs two of them on the same sentence.
+const MOMENT_AWARDS = [
+  { key: "simplifiedJargon", label: "Dropped the jargon when asked", xp: 30 },
+  { key: "selfCorrected", label: "Caught your own mistake", xp: 40 },
+  { key: "usedGoodAnalogy", label: "Found a good analogy", xp: 50 },
+];
+
+// Two quotes are the same evidence if they read the same aloud: case,
+// surrounding space and internal run-on space are all noise here.
+function normaliseQuote(quote) {
+  return String(quote ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+// Which moments actually count, once duplicates are settled.
+//
+// One sentence can honestly be two moments at once — "actually, let me say
+// that better: each connection has a dial" is a self-correction AND a dropped
+// technical term. Crediting both puts the identical quote on two rows of the
+// recap, which reads as a glitch rather than as credit. So a quote counts
+// once, for the highest-value moment claiming it.
+//
+// Blank quotes never collide: the server clears any quote it could not find
+// verbatim in the transcript, and two unevidenced moments are still two
+// different things that happened.
+//
+// This is the single definition of "earned" — the XP rows and the badges both
+// read it, so a badge can never celebrate something the ledger didn't pay for.
+function paidMomentKeys(moments) {
+  const paidQuotes = new Set();
+  const earned = new Set();
+
+  for (const award of [...MOMENT_AWARDS].sort((a, b) => b.xp - a.xp)) {
+    if (!moments?.[award.key]?.happened) {
+      continue;
+    }
+
+    const quote = normaliseQuote(moments[award.key].quote);
+
+    if (quote) {
+      if (paidQuotes.has(quote)) {
+        continue;
+      }
+
+      paidQuotes.add(quote);
+    }
+
+    earned.add(award.key);
+  }
+
+  return earned;
+}
+
 // Converts one graded lesson into itemised XP events. Understanding XP comes
 // from the AI grade, never from the keyword bar — coverage earns its own,
 // visibly smaller award. Mistakes never subtract; events that didn't happen
@@ -87,28 +144,18 @@ export function xpForLesson({ results, moments, coveredCount, totalPoints, saidA
       events.push({ label: "Grandma understood all of it", xp: 100 });
     }
 
-    if (moments?.simplifiedJargon?.happened) {
-      events.push({
-        label: "Dropped the jargon when asked",
-        xp: 30,
-        quote: moments.simplifiedJargon.quote,
-      });
-    }
+    const earnedKeys = paidMomentKeys(moments);
 
-    if (moments?.selfCorrected?.happened) {
-      events.push({
-        label: "Caught your own mistake",
-        xp: 40,
-        quote: moments.selfCorrected.quote,
-      });
-    }
-
-    if (moments?.usedGoodAnalogy?.happened) {
-      events.push({
-        label: "Found a good analogy",
-        xp: 50,
-        quote: moments.usedGoodAnalogy.quote,
-      });
+    // Emitted in the declared order, not the order they were judged in, so
+    // the recap always lists these three the same way round.
+    for (const award of MOMENT_AWARDS) {
+      if (earnedKeys.has(award.key)) {
+        events.push({
+          label: award.label,
+          xp: award.xp,
+          quote: moments[award.key].quote,
+        });
+      }
     }
   }
 
@@ -247,13 +294,19 @@ export function evaluateAchievements(lesson, profile) {
     results.length > 0 &&
     results.every((r) => r.understood);
 
-  const hadAnalogy = Boolean(moments?.usedGoodAnalogy?.happened);
+  // Badges read the same ledger the XP rows do. A moment whose quote was
+  // already credited to a higher award is not a second achievement — without
+  // this, the recap can hand out Jargon Slayer for a sentence it visibly
+  // declined to pay a jargon award for.
+  const credited = paidMomentKeys(moments);
+
+  const hadAnalogy = credited.has("usedGoodAnalogy");
   const analogyLessons = (profile.analogyLessons ?? 0) + (hadAnalogy ? 1 : 0);
   const strongScores =
     (profile.strongScores ?? 0) + (score !== null && score >= 75 ? 1 : 0);
 
   const conditions = {
-    "jargon-slayer": Boolean(moments?.simplifiedJargon?.happened),
+    "jargon-slayer": credited.has("simplifiedJargon"),
     approved: allUnderstood && (clarificationCount ?? 99) <= 1,
     "deep-thinker": (deepAnswers ?? 0) >= 5,
     perfect: score !== null && score >= 95,
