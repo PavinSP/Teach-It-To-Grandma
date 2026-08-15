@@ -122,6 +122,18 @@ never have to revert code while presenting:
 
 Type `features()` in the browser console to see what is currently on.
 
+## Starting over
+
+```
+?reset          clear the lesson — transcript, grades, boards, the game.
+                Your name, face, XP and badges survive.
+?reset=all      clear everything, including who you are and what you earned.
+```
+
+This runs before the app mounts, so it works even when the app renders
+blank — which is exactly when you need it. Other parameters survive, so
+`?reset&on=misconceptionAmbush` clears the lesson and keeps the ambush armed.
+
 If the app is broken badly enough that flags don't help, fall back to the last
 known-good commit:
 

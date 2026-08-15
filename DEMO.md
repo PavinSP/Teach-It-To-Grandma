@@ -137,7 +137,9 @@ working. Hand them the mic and let them try to beat you.
 | Several act up | `?safe` — core loop only, still a full demo |
 | Trap doesn't spring after Shift+M | Skip it — say "she usually fights back too" and finish; the villain-vs-live board still lands the thesis |
 | Mic dead on the demo machine | The error now says why (padlock vs connection) — read it, it tells you the fix |
-| App won't render at all | `git checkout demo-safe`, restart Vite — a known-good build in under a minute |
+| A session gets wedged | Add `?reset` to the URL — clears the lesson, keeps your XP and badges |
+| App won't render at all | Try `?reset` first (it runs before the app mounts). Still broken: `git checkout demo-safe`, restart Vite |
+| Handing the laptop to someone else | `?reset=all` — clears identity and progress too |
 | ElevenLabs itself is down | The recorded villain run + a finished recap in a second tab is your backup narrative — keep one open |
 
 ## What NOT to say

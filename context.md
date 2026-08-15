@@ -569,3 +569,23 @@ prompt, so no instruction could have stopped it. The fix is
 pause lasts — the event exists precisely to reset that timer. The stage
 direction stays as belt-and-braces for the model's own judgement; the
 heartbeat is what actually holds the silence.
+
+## Session 27 — The escape hatch (?reset)
+
+Three things persist now — the per-tab lesson snapshot, the XP/badge
+profile, and the student's name and face — so a wedged or corrupt state
+had no exit except devtools.
+
+`?reset` clears the lesson only; `?reset=all` clears identity and progress
+too. It runs at import time in `main.jsx`, **before React mounts**, which
+is the whole design: the state most likely to need clearing is state that
+breaks rendering, and a button inside a blank page saves nobody.
+
+The parameter strips itself afterwards (so a later refresh doesn't
+silently wipe a fresh session) while leaving other parameters intact —
+`?reset&on=misconceptionAmbush` clears the lesson and keeps the ambush
+armed. Blocked storage is caught rather than thrown.
+
+Documented in TESTING.md and in DEMO.md's on-stage failure table, where
+"App won't render at all" now says to try `?reset` before falling back to
+`git checkout demo-safe`.
