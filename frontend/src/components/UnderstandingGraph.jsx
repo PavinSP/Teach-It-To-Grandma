@@ -45,6 +45,7 @@ function readPalette(el) {
     surface: get("--surface", "#14171A"),
     bg: get("--bg-void", "#08090A"),
     border: get("--border", "#262B31"),
+    borderStrong: get("--border-strong", "#39414A"),
     text: get("--text", "#E8EDF2"),
     textMuted: get("--text-muted", "#5E6975"),
   };
@@ -204,25 +205,52 @@ export function UnderstandingGraph({
 
     paletteRef.current = readPalette(wrap);
 
-    const resize = () => {
-      const rect = wrap.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Two rules here, both learned the hard way.
+    //
+    // Measure the CONTENT box, never getBoundingClientRect. The wrap has a
+    // 2px border, so its border-box is 4px wider than the space the canvas
+    // actually occupies. Sizing the canvas from that made it wider than its
+    // own container, which changed the container, which fired the observer
+    // again — a feedback loop running at frame rate.
+    //
+    // And assigning width or height CLEARS a canvas, so only assign when
+    // the value really changed. Without that guard the loop above wiped
+    // every frame the instant after it was drawn: the simulation ran, the
+    // nodes were in the right places, and the panel stayed black.
+    const applySize = (cssW, cssH) => {
+      if (!cssW || !cssH) return;
 
-      sizeRef.current = { w: rect.width, h: rect.height, dpr };
-      canvas.width = Math.round(rect.width * dpr);
-      canvas.height = Math.round(rect.height * dpr);
-      canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${rect.height}px`;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = Math.round(cssW * dpr);
+      const h = Math.round(cssH * dpr);
+      const changed = canvas.width !== w || canvas.height !== h;
+
+      sizeRef.current = { w: cssW, h: cssH, dpr };
+
+      if (!changed) return;
+
+      canvas.width = w;
+      canvas.height = h;
 
       simRef.current
-        ?.force("center", forceCenter(rect.width / 2, rect.height / 2))
+        ?.force("center", forceCenter(cssW / 2, cssH / 2))
         .alpha(0.3)
         .restart();
     };
 
-    resize();
+    const first = wrap.getBoundingClientRect();
 
-    const ro = new ResizeObserver(resize);
+    applySize(
+      first.width - parseFloat(getComputedStyle(wrap).borderLeftWidth) * 2,
+      first.height - parseFloat(getComputedStyle(wrap).borderTopWidth) * 2
+    );
+
+    const ro = new ResizeObserver(([entry]) => {
+      const box = entry.contentRect;
+
+      applySize(box.width, box.height);
+    });
+
     ro.observe(wrap);
 
     // A canvas nobody can see must not cost frames.
@@ -265,13 +293,27 @@ export function UnderstandingGraph({
 
       if (!a?.x || !b?.x) continue;
 
+      // An established edge is drawn in the state colour of what it leads
+      // to, dimmed — so a covered branch reads as one lit region rather
+      // than as chips that happen to sit near each other. Unexplored
+      // ground stays a dashed hairline: present, joined, not yet earned.
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
       ctx.lineTo(b.x, b.y);
       ctx.lineWidth = 1;
-      ctx.strokeStyle = link.established ? palette.border : palette.bg;
-      ctx.setLineDash(link.established ? [] : [3, 4]);
+
+      if (link.established) {
+        ctx.globalAlpha = 0.45;
+        ctx.strokeStyle = palette[b.state] ?? palette.borderStrong;
+        ctx.setLineDash([]);
+      } else {
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = palette.borderStrong;
+        ctx.setLineDash([3, 4]);
+      }
+
       ctx.stroke();
+      ctx.globalAlpha = 1;
       ctx.setLineDash([]);
     }
 
