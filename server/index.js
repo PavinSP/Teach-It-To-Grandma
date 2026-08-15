@@ -107,6 +107,17 @@ For each of those, list the words or short phrases a student would almost certai
 
 Also name the misconceptions beginners most often hold about this topic.
 
+Also choose the "motif" — the shape that best pictures how this topic actually behaves, from exactly this list:
+- "network": things connected to things (neural networks, graphs, social systems, the internet)
+- "waves": something oscillating or propagating (sound, light, signals, frequencies)
+- "particles": many small independent things (molecules, gases, randomness, statistics, populations)
+- "orbits": something circling something else (astronomy, atoms, cycles, seasons)
+- "flow": one thing feeding into the next (algorithms, pipelines, processes, supply chains, rivers)
+- "grid": values arranged in a lattice (matrices, images, pixels, spreadsheets, maps)
+- "branches": one thing splitting into many (recursion, trees, evolution, hierarchies, decisions)
+- "pulse": events over time (heartbeats, neurons firing, time series, economics)
+Pick on the topic's underlying structure, not its surface words.
+
 Also assess the topic itself. "conceptDensity" is how many distinct ideas a beginner has to hold in their head at once — Low, Medium, or High. "prerequisites" is how much they need to already know before any of this can land — Low, Medium, or High. List 2-3 concrete things they'd need to already know in "prerequisiteNotes" (an empty list if there really are none).
 
 Also write three challenges that would test whether a student really understands this topic rather than just reciting it. Each one must name a specific concept from the points above, not a generic instruction — "explain the learning rate without saying 'step'" is good, "explain it more simply" is not. Give each an id ("c1", "c2", "c3"), a kind (one of: analogy, five_year_old, no_jargon, real_world, opposite), a short label under 5 words for a button, and an instruction naming what Grandma should ask for.
@@ -154,6 +165,19 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
                 },
               },
               misconceptions: { type: "array", items: { type: "string" } },
+              motif: {
+                type: "string",
+                enum: [
+                  "network",
+                  "waves",
+                  "particles",
+                  "orbits",
+                  "flow",
+                  "grid",
+                  "branches",
+                  "pulse",
+                ],
+              },
               analysis: {
                 type: "object",
                 properties: {
@@ -209,6 +233,7 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
               "difficulty",
               "points",
               "misconceptions",
+              "motif",
               "analysis",
               "challenges",
             ],
@@ -253,6 +278,11 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
     // These are additive to a screen that must never fail because of them,
     // so a malformed or missing value degrades to "nothing to show" rather
     // than breaking the response.
+    // Additive and purely decorative: an unknown value degrades to no
+    // background rather than breaking the lesson.
+    const MOTIFS = ["network","waves","particles","orbits","flow","grid","branches","pulse"];
+    lesson.motif = MOTIFS.includes(lesson.motif) ? lesson.motif : null;
+
     lesson.analysis =
       lesson.analysis && typeof lesson.analysis === "object"
         ? lesson.analysis

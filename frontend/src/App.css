@@ -2515,3 +2515,142 @@ details.misconceptions-panel .misconceptions-list {
   inset: 0;
   will-change: opacity;
 }
+
+/* -----------------------------
+   Topic motif — the moving backdrop
+----------------------------- */
+
+/* Fixed and behind everything, so scrolling never drags it and no click
+   can ever land on it. */
+.motif {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  overflow: hidden;
+}
+
+.motif svg {
+  width: 100%;
+  height: 100%;
+}
+
+.app {
+  position: relative;
+  z-index: 1;
+}
+
+/* Ink, not colour: the backdrop must never compete with the lesson. */
+.motif-edge,
+.motif-orbit,
+.motif-wave,
+.motif-limb,
+.motif-pulse {
+  fill: none;
+  stroke: #26221d;
+  stroke-width: 0.35;
+  opacity: 0.13;
+}
+
+.motif-node,
+.motif-particle,
+.motif-chevron {
+  fill: #26221d;
+  opacity: 0.13;
+}
+
+.motif-cell {
+  fill: none;
+  stroke: #26221d;
+  stroke-width: 0.3;
+  opacity: 0.1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .motif-node {
+    animation: motif-blink 5.5s ease-in-out infinite;
+  }
+
+  .motif-edge {
+    animation: motif-trace 6.5s ease-in-out infinite;
+  }
+
+  .motif-wave {
+    animation: motif-drift linear infinite;
+  }
+
+  .motif-particle {
+    animation: motif-float ease-in-out infinite;
+  }
+
+  .motif-spin {
+    animation: motif-rotate linear infinite;
+  }
+
+  .motif-chevron {
+    animation: motif-travel linear infinite;
+  }
+
+  .motif-cell {
+    animation: motif-glow 7s ease-in-out infinite;
+  }
+
+  .motif-limb {
+    stroke-dasharray: 40;
+    animation: motif-grow 9s ease-in-out infinite;
+  }
+
+  .motif-pulse {
+    animation: motif-scroll 12s linear infinite;
+  }
+}
+
+@keyframes motif-blink {
+  0%, 100% { opacity: 0.09; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes motif-trace {
+  0%, 100% { opacity: 0.07; }
+  50% { opacity: 0.2; }
+}
+
+/* The path is two periods wide; sliding one period loops seamlessly. */
+@keyframes motif-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50px); }
+}
+
+@keyframes motif-float {
+  0%, 100% { transform: translate(0, 0); opacity: 0.08; }
+  50% { transform: translate(4px, -9px); opacity: 0.22; }
+}
+
+@keyframes motif-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes motif-travel {
+  from { transform: translateX(0); opacity: 0; }
+  10% { opacity: 0.22; }
+  90% { opacity: 0.22; }
+  to { transform: translateX(96px); opacity: 0; }
+}
+
+@keyframes motif-glow {
+  0%, 100% { opacity: 0.06; }
+  50% { opacity: 0.24; }
+}
+
+@keyframes motif-grow {
+  0% { stroke-dashoffset: 40; opacity: 0.05; }
+  45%, 75% { stroke-dashoffset: 0; opacity: 0.2; }
+  100% { stroke-dashoffset: 40; opacity: 0.05; }
+}
+
+@keyframes motif-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}

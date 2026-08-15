@@ -18,6 +18,7 @@ import {
 import { CHARACTERS, buildPersonaPrompt, DIRECTOR } from "./characters";
 import { loadSnapshot, saveSnapshot } from "./snapshot";
 import { resetNow } from "./reset";
+import Motif from "./Motif";
 import {
   YOU_OPTIONS,
   YOU_PRESETS,
@@ -57,6 +58,7 @@ function toLesson(generated) {
       required: point.required,
     })),
     misconceptions: generated.misconceptions ?? [],
+    motif: generated.motif ?? null,
     analysis: generated.analysis ?? null,
     challenges: generated.challenges ?? [],
   };
@@ -2322,7 +2324,12 @@ function App() {
     );
   }
   return (
-    <main className="app">
+    <>
+      {FEATURES.topicMotif && selectedTopic.motif && (
+        <Motif name={selectedTopic.motif} />
+      )}
+
+      <main className="app">
       <section className="session">
         <button
           className="back-button"
@@ -2861,7 +2868,8 @@ function App() {
           )}
         </div>
       </section>
-    </main>
+      </main>
+    </>
   );
 }
 

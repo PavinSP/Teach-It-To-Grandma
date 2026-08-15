@@ -631,3 +631,31 @@ only while `isSpeaking` and never while paused. Volume is eased toward
 its target (factor 0.45), which measures as ~33ms to half-open and ~84ms
 to close — fast enough to track syllables, smooth enough not to strobe
 (max per-frame jump 0.35).
+
+## Session 29 — A backdrop that pictures the topic
+
+The lesson now has a quiet moving background matched to what it is
+about: a connected network behind neural networks, travelling waves
+behind sound, a splitting tree behind recursion.
+
+**Not fetched images.** A stock-photo API would mean licensing, an
+external dependency mid-demo, and whatever the search happened to return.
+Instead `/api/lesson` picks a `motif` from eight shapes we designed —
+network, waves, particles, orbits, flow, grid, branches, pulse — chosen
+on the topic's underlying structure rather than its words. Verified
+live: sound waves→waves, recursion→branches, digital images→grid, how
+the heart beats→pulse.
+
+**CSS animations on SVG, never canvas.** Transforms and opacity only, so
+the browser runs them on the compositor. A canvas rAF loop would compete
+with the live voice call for the main thread, and there is already one
+running for the mouth. Everything sits inside a `prefers-reduced-motion`
+guard, at ~13% opacity in ink rather than colour, `position: fixed` and
+`pointer-events: none` so it never scrolls oddly or swallows a click.
+
+Looping is by construction rather than by fade: the wave path is two
+periods wide and slides exactly one, the pulse trace is duplicated and
+slides half its width.
+
+An unknown motif value degrades to no backdrop rather than breaking the
+lesson, same as `analysis` and `challenges`.

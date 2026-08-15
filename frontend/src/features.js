@@ -79,6 +79,10 @@ const DEFAULTS = {
   // and cross-faded — never a src swap, which would flicker.
   characterMouth: true,
 
+  // A quiet moving backdrop picturing how the topic behaves, chosen by
+  // the lesson generator from eight shapes we designed.
+  topicMotif: true,
+
   // #34 — several people teach the SAME stored lesson in turn, one board.
   // Same machine, sequential — the only multiplayer that honestly works
   // without deployment.
