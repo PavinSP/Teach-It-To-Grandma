@@ -2707,3 +2707,48 @@ details.misconceptions-panel .misconceptions-list {
   border-top: 1px solid #e6ded2;
   font-size: 14px;
 }
+
+/* Language (#19) */
+
+.language-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.language-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.45;
+  margin-right: 2px;
+}
+
+.language-chip {
+  padding: 7px 15px;
+  font-size: 14px;
+  border: 1px solid #d8d0c4;
+  border-radius: 999px;
+  background: #fffdf8;
+  color: #4a443c;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.language-chip:hover:not(:disabled) {
+  border-color: #26221d;
+}
+
+.language-chip.selected {
+  border-color: #26221d;
+  border-width: 2px;
+  padding: 6px 14px;
+  font-weight: 700;
+}
+
+.language-chip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

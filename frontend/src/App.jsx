@@ -33,6 +33,12 @@ const AGENT_ID = "agent_8901kzzhzexhe2qt3903amp09nnq";
 const GRADING_API = import.meta.env.VITE_GRADING_API || "http://localhost:3001";
 
 // Starting points, not limits — any topic can be typed in.
+// Both codes are in ElevenLabs' supported set and configured on the agent.
+const LANGUAGES = [
+  { code: "en", label: "English", flag: "🇬🇧" },
+  { code: "de", label: "Deutsch", flag: "🇩🇪" },
+];
+
 const SUGGESTED_TOPICS = [
   "Neural networks",
   "Backpropagation",
@@ -232,6 +238,9 @@ function App() {
   // snapshotted — the voice session dies on refresh, so a restored pause
   // would be a lie.
   const [paused, setPaused] = useState(false);
+  // A preference, not lesson state: it survives topic changes and only
+  // takes effect on the next lesson generated.
+  const [language, setLanguage] = useState("en");
   // 0 = mouth closed, 1 = open. Driven by her real output volume.
   const [mouthOpen, setMouthOpen] = useState(0);
   // What the student predicted before teaching, 0-100, or null if they
@@ -832,6 +841,9 @@ function App() {
                   prompt: {
                     prompt: buildPersonaPrompt(activeCharacter, selectedTopic),
                   },
+                  ...(FEATURES.multilingual && language !== "en"
+                    ? { language }
+                    : {}),
                   // Each character's distinct greeting doubles as the
                   // override canary: hear the wrong one, and you know the
                   // dashboard toggles aren't live.
@@ -930,6 +942,7 @@ function App() {
               }
             : {}),
           ...(ambush ? { ambushedMisconception: ambush.text } : {}),
+          ...(FEATURES.multilingual ? { language } : {}),
         }),
       });
 
@@ -1358,7 +1371,10 @@ function App() {
       const response = await fetch(`${GRADING_API}/api/lesson`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: wanted }),
+        body: JSON.stringify({
+          topic: wanted,
+          ...(FEATURES.multilingual ? { language } : {}),
+        }),
       });
 
       const body = await response.json();
@@ -1612,6 +1628,25 @@ function App() {
           )}
 
           <h2>What do you want to teach?</h2>
+
+          {FEATURES.multilingual && (
+            <div className="language-row">
+              <span className="language-label">Teach in</span>
+
+              {LANGUAGES.map((l) => (
+                <button
+                  key={l.code}
+                  className={`language-chip ${
+                    language === l.code ? "selected" : ""
+                  }`}
+                  onClick={() => setLanguage(l.code)}
+                  disabled={isBuildingLesson}
+                >
+                  {l.flag} {l.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           <form
             className="topic-form"

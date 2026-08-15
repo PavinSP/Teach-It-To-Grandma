@@ -89,6 +89,10 @@ const DEFAULTS = {
   // Ground the explanation never went near, as opposed to covered badly.
   blindSpots: true,
 
+  // #19 — teach in German. The agent has the language configured; this
+  // switches the lesson, the grading and her voice together.
+  multilingual: true,
+
   // #34 — several people teach the SAME stored lesson in turn, one board.
   // Same machine, sequential — the only multiplayer that honestly works
   // without deployment.

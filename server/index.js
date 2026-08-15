@@ -41,6 +41,27 @@ if (!apiKey) {
 
 const client = new OpenAI({ apiKey, baseURL: TITANOM_BASE_URL });
 
+// Languages a lesson can be taught in. Validated against this list before
+// a code ever reaches a prompt.
+const LANGUAGES = { en: "English", de: "German" };
+
+function languageName(code) {
+  return LANGUAGES[code] ?? null;
+}
+
+// Appended to any prompt producing text the student reads. The keyword
+// clause is load-bearing: German labels with English keywords would leave
+// the live coverage bar permanently at zero.
+function inLanguage(code) {
+  const name = languageName(code);
+
+  if (!name || code === "en") {
+    return "";
+  }
+
+  return `\n\nWrite EVERY string you return in ${name} — names, descriptions, point labels, reasons, summaries, questions and notes. The "keywords" must be in ${name} too, because that is the language the student will be speaking.`;
+}
+
 const app = express();
 
 // Only the app's own dev origins — an open CORS policy plus an
@@ -102,6 +123,11 @@ app.get("/health", (_req, res) => {
 // how hard it is, and what people usually get wrong about it.
 app.post("/api/lesson", rateLimit, async (req, res) => {
   const topic = (req.body?.topic ?? "").trim();
+  const language = req.body?.language ?? "en";
+
+  if (!languageName(language)) {
+    return res.status(400).json({ error: "Unsupported language." });
+  }
 
   if (!topic) {
     return res.status(400).json({ error: "Expected { topic }." });
@@ -125,7 +151,7 @@ Also assess the topic itself. "conceptDensity" is how many distinct ideas a begi
 
 Also write three challenges that would test whether a student really understands this topic rather than just reciting it. Each one must name a specific concept from the points above, not a generic instruction — "explain the learning rate without saying 'step'" is good, "explain it more simply" is not. Give each an id ("c1", "c2", "c3"), a kind (one of: analogy, five_year_old, no_jargon, real_world, opposite), a short label under 5 words for a button, and an instruction naming what Grandma should ask for.
 
-If the topic is too vague to teach, or is not a real subject, set "ok" to false and say why in "problem" — otherwise set "ok" to true and leave "problem" empty.`;
+If the topic is too vague to teach, or is not a real subject, set "ok" to false and say why in "problem" — otherwise set "ok" to true and leave "problem" empty.${inLanguage(language)}`;
 
   try {
     const completion = await client.chat.completions.create({
@@ -292,6 +318,7 @@ app.post("/api/grade", rateLimit, async (req, res) => {
   // the original Grandma behaviour, unchanged.
   const { topicName, points, transcript, character, ambushedMisconception } =
     req.body ?? {};
+  const language = req.body?.language ?? "en";
 
   if (!topicName || !Array.isArray(points) || !Array.isArray(transcript)) {
     return res
@@ -395,7 +422,7 @@ Respond with JSON only, in exactly this shape:
       ? `,\n  "misconceptionHandling": { "noticed": true or false, "corrected": true or false, "quote": "<their exact correcting words, or empty>" }`
       : ""
   }
-}`;
+}${inLanguage(language)}`;
 
   try {
     const completion = await client.chat.completions.create({
