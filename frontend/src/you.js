@@ -50,7 +50,10 @@ export const YOU_OPTIONS = {
     { value: "full", label: "Full beard", labelDe: "Vollbart" },
   ],
   accessories: [
-    { value: "", label: "None", labelDe: "Keiner" },
+    // "Keine", not "Keiner": this dial is labelled Brille, which is feminine.
+    // The identical option under facial hair keeps "Keiner" — that dial is
+    // labelled Bart, which is masculine. Same English word, different German.
+    { value: "", label: "None", labelDe: "Keine" },
     { value: "glasses", label: "Glasses", labelDe: "Brille" },
     { value: "glasses2", label: "Round glasses", labelDe: "Runde Brille" },
     { value: "glasses3", label: "Bold glasses", labelDe: "Kräftige Brille" },
