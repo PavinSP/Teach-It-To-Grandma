@@ -90,7 +90,7 @@ export const CHARACTERS = [
       lost: "Wait... I'm still confused.",
     },
     headlinesDe: {
-      aced: "Du bist die beste Lehrerin der Welt!",
+      aced: "Du erklärst besser als alle anderen!",
       followed: "Das meiste hab ich verstanden! Aber ich hab noch Fragen.",
       partial: "Manches hat Sinn ergeben... die Mitte aber nicht.",
       lost: "Warte... ich bin immer noch verwirrt.",
@@ -338,7 +338,7 @@ THE STUDENT IS TEACHING YOU: ${lesson.name}
 (${lesson.description})
 ${
   language === "de"
-    ? "\nSPRACHE: Sprich ausschliesslich Deutsch. Der Student spricht Deutsch mit dir. Antworte niemals auf Englisch, auch nicht teilweise.\n"
+    ? "\nSPRACHE: Sprich ausschließlich Deutsch. Der Student spricht Deutsch mit dir. Antworte niemals auf Englisch, auch nicht teilweise.\n"
     : ""
 }${NEVER_CHANGES}`;
 }
