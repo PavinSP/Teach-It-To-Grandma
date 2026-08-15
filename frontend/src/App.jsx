@@ -12,6 +12,7 @@ import {
   evaluateAchievements,
 } from "./progression";
 import { CHARACTERS, buildPersonaPrompt, DIRECTOR } from "./characters";
+import { loadSnapshot, saveSnapshot } from "./snapshot";
 import {
   YOU_OPTIONS,
   YOU_PRESETS,
@@ -144,36 +145,48 @@ function generateRecap(topic, progress, messages, who = "Grandma") {
   };
 }
 function App() {
-  const [selectedTopic, setSelectedTopic] = useState(null);
+  // The page you were on, restored across refresh (per tab).
+  const [snap] = useState(loadSnapshot);
+
+  const [selectedTopic, setSelectedTopic] = useState(snap?.selectedTopic ?? null);
   const [error, setError] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [showRecap, setShowRecap] = useState(false);
-  const [aiGrade, setAiGrade] = useState(null);
+  const [messages, setMessages] = useState(snap?.messages ?? []);
+  const [showRecap, setShowRecap] = useState(snap?.showRecap ?? false);
+  const [aiGrade, setAiGrade] = useState(snap?.aiGrade ?? null);
   const [isGrading, setIsGrading] = useState(false);
-  const [topicInput, setTopicInput] = useState("");
+  const [topicInput, setTopicInput] = useState(snap?.topicInput ?? "");
   const [isBuildingLesson, setIsBuildingLesson] = useState(false);
   const [lessonError, setLessonError] = useState("");
-  const [explainBack, setExplainBack] = useState(null);
+  const [explainBack, setExplainBack] = useState(snap?.explainBack ?? null);
   const [isExplaining, setIsExplaining] = useState(false);
-  const [recallText, setRecallText] = useState("");
-  const [askedForRecall, setAskedForRecall] = useState(false);
-  const [challenge, setChallenge] = useState(null);
+  const [recallText, setRecallText] = useState(snap?.recallText ?? "");
+  const [askedForRecall, setAskedForRecall] = useState(
+    snap?.askedForRecall ?? false
+  );
+  const [challenge, setChallenge] = useState(snap?.challenge ?? null);
   const [isBuildingChallenge, setIsBuildingChallenge] = useState(false);
   const [challengeError, setChallengeError] = useState("");
-  const [usedChallengeIds, setUsedChallengeIds] = useState([]);
+  const [usedChallengeIds, setUsedChallengeIds] = useState(
+    snap?.usedChallengeIds ?? []
+  );
   const [challengeSentNotice, setChallengeSentNotice] = useState("");
-  const [lessonXp, setLessonXp] = useState(null);
-  const [newAchievements, setNewAchievements] = useState([]);
+  const [lessonXp, setLessonXp] = useState(snap?.lessonXp ?? null);
+  const [newAchievements, setNewAchievements] = useState(
+    snap?.newAchievements ?? []
+  );
   const [displayScore, setDisplayScore] = useState(null);
   const [profileXp, setProfileXp] = useState(() =>
     FEATURES.progression ? loadProfile().xp : null
   );
   // Deliberately NOT reset when the topic changes — a student who picked the
   // Expert stays with the Expert across lessons until they choose otherwise.
-  const [character, setCharacter] = useState(CHARACTERS[0]);
+  const [character, setCharacter] = useState(
+    () =>
+      CHARACTERS.find((c) => c.id === snap?.characterId) ?? CHARACTERS[0]
+  );
   // #18 — a view preference, not session state: it survives lesson changes
   // and never touches what gets recorded or graded.
-  const [voiceOnly, setVoiceOnly] = useState(false);
+  const [voiceOnly, setVoiceOnly] = useState(snap?.voiceOnly ?? false);
   // #46 (student half) — who is doing the teaching.
   const [you, setYou] = useState(() =>
     FEATURES.youCharacter ? loadYou() : null
@@ -183,16 +196,20 @@ function App() {
   const [youDraftParams, setYouDraftParams] = useState(DEFAULT_PARAMS);
   const [isSavingYou, setIsSavingYou] = useState(false);
   // #11 — the misconception the character was directed to state, if any.
-  const [ambush, setAmbush] = useState(null);
+  const [ambush, setAmbush] = useState(snap?.ambush ?? null);
   // #10 — the retelling game: claims, which the student flagged, whether
   // they've locked their answers in.
-  const [mirror, setMirror] = useState(null);
-  const [mirrorFlags, setMirrorFlags] = useState(new Set());
-  const [mirrorSubmitted, setMirrorSubmitted] = useState(false);
+  const [mirror, setMirror] = useState(snap?.mirror ?? null);
+  const [mirrorFlags, setMirrorFlags] = useState(
+    () => new Set(snap?.mirrorFlags ?? [])
+  );
+  const [mirrorSubmitted, setMirrorSubmitted] = useState(
+    snap?.mirrorSubmitted ?? false
+  );
   const [isBuildingMirror, setIsBuildingMirror] = useState(false);
   const [mirrorError, setMirrorError] = useState("");
   // #34 — the teach-off this session belongs to, if any: {code, player}.
-  const [teachoff, setTeachoff] = useState(null);
+  const [teachoff, setTeachoff] = useState(snap?.teachoff ?? null);
   const [teachoffBoard, setTeachoffBoard] = useState(null);
   const [teachoffName, setTeachoffName] = useState(
     () => (FEATURES.youCharacter ? loadYou()?.name : "") ?? ""
@@ -203,17 +220,17 @@ function App() {
   // Two stage directions in one context window produce garbage — every
   // director-channel sender records the student-turn it fired at, and no
   // sender may fire within 2 turns of the last.
-  const directorTurnRef = useRef(-99);
+  const directorTurnRef = useRef(snap?.directorTurn ?? -99);
   const transcriptEndRef = useRef(null);
   // Her next reply after we ask is the recall itself — catch it as it lands.
   const pendingRecallRef = useRef(false);
   // One lesson attempt = one XP award. The id is minted once per attempt
   // (double-clicking Finish must not mint twice), and the commit effect
   // refuses to run for an id it has already paid out.
-  const lessonIdRef = useRef(null);
-  const committedRef = useRef(null);
+  const lessonIdRef = useRef(snap?.lessonId ?? null);
+  const committedRef = useRef(snap?.committedId ?? null);
   // When the mic first opened for this attempt — Speed Teacher's clock.
-  const sessionStartedAtRef = useRef(null);
+  const sessionStartedAtRef = useRef(snap?.sessionStartedAt ?? null);
 
   // With the picker off, every derived name resolves to Grandma and the app
   // reads exactly as it did before characters existed.
@@ -227,6 +244,87 @@ function App() {
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Refresh restores this exact page: every meaningful piece of state is
+  // snapshotted per tab. The pay-once ids ride along so a reloaded recap
+  // can never award its XP twice.
+  useEffect(() => {
+    saveSnapshot({
+      selectedTopic,
+      messages,
+      showRecap,
+      aiGrade,
+      explainBack,
+      recallText,
+      askedForRecall,
+      challenge,
+      usedChallengeIds,
+      ambush,
+      teachoff,
+      lessonXp,
+      newAchievements,
+      mirror,
+      mirrorFlags: [...mirrorFlags],
+      mirrorSubmitted,
+      voiceOnly,
+      topicInput,
+      characterId: character.id,
+      lessonId: lessonIdRef.current,
+      committedId: committedRef.current,
+      sessionStartedAt: sessionStartedAtRef.current,
+      directorTurn: directorTurnRef.current,
+    });
+  }, [
+    selectedTopic,
+    messages,
+    showRecap,
+    aiGrade,
+    explainBack,
+    recallText,
+    askedForRecall,
+    challenge,
+    usedChallengeIds,
+    ambush,
+    teachoff,
+    lessonXp,
+    newAchievements,
+    mirror,
+    mirrorFlags,
+    mirrorSubmitted,
+    voiceOnly,
+    topicInput,
+    character,
+  ]);
+
+  // If the tab died while grading was in flight, the recap comes back with
+  // no verdict and no way to get one — refire the grade once on mount.
+  useEffect(() => {
+    if (
+      showRecap &&
+      !aiGrade &&
+      !isGrading &&
+      selectedTopic &&
+      messages.some((m) => m.source === "user" && m.meta !== "prompt") &&
+      committedRef.current !== lessonIdRef.current
+    ) {
+      gradeWithAI();
+      explainBackWithAI();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // A reloaded recap lost its in-memory board — fetch it back.
+  useEffect(() => {
+    if (!teachoff || !showRecap || teachoffBoard) {
+      return;
+    }
+
+    fetch(`${GRADING_API}/api/teachoff/${teachoff.code}/runs`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => body && setTeachoffBoard(body.runs))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teachoff, showRecap]);
 
   const conversation = useConversation({
     onConnect: () => {
