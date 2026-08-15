@@ -62,6 +62,37 @@ function toLesson(generated) {
   };
 }
 
+// Strips machinery a model may have echoed instead of acted on: private
+// notes in brackets, and tool calls written out as text. Cannot stop it
+// being spoken aloud, but keeps it off the screen and out of grading.
+// A net, not the fix. The fix is the prompt telling her never to speak a
+// note; this catches what still gets through.
+//
+// Surgical on purpose: an earlier version deleted the rest of the line and
+// took her real reply with it. It removes the marker, a written-out tool
+// call, and one sentence of instruction. A leak several sentences long may
+// leave a fragment — there is no reliable way to tell where an instruction
+// stops and her own words start, and cutting too much is the worse error.
+const LEAKS = [
+  /\[(?:note|director)\]\s*/gi,
+  /\bset_mood\s*\([^)]*\)\s*/gi,
+  /\b(?:Next reply only|From now on)\s*:[^.?!]*[.?!]\s*/gi,
+];
+
+export function scrub(text) {
+  if (typeof text !== "string") {
+    return text;
+  }
+
+  let out = text;
+
+  for (const pattern of LEAKS) {
+    out = out.replace(pattern, "");
+  }
+
+  return out.replace(/\s{2,}/g, " ").trim();
+}
+
 function calculateProgress(topic, messages) {
   const studentText = messages
     .filter((message) => message.source === "user" && message.meta !== "prompt")
@@ -393,7 +424,7 @@ function App() {
 
       setMessages((previous) => [
         ...previous,
-        message,
+        { ...message, message: scrub(message.message) },
       ]);
     },
 

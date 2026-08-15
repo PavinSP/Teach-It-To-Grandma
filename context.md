@@ -716,3 +716,31 @@ stays deep because four jurors must remain four distinct people.
 
 **Result: lesson 13.9s → 2.9s, grading ~9s → 2.3s.** Smoke test 5/5,
 including the thesis check.
+
+## Session 33 — The machinery started talking
+
+Live transcripts showed the character speaking the internals aloud:
+`set_mood(confused)` as text, and `[DIRECTOR] Next reply only: ...` read
+out verbatim. Both catastrophic in front of judges.
+
+**The set_mood leak was my bug.** Session 25 put "call the set_mood tool"
+into every persona, but the tool was never registered on the agent. A
+model told to call a tool it does not have will simply *say* the call.
+The instruction is now behind `MOOD_TOOL_REGISTERED` in `characters.js`,
+default **false** — flip it only after adding the client tool in the
+dashboard. The keyword heuristic covers the feature meanwhile, which is
+why this cost nothing but noise.
+
+**The director leak is model-dependent** and appeared after the LLM was
+switched in the ElevenLabs dashboard. Gemini 2.5 Flash had been acting on
+the notes silently; the new model echoes them. Three changes: the marker
+is now `[note]` rather than `[DIRECTOR]` (the model kept saying the word
+"director" aloud), the rules are far more forceful about never speaking,
+quoting or summarising a note, and a `scrub()` runs at the single point
+messages enter the app.
+
+`scrub()` is a net, not a fix — it keeps leaks off the screen and out of
+grading, but cannot stop TTS speaking them. It is deliberately surgical:
+an earlier version removed the rest of the line and deleted her real
+reply with it. A multi-sentence leak may still leave a fragment, and
+that is the right trade — cutting into real speech is the worse error.

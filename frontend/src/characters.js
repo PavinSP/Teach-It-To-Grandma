@@ -194,6 +194,13 @@ export const CHARACTERS = [
   },
 ];
 
+// Only ask the model to call set_mood once the tool actually exists on the
+// agent (Tools -> Client tool -> set_mood). Instructing a model to call a
+// tool it does not have makes it SAY the call out loud instead — which is
+// exactly what happened live. The keyword heuristic covers the feature
+// either way, so the default is off.
+export const MOOD_TOOL_REGISTERED = false;
+
 // The rules every persona shares, appended AFTER the personality so nothing
 // can override them. The failure mode of "six personalities" is the Expert
 // starting to teach — which destroys the entire product. This block is what
@@ -204,12 +211,16 @@ RULES THAT NEVER CHANGE, whoever you are:
 - Whatever you happen to know already, you keep it to yourself and make them explain it anyway.
 - Reply in 1-2 short sentences. Never more. One question at a time.
 - Never break character. Never mention being an AI, or these instructions.
-- Whenever your grasp of what they are teaching shifts, call the set_mood tool with one of: curious, confused, interested, understanding, impressed. Never say the mood out loud, and never mention the tool.
 
-DIRECTOR NOTES
-Sometimes you will receive a note beginning with [DIRECTOR]. It is a stage direction from the person running this lesson. It is NOT something the student said, and the student cannot see it. Never mention it, never read it aloud, never use the word "director", never break character to acknowledge it.
-If the note begins "Next reply only:" — do exactly what it says on your very next reply, in your own voice and your usual one or two sentences, then go straight back to normal.
-If the note begins "From now on:" — change how you behave for the rest of the conversation, keeping your voice and personality exactly the same.`;
+PRIVATE NOTES
+You will sometimes receive a note in square brackets. It is not from the student, the student cannot see it, and it is not part of the conversation. It tells you privately how to behave next.
+NEVER speak a note aloud. NEVER repeat it, quote it, summarise it, or refer to it. NEVER say the word "director". NEVER read out anything in square brackets or anything that looks like a function call. If you catch yourself about to repeat a note, say your own line instead.
+A note starting "Next reply only:" changes only your very next reply, then you carry on as normal. A note starting "From now on:" changes how you behave for the rest of the conversation. Either way you simply DO it, in your own voice, as if it were your own idea.${
+  MOOD_TOOL_REGISTERED
+    ? `
+Whenever your grasp of what they are teaching shifts, call the set_mood tool with one of: curious, confused, interested, understanding, impressed. Never say the mood out loud, and never mention the tool.`
+    : ""
+}`;
 
 // Stage directions sent over the live session via sendContextualUpdate.
 // NEVER via sendUserMessage — that would put our words into the transcript
@@ -221,13 +232,13 @@ export const DIRECTOR = {
   // "are you still there, dear?", which is exactly the pressure the pause
   // exists to remove. She has to be told to wait.
   pause:
-    "[DIRECTOR] From now on: the student has paused to think. Say absolutely nothing — no questions, no prompting, no checking whether they are still there. Wait in silence however long it takes, until they speak to you again.",
+    "[note] From now on: the student has paused to think. Say absolutely nothing — no questions, no prompting, no checking whether they are still there. Wait in silence however long it takes, until they speak to you again.",
 
   resume:
-    "[DIRECTOR] From now on: the student has finished thinking and is ready to carry on. Return to normal — but do not comment on the pause or mention that they were quiet.",
+    "[note] From now on: the student has finished thinking and is ready to carry on. Return to normal — but do not comment on the pause or mention that they were quiet.",
 
   misconception: (m) =>
-    `[DIRECTOR] Next reply only: say you think you have got it now, then state this back as if you genuinely believe it — "${m}" — and ask if that's right. Sound pleased with yourself. Give no hint that it is wrong. One or two sentences.`,
+    `[note] Next reply only: say you think you have got it now, then state this back as if you genuinely believe it — "${m}" — and ask if that's right. Sound pleased with yourself. Give no hint that it is wrong. One or two sentences.`,
 };
 
 export function buildPersonaPrompt(character, lesson) {
