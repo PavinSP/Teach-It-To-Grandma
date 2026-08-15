@@ -41,9 +41,14 @@ Add one environment variable before deploying:
 |---|---|
 | `TITANOM_API_KEY` | the key from your local `.env` |
 
-**This first deploy is expected to fail.** The store refuses to boot without
-Redis, and the build log will say so in a sentence. That is the guard
-working, not a broken build — Redis is the next step.
+**The build will succeed.** Vercel bundles your code without running it, so
+the storage guard — which fires when the module is first imported — has
+nothing to trip over until a request arrives.
+
+Open `https://<api-url>/health` to confirm Express is actually live. At this
+stage either answer is fine: a 500 means the guard fired as designed, and
+JSON means it booted. A **404** is the one to act on — it means the Root
+Directory is not set to `server`, so Vercel found no app to run.
 
 Note: with a Root Directory set, the build cannot read files above it. That
 is fine here. `server/` is self-contained, and the `dotenv` call that looks

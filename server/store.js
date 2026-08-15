@@ -44,18 +44,32 @@ const redis =
 
 export const backend = redis ? "redis" : "file";
 
+const NEEDS_REDIS =
+  "Teach-off storage is not configured. This environment cannot durably " +
+  "write to disk, so codes could not be shared between devices — which is " +
+  "the whole point of deploying. Set UPSTASH_REDIS_REST_URL and " +
+  "UPSTASH_REDIS_REST_TOKEN in the project's environment variables.";
+
 // Refuse to boot rather than half-work. A file-backed board on serverless
 // succeeds whenever two requests happen to hit the same warm instance and
 // fails otherwise — it would pass every test you thought to run and then
 // lose a judge's teach-off code on stage. A dead deploy with a readable
 // reason is strictly better than a board that works four times in five.
-if (process.env.VERCEL && !redis) {
-  throw new Error(
-    "Teach-off storage is not configured. A deployed build needs " +
-      "UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN — without them " +
-      "codes cannot be shared between devices, which is the whole point of " +
-      "deploying. Add them in the Vercel project's environment variables."
-  );
+//
+// The test is whether this process can actually persist, not whether it
+// recognises the host. `process.env.VERCEL` was the obvious check and is
+// the wrong one: it only exists when "Enable access to System Environment
+// Variables" happens to be ticked in project settings, so the guard would
+// have been silently absent on exactly the deploys that needed it. Probing
+// the filesystem asks the real question and holds on any host.
+if (!redis) {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(join(DATA_DIR, ".writable"), "");
+    fs.unlinkSync(join(DATA_DIR, ".writable"));
+  } catch {
+    throw new Error(NEEDS_REDIS);
+  }
 }
 
 function makeCode() {
