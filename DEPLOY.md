@@ -26,46 +26,54 @@ check `/health`, which reports `{"ok":true,"store":"redis"}`.
 
 ---
 
-## 1. Create the Redis store
+## 1. The API project
 
-In the Vercel dashboard: **Storage → Create → Upstash Redis** (free tier is
-ample — a board is a few kilobytes and expires after fourteen days).
-
-Connect it to the **API project** once that exists. Vercel injects
-`UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` automatically; you
-never copy a token by hand.
-
-## 2. The API project
-
-**New Project → import `PavinSP/titanom-hackathon`.**
+**Add New → Project → import `PavinSP/titanom-hackathon`.**
 
 | Setting | Value |
 |---|---|
-| Root Directory | `server` |
+| Root Directory | `server` — click **Edit** beside it and pick the folder |
 | Framework Preset | Express (auto-detected) |
 
-Environment variables:
+Add one environment variable before deploying:
 
 | Name | Value |
 |---|---|
 | `TITANOM_API_KEY` | the key from your local `.env` |
-| `ALLOWED_ORIGIN` | the frontend URL, once you have it from step 3 |
 
-Deploy, then check `https://<api-url>/health`. It must say `"store":"redis"`.
-If it says `"file"`, the Upstash integration is not attached to this project.
-If the deployment failed outright, read the build log — the store throws a
-sentence explaining exactly what is missing.
+**This first deploy is expected to fail.** The store refuses to boot without
+Redis, and the build log will say so in a sentence. That is the guard
+working, not a broken build — Redis is the next step.
+
+Note: with a Root Directory set, the build cannot read files above it. That
+is fine here. `server/` is self-contained, and the `dotenv` call that looks
+for `../.env` simply finds nothing and moves on, because on Vercel the
+environment variables come from the platform instead.
+
+## 2. Attach Redis
+
+Vercel KV no longer exists; Redis comes through the Marketplace.
+
+**Marketplace → search "redis" → Upstash → Install**, and connect it to the
+API project you just made. The free tier is ample — a board is a few
+kilobytes and expires after fourteen days.
+
+Vercel injects `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
+itself. You never copy a token by hand.
+
+Now **redeploy** the API project. Check `https://<api-url>/health` — it must
+say `{"ok":true,"store":"redis"}`. If it says `"file"`, the integration is
+attached to a different project.
 
 ## 3. The frontend project
 
-**New Project → import the same repo again.**
+**Add New → Project → import the same repo again.** One repo, two projects,
+which is expected and supported.
 
 | Setting | Value |
 |---|---|
 | Root Directory | `frontend` |
 | Framework Preset | Vite (auto-detected) |
-
-Environment variable:
 
 | Name | Value |
 |---|---|
@@ -74,10 +82,15 @@ Environment variable:
 This is read at build time, not run time — changing it needs a redeploy, not
 just a reload.
 
-## 4. Close the loop
+## 4. Close the CORS loop
 
-Go back to the API project and set `ALLOWED_ORIGIN` to the frontend's URL,
-then redeploy it. Comma-separate to allow more than one origin.
+Back in the **API** project's settings, add:
+
+| Name | Value |
+|---|---|
+| `ALLOWED_ORIGIN` | the frontend's URL, no trailing slash |
+
+Redeploy the API. Comma-separate the value to allow more than one origin.
 
 Without this every request fails CORS, which shows up in the browser console
 and as a silent dead button in the UI.
