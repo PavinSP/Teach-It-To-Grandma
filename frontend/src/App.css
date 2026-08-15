@@ -2457,3 +2457,38 @@ details.misconceptions-panel .misconceptions-list {
   opacity: 0.72;
   transition: opacity 0.4s ease;
 }
+
+/* Starting over — quiet by design: an escape hatch, not a call to action. */
+
+.reset-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 56px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(38, 34, 29, 0.08);
+}
+
+.reset-link {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 13px;
+  color: #8a8176;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.reset-link:hover {
+  color: #26221d;
+}
+
+.reset-link.danger:hover {
+  color: #9c3327;
+}
+
+.reset-sep {
+  color: #cec5b8;
+  font-size: 13px;
+}

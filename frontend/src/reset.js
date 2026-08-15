@@ -76,3 +76,27 @@ export function runResetIfAsked() {
 
   return everything ? "all" : "session";
 }
+
+// The same clearing, triggered from a button rather than the URL. Reloads
+// afterwards: wiping storage while the old state still sits in React
+// memory would leave the two disagreeing.
+export function resetNow(scope = "session") {
+  try {
+    drop(sessionStorage, SESSION_KEYS);
+    drop(localStorage, SESSION_KEYS);
+
+    if (scope === "all") {
+      drop(localStorage, PROFILE_KEYS);
+    }
+  } catch {
+    // Nothing to clear if storage is unavailable.
+  }
+
+  try {
+    // Keep whatever else the URL was carrying — a reset shouldn't disarm
+    // a feature someone deliberately switched on.
+    window.location.reload();
+  } catch {
+    // Reload blocked: the clear still happened, next load will be clean.
+  }
+}

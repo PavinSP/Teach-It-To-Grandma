@@ -589,3 +589,12 @@ armed. Blocked storage is caught rather than thrown.
 Documented in TESTING.md and in DEMO.md's on-stage failure table, where
 "App won't render at all" now says to try `?reset` before falling back to
 `git checkout demo-safe`.
+
+**Also as buttons** — a quiet footer on the landing page: "Clear saved
+lesson" and "Reset everything". The URL stays the emergency hatch (it's
+the only thing that works when the page won't render); the buttons are
+for the ordinary case where nobody should need to know a URL. Only the
+destructive one confirms — deleting earned XP and badges is real loss,
+while clearing a stuck lesson costs nothing. Labelled by what they clear
+rather than "start fresh", which read as "start a lesson" next to the
+topic box.

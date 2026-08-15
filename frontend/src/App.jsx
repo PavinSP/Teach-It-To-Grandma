@@ -17,6 +17,7 @@ import {
 } from "./progression";
 import { CHARACTERS, buildPersonaPrompt, DIRECTOR } from "./characters";
 import { loadSnapshot, saveSnapshot } from "./snapshot";
+import { resetNow } from "./reset";
 import {
   YOU_OPTIONS,
   YOU_PRESETS,
@@ -1562,6 +1563,34 @@ function App() {
                 {topic}
               </button>
             ))}
+          </div>
+
+          <div className="reset-row">
+            <button
+              className="reset-link"
+              onClick={() => resetNow("session")}
+              title="Clears any half-finished lesson still saved in this tab. Keeps your name, XP and badges."
+            >
+              Clear saved lesson
+            </button>
+
+            <span className="reset-sep">·</span>
+
+            <button
+              className="reset-link danger"
+              onClick={() => {
+                const sure = window.confirm(
+                  "Clear everything?\n\nYour name, face, XP and badges will be deleted. This can't be undone."
+                );
+
+                if (sure) {
+                  resetNow("all");
+                }
+              }}
+              title="Deletes your name, face, XP and badges as well"
+            >
+              Reset everything
+            </button>
           </div>
         </section>
       </main>
