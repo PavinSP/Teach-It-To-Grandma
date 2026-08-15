@@ -1,17 +1,18 @@
-// A quiet moving backdrop that pictures how the topic behaves — networks
-// for neural networks, waves for sound, branches for recursion. The shape
-// is chosen by the lesson generator from a fixed set, so it is always one
-// of eight things we designed rather than whatever an image search
-// returned.
+// The shape behind the conversation, picturing how the topic behaves —
+// a network for neural networks, waves for sound, a tree for recursion.
 //
-// Everything animates through CSS transforms and opacity only, which the
-// browser can run on the compositor. A canvas loop would compete with the
-// live voice call for the main thread; this does not.
+// It is not decoration: the shape FILLS IN as the lesson is covered. Each
+// motif is an ordered list of parts, and the first `progress` fraction of
+// them are lit. Teach well and the network wires itself up, the tree
+// grows, the grid fills. Everything also breathes while she is speaking.
+//
+// CSS transforms and opacity only, so the browser runs it on the
+// compositor rather than competing with the live voice call.
 
 const NODES = [
-  [18, 26], [42, 16], [70, 30], [88, 20],
-  [12, 58], [38, 52], [64, 62], [86, 54],
-  [26, 84], [54, 88], [78, 80],
+  [16, 30], [40, 18], [66, 28], [88, 22],
+  [10, 60], [36, 52], [62, 62], [86, 56],
+  [24, 86], [52, 90], [80, 82],
 ];
 
 const EDGES = [
@@ -19,7 +20,20 @@ const EDGES = [
   [4, 5], [5, 6], [6, 7], [4, 8], [5, 9], [6, 9], [7, 10], [9, 10],
 ];
 
-function Network() {
+// How many of `total` parts are lit at this progress, always leaving the
+// first one lit so the shape never disappears entirely.
+function litCount(progress, total) {
+  return Math.max(1, Math.round(progress * total));
+}
+
+function cls(index, lit) {
+  return index < lit ? "on" : "off";
+}
+
+function Network({ progress }) {
+  const litNodes = litCount(progress, NODES.length);
+  const litEdges = litCount(progress, EDGES.length);
+
   return (
     <svg viewBox="0 0 100 100" preserveAspectRatio="none">
       {EDGES.map(([a, b], i) => (
@@ -29,8 +43,7 @@ function Network() {
           y1={NODES[a][1]}
           x2={NODES[b][0]}
           y2={NODES[b][1]}
-          className="motif-edge"
-          style={{ animationDelay: `${(i % 5) * 0.7}s` }}
+          className={`m-line ${cls(i, litEdges)}`}
         />
       ))}
 
@@ -39,31 +52,30 @@ function Network() {
           key={i}
           cx={x}
           cy={y}
-          r="1.6"
-          className="motif-node"
-          style={{ animationDelay: `${(i % 6) * 0.9}s` }}
+          r="2"
+          className={`m-dot ${cls(i, litNodes)}`}
+          style={{ animationDelay: `${(i % 5) * 0.6}s` }}
         />
       ))}
     </svg>
   );
 }
 
-function Waves() {
-  // Two periods wide, so translating by exactly half loops seamlessly.
+function Waves({ progress }) {
   const path =
-    "M0 50 Q 12.5 30 25 50 T 50 50 T 75 50 T 100 50 T 125 50 T 150 50 T 175 50 T 200 50";
+    "M0 50 Q 12.5 32 25 50 T 50 50 T 75 50 T 100 50 T 125 50 T 150 50 T 175 50 T 200 50";
+  const lit = litCount(progress, 4);
 
   return (
     <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-      {[0, 1, 2].map((i) => (
+      {[0, 1, 2, 3].map((i) => (
         <path
           key={i}
           d={path}
-          className="motif-wave"
+          className={`m-line drift ${cls(i, lit)}`}
           style={{
-            transform: `translateY(${(i - 1) * 16}px)`,
-            animationDuration: `${9 + i * 3}s`,
-            opacity: 1 - i * 0.25,
+            transform: `translateY(${(i - 1.5) * 13}px)`,
+            animationDuration: `${8 + i * 2.5}s`,
           }}
         />
       ))}
@@ -71,14 +83,15 @@ function Waves() {
   );
 }
 
-function Particles() {
-  const dots = Array.from({ length: 26 }, (_, i) => ({
-    x: (i * 37) % 100,
-    y: (i * 61) % 100,
-    r: 0.8 + ((i * 13) % 10) / 9,
-    d: (i % 7) * 1.4,
-    t: 11 + (i % 5) * 3,
+function Particles({ progress }) {
+  const dots = Array.from({ length: 24 }, (_, i) => ({
+    x: (i * 37 + 7) % 96,
+    y: (i * 61 + 11) % 92,
+    r: 1 + ((i * 13) % 8) / 8,
+    d: (i % 6) * 1.3,
+    t: 10 + (i % 5) * 3,
   }));
+  const lit = litCount(progress, dots.length);
 
   return (
     <svg viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -88,7 +101,7 @@ function Particles() {
           cx={p.x}
           cy={p.y}
           r={p.r}
-          className="motif-particle"
+          className={`m-dot float ${cls(i, lit)}`}
           style={{ animationDelay: `${p.d}s`, animationDuration: `${p.t}s` }}
         />
       ))}
@@ -96,23 +109,26 @@ function Particles() {
   );
 }
 
-function Orbits() {
+function Orbits({ progress }) {
+  const rings = [15, 26, 37, 47];
+  const lit = litCount(progress, rings.length);
+
   return (
     <svg viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="3" className="motif-node" />
+      <circle cx="50" cy="50" r="3.5" className="m-dot on" />
 
-      {[16, 27, 38].map((r, i) => (
-        <g key={r}>
-          <circle cx="50" cy="50" r={r} className="motif-orbit" />
+      {rings.map((r, i) => (
+        <g key={r} className={cls(i, lit)}>
+          <circle cx="50" cy="50" r={r} className="m-line" />
           <g
-            className="motif-spin"
+            className="spin"
             style={{
               transformOrigin: "50px 50px",
-              animationDuration: `${14 + i * 9}s`,
+              animationDuration: `${13 + i * 7}s`,
               animationDirection: i % 2 ? "reverse" : "normal",
             }}
           >
-            <circle cx={50 + r} cy="50" r="2" className="motif-node" />
+            <circle cx={50 + r} cy="50" r="2.2" className="m-dot" />
           </g>
         </g>
       ))}
@@ -120,20 +136,23 @@ function Orbits() {
   );
 }
 
-function Flow() {
+function Flow({ progress }) {
+  const lanes = [20, 40, 60, 80];
+  const lit = litCount(progress, lanes.length);
+
   return (
     <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-      {[22, 42, 62, 82].map((y, row) => (
-        <g key={y}>
-          <line x1="0" y1={y} x2="100" y2={y} className="motif-orbit" />
+      {lanes.map((y, row) => (
+        <g key={y} className={cls(row, lit)}>
+          <line x1="0" y1={y} x2="100" y2={y} className="m-line" />
           {[0, 1, 2].map((i) => (
             <polygon
               key={i}
-              points={`0,${y - 2.5} 5,${y} 0,${y + 2.5}`}
-              className="motif-chevron"
+              points={`0,${y - 3} 6,${y} 0,${y + 3}`}
+              className="m-dot travel"
               style={{
-                animationDelay: `${i * 2.6 + row * 0.8}s`,
-                animationDuration: "7.8s",
+                animationDelay: `${i * 2.5 + row * 0.7}s`,
+                animationDuration: "7.5s",
               }}
             />
           ))}
@@ -143,66 +162,69 @@ function Flow() {
   );
 }
 
-function Grid() {
+function Grid({ progress }) {
   const cells = [];
 
-  for (let r = 0; r < 7; r++) {
-    for (let c = 0; c < 7; c++) {
-      cells.push({ r, c, i: r * 7 + c });
+  for (let r = 0; r < 6; r++) {
+    for (let c = 0; c < 6; c++) {
+      cells.push({ r, c });
     }
   }
 
+  const lit = litCount(progress, cells.length);
+
   return (
     <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-      {cells.map(({ r, c, i }) => (
+      {cells.map(({ r, c }, i) => (
         <rect
           key={i}
-          x={c * 14 + 2}
-          y={r * 14 + 2}
-          width="10"
-          height="10"
-          rx="1.5"
-          className="motif-cell"
-          style={{ animationDelay: `${((r + c) % 6) * 1.1}s` }}
+          x={c * 16 + 3}
+          y={r * 16 + 3}
+          width="12"
+          height="12"
+          rx="2"
+          className={`m-cell ${cls(i, lit)}`}
+          style={{ animationDelay: `${((r + c) % 5) * 1.1}s` }}
         />
       ))}
     </svg>
   );
 }
 
-function Branches() {
-  // One trunk splitting twice, drawn on with a dash animation.
+function Branches({ progress }) {
   const limbs = [
-    "M50 100 L50 66",
-    "M50 66 L30 46", "M50 66 L70 46",
-    "M30 46 L18 28", "M30 46 L40 26",
-    "M70 46 L60 26", "M70 46 L82 28",
-    "M18 28 L12 14", "M40 26 L38 10",
-    "M60 26 L62 10", "M82 28 L88 14",
+    "M50 98 L50 68",
+    "M50 68 L30 48", "M50 68 L70 48",
+    "M30 48 L18 30", "M30 48 L40 28",
+    "M70 48 L60 28", "M70 48 L82 30",
+    "M18 30 L12 14", "M40 28 L38 10",
+    "M60 28 L62 10", "M82 30 L88 14",
   ];
+  const lit = litCount(progress, limbs.length);
 
   return (
     <svg viewBox="0 0 100 100" preserveAspectRatio="none">
       {limbs.map((d, i) => (
-        <path
-          key={i}
-          d={d}
-          className="motif-limb"
-          style={{ animationDelay: `${i * 0.55}s` }}
-        />
+        <path key={i} d={d} className={`m-line grow ${cls(i, lit)}`} />
       ))}
     </svg>
   );
 }
 
-function Pulse() {
-  // Two identical spans side by side, so a half-width slide loops cleanly.
+function Pulse({ progress }) {
   const beat =
     "l6 0 l2 -14 l3 26 l3 -20 l2 8 l6 0 l8 0 l6 0 l2 -9 l3 17 l3 -14 l2 6 l9 0";
 
   return (
     <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-      <path d={`M0 50 ${beat} ${beat}`} className="motif-pulse" />
+      {/* The whole trace is always present but faint; the lit copy is
+          revealed left-to-right in step with the lesson. */}
+      <path d={`M0 50 ${beat} ${beat}`} className="m-line off" />
+      <path
+        d={`M0 50 ${beat} ${beat}`}
+        className="m-line on scroll"
+        style={{ clipPath: `inset(0 ${100 - progress * 100}% 0 0)` }}
+      />
     </svg>
   );
 }
@@ -218,16 +240,21 @@ const MOTIFS = {
   pulse: Pulse,
 };
 
-export default function Motif({ name }) {
+export default function Motif({ name, progress = 0, speaking = false }) {
   const Shape = MOTIFS[name];
 
   if (!Shape) {
     return null;
   }
 
+  const clamped = Math.max(0, Math.min(1, progress));
+
   return (
-    <div className={`motif motif-${name}`} aria-hidden="true">
-      <Shape />
+    <div
+      className={`motif motif-${name} ${speaking ? "is-speaking" : ""}`}
+      aria-hidden="true"
+    >
+      <Shape progress={clamped} />
     </div>
   );
 }

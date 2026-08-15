@@ -632,7 +632,7 @@ its target (factor 0.45), which measures as ~33ms to half-open and ~84ms
 to close — fast enough to track syllables, smooth enough not to strobe
 (max per-frame jump 0.35).
 
-## Session 29 — A backdrop that pictures the topic
+## Session 29 — A shape that fills in as you teach
 
 The lesson now has a quiet moving background matched to what it is
 about: a connected network behind neural networks, travelling waves
@@ -659,3 +659,17 @@ slides half its width.
 
 An unknown motif value degrades to no backdrop rather than breaking the
 lesson, same as `analysis` and `challenges`.
+
+**Revised the same session.** The first version put the motif behind the
+whole page as a slow decorative loop, and it was wrong on both counts. It
+now lives *inside the conversation panel*, and it is driven by the lesson
+rather than by a timer: each motif is an ordered list of parts, and the
+first `covered/total` fraction of them are lit. Teach a 4-point lesson and
+the network wires itself up 1 → 3 → 6 → 8 → 11 nodes; the tree grows limb
+by limb; the ECG trace is revealed left to right by a clip path.
+
+So it reads as an ambient second progress indicator rather than wallpaper.
+Unearned parts sit at 5% opacity, earned parts at ~20-26% — the gap is
+what makes progress legible at a glance. The whole shape also breathes
+while she is speaking, so the panel feels alive while the transcript is
+still catching up. One part is always lit, so the panel is never blank.

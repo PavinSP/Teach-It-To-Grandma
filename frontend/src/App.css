@@ -273,6 +273,7 @@ h2 {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  /* Also the positioning context for the motif behind the messages. */
   position: sticky;
   top: 16px;
   height: calc(100vh - 140px);
@@ -2517,17 +2518,16 @@ details.misconceptions-panel .misconceptions-list {
 }
 
 /* -----------------------------
-   Topic motif — the moving backdrop
+   Topic motif — inside the conversation, and it fills in
 ----------------------------- */
 
-/* Fixed and behind everything, so scrolling never drags it and no click
-   can ever land on it. */
+/* Sits inside the chat panel, behind the messages. The panel is the
+   frame; the shape is what the lesson is about, filling in as it lands. */
 .motif {
-  position: fixed;
-  inset: 0;
+  position: absolute;
+  inset: 18px;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.55;
   overflow: hidden;
 }
 
@@ -2536,95 +2536,118 @@ details.misconceptions-panel .misconceptions-list {
   height: 100%;
 }
 
-.app {
+/* Everything the panel actually contains must sit above it. */
+.conversation > *:not(.motif) {
   position: relative;
   z-index: 1;
 }
 
-/* Ink, not colour: the backdrop must never compete with the lesson. */
-.motif-edge,
-.motif-orbit,
-.motif-wave,
-.motif-limb,
-.motif-pulse {
+/* Parts not yet earned are barely there; earned parts are clearly on.
+   The gap between the two is what makes progress readable at a glance. */
+.m-line {
   fill: none;
   stroke: #26221d;
-  stroke-width: 0.35;
-  opacity: 0.13;
+  stroke-width: 0.6;
+  transition: opacity 0.7s ease, stroke-width 0.7s ease;
 }
 
-.motif-node,
-.motif-particle,
-.motif-chevron {
+.m-dot {
   fill: #26221d;
-  opacity: 0.13;
+  transition: opacity 0.7s ease;
 }
 
-.motif-cell {
+.m-cell {
   fill: none;
   stroke: #26221d;
-  stroke-width: 0.3;
-  opacity: 0.1;
+  stroke-width: 0.6;
+  transition: opacity 0.7s ease, fill 0.7s ease;
+}
+
+.m-line.off,
+.m-dot.off,
+.m-cell.off,
+g.off {
+  opacity: 0.05;
+}
+
+.m-line.on {
+  opacity: 0.2;
+  stroke-width: 0.9;
+}
+
+.m-dot.on {
+  opacity: 0.26;
+}
+
+.m-cell.on {
+  opacity: 0.24;
+  fill: rgba(38, 34, 29, 0.14);
+}
+
+g.on {
+  opacity: 0.22;
+}
+
+/* She is talking: the whole shape breathes, so the panel feels alive
+   while the transcript is still catching up. */
+.motif.is-speaking {
+  animation: motif-breathe 2.6s ease-in-out infinite;
+}
+
+@keyframes motif-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.015); }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .motif-node {
-    animation: motif-blink 5.5s ease-in-out infinite;
+  .m-dot.on {
+    animation: motif-blink 5s ease-in-out infinite;
   }
 
-  .motif-edge {
-    animation: motif-trace 6.5s ease-in-out infinite;
-  }
-
-  .motif-wave {
+  .drift.on {
     animation: motif-drift linear infinite;
   }
 
-  .motif-particle {
+  .float.on {
     animation: motif-float ease-in-out infinite;
   }
 
-  .motif-spin {
+  .spin {
     animation: motif-rotate linear infinite;
   }
 
-  .motif-chevron {
+  .travel {
     animation: motif-travel linear infinite;
   }
 
-  .motif-cell {
-    animation: motif-glow 7s ease-in-out infinite;
+  .m-cell.on {
+    animation: motif-glow 6s ease-in-out infinite;
   }
 
-  .motif-limb {
+  .grow.on {
     stroke-dasharray: 40;
-    animation: motif-grow 9s ease-in-out infinite;
+    animation: motif-grow 3s ease-out forwards;
   }
 
-  .motif-pulse {
-    animation: motif-scroll 12s linear infinite;
+  .scroll {
+    animation: motif-scroll 14s linear infinite;
   }
 }
 
 @keyframes motif-blink {
-  0%, 100% { opacity: 0.09; }
-  50% { opacity: 0.3; }
-}
-
-@keyframes motif-trace {
-  0%, 100% { opacity: 0.07; }
-  50% { opacity: 0.2; }
+  0%, 100% { opacity: 0.16; }
+  50% { opacity: 0.34; }
 }
 
 /* The path is two periods wide; sliding one period loops seamlessly. */
 @keyframes motif-drift {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50px); }
+  from { transform: translateX(0) translateY(var(--y, 0)); }
+  to { transform: translateX(-50px) translateY(var(--y, 0)); }
 }
 
 @keyframes motif-float {
-  0%, 100% { transform: translate(0, 0); opacity: 0.08; }
-  50% { transform: translate(4px, -9px); opacity: 0.22; }
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(4px, -8px); }
 }
 
 @keyframes motif-rotate {
@@ -2634,20 +2657,19 @@ details.misconceptions-panel .misconceptions-list {
 
 @keyframes motif-travel {
   from { transform: translateX(0); opacity: 0; }
-  10% { opacity: 0.22; }
-  90% { opacity: 0.22; }
-  to { transform: translateX(96px); opacity: 0; }
+  12% { opacity: 0.26; }
+  88% { opacity: 0.26; }
+  to { transform: translateX(94px); opacity: 0; }
 }
 
 @keyframes motif-glow {
-  0%, 100% { opacity: 0.06; }
-  50% { opacity: 0.24; }
+  0%, 100% { opacity: 0.16; }
+  50% { opacity: 0.3; }
 }
 
 @keyframes motif-grow {
-  0% { stroke-dashoffset: 40; opacity: 0.05; }
-  45%, 75% { stroke-dashoffset: 0; opacity: 0.2; }
-  100% { stroke-dashoffset: 40; opacity: 0.05; }
+  from { stroke-dashoffset: 40; }
+  to { stroke-dashoffset: 0; }
 }
 
 @keyframes motif-scroll {

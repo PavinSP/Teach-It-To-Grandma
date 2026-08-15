@@ -2324,11 +2324,6 @@ function App() {
     );
   }
   return (
-    <>
-      {FEATURES.topicMotif && selectedTopic.motif && (
-        <Motif name={selectedTopic.motif} />
-      )}
-
       <main className="app">
       <section className="session">
         <button
@@ -2511,6 +2506,14 @@ function App() {
           </aside>
 
           <section className="conversation">
+            {FEATURES.topicMotif && selectedTopic.motif && (
+              <Motif
+                name={selectedTopic.motif}
+                progress={totalCount ? completedCount / totalCount : 0}
+                speaking={conversation.isSpeaking}
+              />
+            )}
+
             <div>
               {voiceOnlyActive ? (
                 /* Pure conversation: everything still records and grades
@@ -2869,7 +2872,6 @@ function App() {
         </div>
       </section>
       </main>
-    </>
   );
 }
 
