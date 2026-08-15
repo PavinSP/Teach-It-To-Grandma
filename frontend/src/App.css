@@ -3330,3 +3330,144 @@ details.misconceptions-panel .misconceptions-list {
   line-height: 1.5;
   color: #8a8176;
 }
+
+/* =========================================================================
+   Phones — the session view specifically
+   =========================================================================
+
+   The three-column layout stacks correctly on a narrow screen but nothing
+   manages height, so a live lesson became four or five screens of scroll
+   with the finish button stranded underneath the checklist, the challenge
+   deck and the misconceptions panel. Ending a lesson mid-demo meant
+   scrolling past everything you were not using to reach the one control
+   you were.
+
+   Three things fix that: the call controls stay on screen, the panel that
+   ends the lesson comes before the panels that merely inform, and the
+   pre-lesson reading material stops occupying a whole screen during the
+   part where somebody is talking.
+
+   Deliberately the last block in this file so it wins on order alone, and
+   so it can be deleted in one piece.
+   ========================================================================= */
+
+@media (max-width: 900px) {
+  /* Reading matter, not live instrumentation. It has been read by the time
+     the mic is on, and it costs most of a screen. */
+  .session-header p {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 0;
+  }
+
+  .session-layout {
+    gap: 16px;
+  }
+
+  /* Portrait, name and status on one line — the face still reacts, it just
+     stops claiming a third of the viewport to do it. */
+  .character-rail {
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0;
+  }
+
+  .character-rail .grandma-character {
+    width: 64px;
+    height: 64px;
+    flex: none;
+  }
+
+  .rail-name {
+    margin: 0;
+  }
+
+  .conversation {
+    padding: 16px;
+    min-height: 0;
+    gap: 12px;
+  }
+
+  /* The transcript is the thing being watched, so it gets the room. */
+  .transcript {
+    max-height: none;
+    min-height: 48vh;
+    flex: 1;
+  }
+
+  /* Mute, pause and end-call follow you down the page. Losing the ability
+     to stop a live microphone because it scrolled away is the failure this
+     prevents. */
+  .mic-area {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    padding: 10px 0 4px;
+    margin-top: 4px;
+    background: #fffdf8;
+    border-top: 1px solid #ebe5dc;
+  }
+
+  /* Order by what the panel is FOR: glance at coverage, leave the lesson,
+     then read the detail. Source order puts the exit last, which is right
+     on a desktop sidebar and wrong on a phone. */
+  .progress {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .progress-title { order: 1; }
+  .progress-count { order: 2; }
+  .journey        { order: 3; }
+  .completion-area { order: 4; margin-top: 16px; padding-top: 16px; }
+  .progress-item  { order: 5; }
+  .banned-terms-panel { order: 6; }
+  .challenge-deck { order: 7; }
+  .misconceptions-panel { order: 8; }
+}
+
+@media (max-width: 600px) {
+  .session-header h1 {
+    font-size: 28px;
+    line-height: 1.1;
+  }
+
+  /* The 600px block above this one set 120px, which made the portrait
+     LARGER on a smaller screen than the 900px rule it overrode. */
+  .grandma-character,
+  .character-rail .grandma-character {
+    width: 56px;
+    height: 56px;
+  }
+
+  /* Prerequisites are something you read once before starting. During a
+     lesson they are three lines of text that push the transcript down. */
+  .prereq-chips {
+    display: none;
+  }
+
+  .topic-analysis {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin-top: 6px;
+  }
+
+  .transcript-message {
+    max-width: 100%;
+  }
+
+  /* Thumb-sized, and on one row rather than three stacked full-width
+     buttons. */
+  .mic-controls {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .recall-button {
+    width: 100%;
+  }
+}
