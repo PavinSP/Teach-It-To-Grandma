@@ -1560,13 +1560,29 @@ app.post("/api/quiz", rateLimit, async (req, res) => {
 
   const prompt = `Write ${QUIZ_COUNT} multiple-choice questions about "${topic}" for a fast two-player game. Both players hear each question read aloud and then race to tap an answer, so every question must work when HEARD rather than read.
 
-Keep each question under 18 words and make it answerable in a few seconds. Four options, each under 8 words, all plausible enough that guessing is punished — a question with three obviously silly options measures nothing. Vary which position is correct.
+Keep each question under 18 words and answerable in a few seconds. Four options, each under 8 words.
 
-Make roughly a third of them genuinely tricky: the trap should be a common misunderstanding of the topic, not an obscure fact or a play on wording. Someone who really understands the subject should still get them; someone who half-remembers it should not.
+THE FOUR OPTIONS MUST BE THE SAME KIND OF THING. Four organelles, or four gases, or four colours — never a mix of categories, and never a yes/no question padded out with adverbs. "Do plants only photosynthesise? No / Only at night / Yes / Never" is exactly the failure: heard aloud at speed it is noise. If the four options do not belong to one category, the question is wrong and you must rewrite it.
 
-Order them so the first two or three are easy enough to build confidence, then difficulty climbs.
+THE QUESTION MUST HAVE EXACTLY ONE DEFENSIBLE ANSWER. A knowledgeable person should not be able to argue for a second option. Do not ask a broad question and then reward a narrow step inside it — "what is the process of making food?" is answered by photosynthesis, not by one stage of it, so if your intended answer is a stage then ask about the stage.
 
-For each question also write "why" — one sentence, under 25 words, saying what makes the right answer right. These are shown together at the end of the game, not between questions, so write each one so it stands on its own.
+Make exactly 5 of the ${QUIZ_COUNT} tricky, and set "tricky" true on precisely those.
+
+A tricky question is one where THE MISCONCEPTION IS ON SCREEN AND IS THE MOST TEMPTING OPTION. Test it like this: if a room of reasonably informed people answered fast, most of them would pick the wrong one. If the correct answer is also the obvious answer, the question is not tricky, however neatly you can name a misconception afterwards.
+
+"Which gas do plants release?" is NOT tricky — oxygen is correct and obvious, and nobody was ever going to pick helium. "Which colour of light do plants use LEAST?" IS tricky, because green is correct and almost everyone expects the opposite. "Which molecule powers the Calvin cycle?" is NOT tricky — it is recall with a long word in it.
+
+Build each tricky question backwards: start from a wrong belief people actually defend out loud, make that belief one of the four options, and write the question so that belief looks right.
+
+Building backwards from a belief does NOT license a yes/no question. The four-options-one-category rule still binds here and binds hardest here. "Do plants respire? Yes, constantly / Only at night / Never" is forbidden however real the misconception behind it — turn it into a choice between four comparable things instead, such as asking WHEN a plant respires and offering four times of day, or WHICH process the plant uses at night and offering four named processes.
+
+The other 10 are ordinary recall, and the first three should be easy enough to build confidence. Difficulty climbs after that.
+
+Every distractor must be plausible enough to punish guessing. Three obviously silly options measure nothing.
+
+Vary which option is correct.
+
+For each question write "why" — one sentence, under 25 words, saying what makes the right answer right. These appear together at the end of the game rather than between questions, so each must stand on its own. For a tricky one, name the misconception it caught.
 
 If the topic is too vague or is not a real subject, set "ok" to false and say why in "problem".${inLanguage(language)}`;
 
