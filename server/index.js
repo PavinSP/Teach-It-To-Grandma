@@ -1530,6 +1530,161 @@ app.get("/api/teachoff/:code/runs", async (req, res) => {
   res.json({ code: entry.code, runs: rankedRuns(entry) });
 });
 
+// ---------------------------------------------------------------------------
+// The quiz game (#side mode). Deliberately a different measurement from the
+// rest of this app: a lesson asks whether you can explain something, a quiz
+// asks whether you can recognise the right answer under time pressure. Those
+// are not the same thing and the product's whole argument is that they are
+// not — so this lives beside the teaching flow, never in front of it.
+//
+// Questions are generated per topic, the same way lessons are, so the game
+// works for anything somebody names rather than a fixed bank.
+
+const QUIZ_COUNT = 15;
+
+app.post("/api/quiz", rateLimit, async (req, res) => {
+  const topic = (req.body?.topic ?? "").trim();
+  const language = req.body?.language ?? "en";
+
+  if (!languageName(language)) {
+    return res.status(400).json({ error: "Unsupported language." });
+  }
+
+  if (!topic) {
+    return res.status(400).json({ error: "Expected { topic }." });
+  }
+
+  if (topic.length > 120) {
+    return res.status(400).json({ error: "That topic is too long." });
+  }
+
+  const prompt = `Write ${QUIZ_COUNT} multiple-choice questions about "${topic}" for a fast two-player game. Both players hear each question read aloud and then race to tap an answer, so every question must work when HEARD rather than read.
+
+Keep each question under 18 words and make it answerable in a few seconds. Four options, each under 8 words, all plausible enough that guessing is punished — a question with three obviously silly options measures nothing. Vary which position is correct.
+
+Make roughly a third of them genuinely tricky: the trap should be a common misunderstanding of the topic, not an obscure fact or a play on wording. Someone who really understands the subject should still get them; someone who half-remembers it should not.
+
+Order them so the first two or three are easy enough to build confidence, then difficulty climbs.
+
+For each question also write "why" — one sentence, under 25 words, saying what makes the right answer right. These are shown together at the end of the game, not between questions, so write each one so it stands on its own.
+
+If the topic is too vague or is not a real subject, set "ok" to false and say why in "problem".${inLanguage(language)}`;
+
+  try {
+    const completion = await client.chat.completions.create({
+      model: MODEL,
+      max_completion_tokens: 3000,
+      messages: [{ role: "user", content: prompt }],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "quiz",
+          schema: {
+            type: "object",
+            properties: {
+              ok: { type: "boolean" },
+              problem: { type: "string" },
+              name: { type: "string", description: "The topic, tidied for display" },
+              questions: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    question: { type: "string" },
+                    options: {
+                      type: "array",
+                      items: { type: "string" },
+                      minItems: 4,
+                      maxItems: 4,
+                    },
+                    correct: {
+                      type: "integer",
+                      description: "Index 0-3 of the correct option",
+                    },
+                    tricky: { type: "boolean" },
+                    why: { type: "string" },
+                  },
+                  required: ["question", "options", "correct", "tricky", "why"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["ok", "problem", "name", "questions"],
+            additionalProperties: false,
+          },
+        },
+      },
+    });
+
+    const raw = completion.choices?.[0]?.message?.content;
+
+    if (!raw) {
+      throw new Error("Model returned no content");
+    }
+
+    const quiz = JSON.parse(raw);
+
+    if (!quiz.ok) {
+      return res.status(422).json({
+        error: quiz.problem || "That topic can't be turned into a quiz.",
+      });
+    }
+
+    // Never trust and serve. A question whose "correct" index points outside
+    // its own options is unanswerable, and one with duplicate options has no
+    // single right answer — both would only surface mid-game, on stage, with
+    // two people staring at a timer.
+    const questions = (quiz.questions ?? [])
+      .filter(
+        (q) =>
+          typeof q.question === "string" &&
+          Array.isArray(q.options) &&
+          q.options.length === 4 &&
+          q.options.every((o) => typeof o === "string" && o.trim()) &&
+          new Set(q.options.map((o) => o.trim().toLowerCase())).size === 4 &&
+          Number.isInteger(q.correct) &&
+          q.correct >= 0 &&
+          q.correct <= 3
+      )
+      .map((q, i) => {
+        // Shuffle, because the model has a positional bias and asking it
+        // nicely not to does not fix that. A generated set put the answer
+        // at position 1, 2 or 3 five times each and never at 4 — in a game
+        // where two people are racing a clock, "never the last one" is a
+        // pattern somebody learns by question six and then exploits.
+        // Shuffling makes the distribution a property of the code rather
+        // than a hope about the model.
+        const shuffled = q.options.map((o, index) => ({ o: o.trim(), index }));
+
+        for (let k = shuffled.length - 1; k > 0; k--) {
+          const j = Math.floor(Math.random() * (k + 1));
+
+          [shuffled[k], shuffled[j]] = [shuffled[j], shuffled[k]];
+        }
+
+        return {
+          id: `q${i + 1}`,
+          question: q.question.trim(),
+          options: shuffled.map((entry) => entry.o),
+          correct: shuffled.findIndex((entry) => entry.index === q.correct),
+          tricky: Boolean(q.tricky),
+          why: typeof q.why === "string" ? q.why.trim() : "",
+        };
+      });
+
+    if (questions.length < 5) {
+      throw new Error(
+        `Only ${questions.length} of ${quiz.questions?.length ?? 0} questions survived validation`
+      );
+    }
+
+    res.json({ name: quiz.name || topic, questions });
+  } catch (err) {
+    console.error("Could not build quiz:", err);
+    res.status(500).json({ error: "Could not build a quiz for that topic." });
+  }
+});
+
 // On Vercel the app is imported by api/index.js and the platform owns the
 // socket — binding a port there would throw. Locally, nothing imports this
 // file, so it starts its own listener exactly as it always did.
