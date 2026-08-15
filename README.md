@@ -1,5 +1,9 @@
 # Teach It To Grandma
 
+🏆 **Winner of the ElevenLabs Sonderpreis for Best Project Built With ElevenLabs**, awarded 3 months of ElevenLabs Scale.
+
+**[Try it live](https://titanom-hackathon-8xts.vercel.app/)**
+
 A voice app that tests whether you actually understand something, using the Feynman technique: explain a concept out loud to an AI "Grandma" persona who catches jargon, logic gaps, and vagueness instead of teaching it back to you.
 
 Say a topic, any topic. Grandma listens by voice, asks follow-up questions, and occasionally states something confidently wrong to see if you catch it. At the end, a grading layer judges whether each point was genuinely explained, not just keyword-matched, and produces a score you can compare against other people teaching the same topic ("Teach-Off" mode).
@@ -39,4 +43,4 @@ Run `./smoke-test.sh` before a live demo to sanity-check both processes are up a
 
 ## Status
 
-Actively in development for an upcoming hackathon demo.
+Built for a hackathon; won the ElevenLabs Sonderpreis for Best Project Built With ElevenLabs.
