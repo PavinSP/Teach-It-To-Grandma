@@ -73,7 +73,9 @@ const STRINGS = {
     dropped: "{name} hung up. Press the microphone to carry on — nothing you said is lost.",
     you: "YOU",
     // Recap
-    notesOf: "{name}'s notes".toUpperCase(),
+    // The caller passes an already-uppercased name; uppercasing the
+    // template here instead would break the {name} placeholder itself.
+    notesOf: "{name}'S NOTES",
     recapSub: "Here's what {name} understood from your lesson on",
     feynmanScore: "FEYNMAN SCORE",
     says: "{name} SAYS",
@@ -98,6 +100,8 @@ const STRINGS = {
     youCovered: "You covered",
     theyFollowed: "{name} followed",
     couldRepeat: "{they} could repeat back",
+    gapLadder:
+      "Each step is a harder test than the one before it. Repeating your words back is not the same as following them.",
     tookAway: "What {name} took away",
     saidOutLoud: "What {name} said out loud",
     undefinedWords: "Words you used but never explained",
@@ -231,6 +235,8 @@ const STRINGS = {
     youCovered: "Du hast angesprochen",
     theyFollowed: "{name} ist gefolgt",
     couldRepeat: "{they} konnte wiedergeben",
+    gapLadder:
+      "Jede Stufe ist eine härtere Prüfung als die vorige. Deine Worte wiederzugeben heißt nicht, sie verstanden zu haben.",
     tookAway: "Was {name} mitgenommen hat",
     saidOutLoud: "Was {name} laut gesagt hat",
     undefinedWords: "Wörter, die du benutzt, aber nie erklärt hast",

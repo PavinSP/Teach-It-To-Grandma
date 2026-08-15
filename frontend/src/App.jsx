@@ -152,6 +152,51 @@ export function scrub(text) {
   return out.replace(/\s{2,}/g, " ").trim();
 }
 
+// The listener stopping to ask what something MEANT or HOW it worked — the
+// signal that friction, not curiosity, interrupted the lesson. This feeds 15%
+// of the Feynman score, so it stays a deterministic list an engineer can point
+// at rather than something a model decides.
+//
+// Kept deliberately narrow. "And who turns all these dials?" is interest, and
+// counting ordinary curiosity would punish a lesson that was going well. Only
+// phrasings that mean "that did not land" belong here.
+//
+// The German half is not optional. Without it a German lesson could never
+// register friction at all, which quietly handed every German run up to 15
+// free points and made Teach-Off scores incomparable across languages.
+const CLARIFICATION_PATTERNS = [
+  // English — asking for a meaning or a mechanism
+  /what exactly/,
+  /what does/,
+  /what do you mean/,
+  /what kind of/,
+  /how does/,
+  /why does/,
+  /can you explain/,
+  /could you explain/,
+  // English — saying plainly that it did not land
+  /what on earth is/,
+  /what in the world is/,
+  /i don'?t understand/,
+  /i'?m lost/,
+  /you(?:'ve| have)? lost me/,
+  /slow down/,
+
+  // German — asking for a meaning or a mechanism
+  /was bedeutet/,
+  /was hei(?:ß|ss)t/,
+  /was meinst du/,
+  /was meinen sie/,
+  /wie funktioniert/,
+  /was f(?:ü|ue)r ein/,
+  /kannst du (?:das |mir |mir das )?erkl(?:ä|ae)ren/,
+  /k(?:ö|oe)nnen sie (?:das |mir |mir das )?erkl(?:ä|ae)ren/,
+  // German — saying plainly that it did not land
+  /ich verstehe (?:das )?nicht/,
+  /ich bin verwirrt/,
+  /langsamer/,
+];
+
 function calculateProgress(topic, messages) {
   const studentText = messages
     .filter((message) => message.source === "user" && message.meta !== "prompt")
@@ -205,15 +250,7 @@ function generateRecap(topic, progress, messages, who = "Grandma") {
   const clarificationMessages = grandmaMessages.filter((message) => {
     const text = message.toLowerCase();
 
-    return (
-      text.includes("what exactly") ||
-      text.includes("what does") ||
-      text.includes("how does") ||
-      text.includes("why does") ||
-      text.includes("could you explain") ||
-      text.includes("what do you mean") ||
-      text.includes("what kind of")
-    );
+    return CLARIFICATION_PATTERNS.some((pattern) => pattern.test(text));
   });
 
   let verdict;
@@ -298,6 +335,7 @@ function App() {
   const [jury, setJury] = useState(snap?.jury ?? null);
   const [isConvening, setIsConvening] = useState(false);
   const [juryError, setJuryError] = useState("");
+  const [openJuror, setOpenJuror] = useState(null);
   // #46 (student half) — who is doing the teaching.
   const [you, setYou] = useState(() =>
     FEATURES.youCharacter ? loadYou() : null
@@ -567,6 +605,7 @@ function App() {
     setJury(null);
     setIsConvening(false);
     setJuryError("");
+    setOpenJuror(null);
   };
 
   // Convening costs one call per juror, so it is asked for, never automatic.
@@ -1996,6 +2035,9 @@ function App() {
       (FEATURES.aiHeadline && aiGrade?.headlines?.[headlineBand]) ||
       activeCharacter.headlines[headlineBand];
 
+    const openVerdict =
+      jury?.verdicts?.find((v) => v.id === openJuror) ?? null;
+
     const delivery = FEATURES.deliveryAnalysis
       ? analyseDelivery(recap.userMessages, lessonDurationMs)
       : null;
@@ -2409,26 +2451,79 @@ function App() {
                 </>
               ) : (
                 <>
-                  <div className="jury-rows">
-                    {jury.verdicts.map((v) => (
-                      <div className="juror" key={v.id}>
-                        <span className="juror-name">{v.name}</span>
+                  {/* The scores stay on the bench so the SPREAD — the actual
+                      finding — is readable without clicking anything. Only the
+                      reasoning is behind a tap. */}
+                  <div className="jury-bench">
+                    {jury.verdicts.map((v) => {
+                      const juror = CHARACTERS.find((c) => c.id === v.id);
+                      const isOpen = openJuror === v.id;
 
-                        <span className="juror-bar">
+                      return (
+                        <button
+                          type="button"
+                          key={v.id}
+                          className={`juror-seat ${isOpen ? "open" : ""}`}
+                          onClick={() => setOpenJuror(isOpen ? null : v.id)}
+                          aria-expanded={isOpen}
+                          aria-label={`${v.name} scored ${v.score} out of 100`}
+                        >
                           <span
-                            className={`juror-fill band-${bandForScore(v.score)}`}
-                            style={{ width: `${v.score}%` }}
-                          />
-                        </span>
+                            className={`juror-portrait band-${bandForScore(v.score)}`}
+                            style={
+                              juror?.color
+                                ? { backgroundColor: juror.color }
+                                : undefined
+                            }
+                          >
+                            {juror?.image ? (
+                              <img src={juror.image} alt="" />
+                            ) : (
+                              <span className="juror-glyph">
+                                {juror?.glyph ?? "🧑"}
+                              </span>
+                            )}
+                          </span>
 
-                        <span className="juror-score">{v.score}</span>
+                          <span className="juror-seat-name">{v.name}</span>
 
-                        <span className="juror-said">
-                          <strong>{v.headline}</strong> — {v.verdict}
+                          <span
+                            className={`juror-seat-score band-${bandForScore(v.score)}`}
+                          >
+                            {v.score}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {openVerdict ? (
+                    // Keyed on the juror so switching seats remounts the panel
+                    // and replays its entrance, rather than swapping the text
+                    // underneath a static box.
+                    <div className="juror-verdict" key={openVerdict.id}>
+                      <div className="juror-verdict-head">
+                        <strong>{openVerdict.headline}</strong>
+                        <span className="juror-verdict-score">
+                          {openVerdict.score}
+                          <em>/100</em>
                         </span>
                       </div>
-                    ))}
-                  </div>
+
+                      <span className="juror-bar">
+                        <span
+                          className={`juror-fill band-${bandForScore(openVerdict.score)}`}
+                          style={{ width: `${openVerdict.score}%` }}
+                        />
+                      </span>
+
+                      <p>{openVerdict.verdict}</p>
+                    </div>
+                  ) : (
+                    <p className="jury-hint">
+                      Tap a juror to hear what they made of it.
+                    </p>
+                  )}
 
                   <p className="jury-spread">
                     {jury.spread >= 30
@@ -2463,13 +2558,25 @@ function App() {
                 </div>
               </div>
 
-              {/* Counts, with their denominators visible. Coverage is what
-                  you said; the other two are what actually landed. */}
+              {/* A ladder, not three peer metrics. Saying the words is easier
+                  than getting them repeated back, which is easier than being
+                  followed — so they run loosest-first and the numbers descend.
+                  Flat and in the old order, 2 / 0 / 1 read as three graders
+                  contradicting each other; ordered, the drop between them is
+                  the finding. */}
               <div className="gap-scoreboard">
                 <div className="gap-stat">
                   <span className="gap-label">{tt("youCovered")}</span>
                   <span className="gap-value">
                     {progress.filter(Boolean).length} / {selectedTopic.points.length}
+                  </span>
+                </div>
+
+                <div className="gap-stat">
+                  <span className="gap-label">{tt("couldRepeat")}</span>
+                  <span className="gap-value">
+                    {explainBack.points.filter((p) => p.recalled === "correct").length}{" "}
+                    / {explainBack.points.length}
                   </span>
                 </div>
 
@@ -2482,15 +2589,9 @@ function App() {
                     </span>
                   </div>
                 )}
-
-                <div className="gap-stat">
-                  <span className="gap-label">She could repeat back</span>
-                  <span className="gap-value">
-                    {explainBack.points.filter((p) => p.recalled === "correct").length}{" "}
-                    / {explainBack.points.length}
-                  </span>
-                </div>
               </div>
+
+              <p className="gap-ladder">{tt("gapLadder")}</p>
 
               <div className="grandma-recall">
                 <div className="recall-label">

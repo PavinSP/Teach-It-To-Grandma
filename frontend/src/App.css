@@ -2665,26 +2665,172 @@ details.misconceptions-panel .misconceptions-list {
   gap: 8px;
 }
 
-.jury-rows {
+/* The jury bench: four portraits, scores on show, reasoning behind a tap.
+   Keeping every score visible is deliberate — the SPREAD between jurors is
+   the finding this card exists to deliver, and hiding it behind four clicks
+   would bury the one thing worth seeing. */
+.jury-bench {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.juror-seat {
+  flex: 1 1 0;
+  min-width: 96px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-bottom: 16px;
-}
-
-.juror {
-  display: grid;
-  grid-template-columns: 88px 1fr 38px;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  padding: 14px 8px;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
-.juror-name {
+.juror-seat:hover {
+  background: #faf6ef;
+}
+
+.juror-seat.open {
+  background: #faf6ef;
+  border-color: #d8d0c4;
+}
+
+.juror-seat:focus-visible {
+  outline: 2px solid #26221d;
+  outline-offset: 2px;
+}
+
+.juror-portrait {
+  position: relative;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The ring carries the band colour, so a juror's verdict is legible from
+     the portrait alone before anything is clicked. */
+  box-shadow: 0 0 0 3px #fffdf8, 0 0 0 6px currentColor;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.juror-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.juror-glyph {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.juror-seat.open .juror-portrait {
+  transform: scale(1.08);
+}
+
+.juror-portrait.band-good { color: #2f7a4f; }
+.juror-portrait.band-mid  { color: #c98a2b; }
+.juror-portrait.band-low  { color: #9c3327; }
+
+.juror-seat-name {
+  font-size: 13px;
   font-weight: 700;
+  color: #26221d;
+}
+
+.juror-seat-score {
+  font-size: 19px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.juror-seat-score.band-good { color: #2f7a4f; }
+.juror-seat-score.band-mid  { color: #c98a2b; }
+.juror-seat-score.band-low  { color: #9c3327; }
+
+.jury-hint {
+  margin: 0 0 16px;
+  padding: 16px;
+  border: 1px dashed #d8d0c4;
+  border-radius: 16px;
+  text-align: center;
   font-size: 14px;
+  color: #8a8176;
+}
+
+.juror-verdict {
+  margin-bottom: 16px;
+  padding: 20px;
+  border: 1px solid #d8d0c4;
+  border-radius: 18px;
+  background: #faf6ef;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .juror-verdict {
+    animation: juror-verdict-in 0.25s ease-out;
+  }
+}
+
+@keyframes juror-verdict-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.juror-verdict-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.juror-verdict-head strong {
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.juror-verdict-score {
+  flex: 0 0 auto;
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.juror-verdict-score em {
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  opacity: 0.45;
+}
+
+.juror-verdict p {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #655e55;
 }
 
 .juror-bar {
+  display: block;
   height: 10px;
   border-radius: 999px;
   background: rgba(38, 34, 29, 0.08);
@@ -2701,19 +2847,6 @@ details.misconceptions-panel .misconceptions-list {
 .juror-fill.band-good { background: #2f7a4f; }
 .juror-fill.band-mid  { background: #c98a2b; }
 .juror-fill.band-low  { background: #9c3327; }
-
-.juror-score {
-  font-weight: 800;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.juror-said {
-  grid-column: 2 / -1;
-  font-size: 13px;
-  opacity: 0.75;
-  line-height: 1.45;
-}
 
 .jury-spread {
   margin: 0;
@@ -3188,4 +3321,12 @@ details.misconceptions-panel .misconceptions-list {
   .replay-stats {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+/* The ladder caption under the three counts — explains why they descend. */
+.gap-ladder {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #8a8176;
 }

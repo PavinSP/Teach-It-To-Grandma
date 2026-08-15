@@ -1,0 +1,149 @@
+/* Every colour, easing curve, space step and radius in the app resolves
+   here. The rule that makes the alternate direction possible is simple and
+   absolute: no component stylesheet may contain a colour literal. If a value
+   is not in this file, it cannot be re-themed, and re-theming is the whole
+   reason this file exists.
+
+   "Cathode Seminar" is the shipped direction — a dark instrument panel, warm
+   only where the characters are. The vellum block at the bottom is the warm
+   Swiss-editorial alternate, kept commented and ready. */
+
+:root {
+  /* ground */
+  --bg-void: #08090A;
+  --bg-base: #0D0F11;
+  --surface: #14171A;
+  --surface-raised: #1B1F23;
+  --border: #262B31;
+  --border-strong: #39414A;
+  --inset-hi: rgba(255, 255, 255, 0.045);
+
+  /* text */
+  --text: #E8EDF2;
+  --text-2: #9BA6B2;
+  --text-muted: #5E6975;
+
+  /* semantic — these four ARE the product */
+  --signal: #5EE0FF;        /* live / listening / primary */
+  --understood: #7CFF9B;
+  --partial: #FFC66D;
+  --misunderstood: #FF6B5A;
+  --unexplored: #47525E;     /* deliberately dim and desaturated */
+  --rec: #FF3B30;            /* recording dot only, nowhere else */
+
+  /* easing */
+  --e-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --e-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --e-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --e-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --e-inout-quart: cubic-bezier(0.77, 0, 0.175, 1);
+  --e-emph-decel: cubic-bezier(0.05, 0.7, 0.1, 1);
+
+  /* space */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px; --s9: 96px;
+
+  /* radius — small on purpose */
+  --r-panel: 2px; --r-input: 4px; --r-pill: 999px;
+}
+
+/* -------------------------------------------------------------------------
+   Type. Three faces, no more. The stacks name a self-hosted face first and
+   fall back to something already on the machine — a projector laptop that
+   never finishes downloading a font still renders a deliberate-looking page
+   rather than Times New Roman.
+   ------------------------------------------------------------------------- */
+
+:root {
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-prose: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Scale: 11 · 12 · 13 · 15 · 17 · 21 · 27 · 35 · 46 · 64 */
+  --t-11: 11px; --t-12: 12px; --t-13: 13px; --t-15: 15px; --t-17: 17px;
+  --t-21: 21px; --t-27: 27px; --t-35: 35px; --t-46: 46px; --t-64: 64px;
+
+  --lh-prose: 1.5;
+  --lh-display: 1.05;
+
+  --track-display: -0.02em;   /* display type, tightened */
+  --track-label: 0.06em;      /* uppercase mono labels */
+
+  /* Depth is a border and an inset highlight, never a soft shadow. The one
+     real shadow in the app belongs to modals. */
+  --edge: 1px solid var(--border);
+  --edge-strong: 1px solid var(--border-strong);
+  --lift: inset 0 1px 0 var(--inset-hi);
+  --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.65);
+
+  /* Focus rings appear instantly and are never animated away. */
+  --ring: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--signal);
+}
+
+/* Every live number gets this. Without it the layout jitters on every tick
+   while a timer or a score counts. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* A mono label, shouting quietly. */
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--t-11);
+  font-weight: 500;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* -------------------------------------------------------------------------
+   The four semantic states, resolved to a token so a component never has to
+   know which colour "partial" is this month.
+   ------------------------------------------------------------------------- */
+
+[data-state="understood"]    { --state: var(--understood); }
+[data-state="partial"]       { --state: var(--partial); }
+[data-state="misunderstood"] { --state: var(--misunderstood); }
+[data-state="unexplored"]    { --state: var(--unexplored); }
+
+/* -------------------------------------------------------------------------
+   ALTERNATE DIRECTION — "Vellum": warm Swiss editorial, paper rather than
+   glass. Uncomment the block and set data-theme="vellum" on <html>. Nothing
+   outside this file needs to change, which is the point of the file.
+
+   Note for whoever reads this later: the app's original design lived in this
+   palette, so this is a return path, not a hypothetical.
+
+[data-theme="vellum"] {
+  --bg-void: #F3EFE6;
+  --bg-base: #FBF9F4;
+  --surface: #FFFFFF;
+  --surface-raised: #FFFFFF;
+  --border: #E2DCCF;
+  --border-strong: #CFC7B6;
+  --inset-hi: rgba(0, 0, 0, 0.03);
+
+  --text: #15130F;
+  --text-2: #4A4640;
+  --text-muted: #8B857A;
+
+  --signal: #101010;
+  --understood: #2F6B4F;
+  --partial: #B4761E;
+  --misunderstood: #B03A2E;
+  --unexplored: #B8B1A2;
+  --rec: #B03A2E;
+
+  --ink: #101010;
+  --marker: #FFE45E;
+
+  --font-display: Fraunces, Georgia, serif;
+  --font-prose: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+
+  --r-panel: 0; --r-input: 3px; --r-pill: 999px;
+
+  --lift: none;
+  --shadow-modal: none;
+}
+   ------------------------------------------------------------------------- */

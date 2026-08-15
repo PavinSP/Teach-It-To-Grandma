@@ -1,0 +1,58 @@
+/* Texture: grain, scanlines, vignette. Three cheap layers that stop a dark
+   build reading as a template.
+
+   The grain is a single feTurbulence baked once into a data URI and painted
+   by the compositor. It is never animated — a per-frame grain is a full
+   repaint of the viewport every 16ms, which is the most expensive way to
+   spend a frame on something nobody consciously sees. */
+
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* Scanlines belong inside the graph canvas frame and nowhere else. Applied
+   to a wrapper, not the canvas itself, so the canvas keeps its own pixels. */
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.02) 0,
+    rgba(255, 255, 255, 0.02) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* The session view sits inside a soft radial falloff, which is what makes
+   the centre column read as the lit part of an instrument. */
+.vignette::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 120% 80% at 50% 45%,
+    transparent 40%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+}
+
+/* ?safe is a strange-projector-laptop build, not a preference. mix-blend-mode
+   and large radial gradients are both GPU work with no behavioural payoff, so
+   they are the first things to go. The page still looks deliberate without
+   them — flat and clinical rather than textured and clinical. */
+[data-safe="true"] .grain,
+[data-safe="true"] .scanlines::after,
+[data-safe="true"] .vignette::before {
+  display: none;
+}
