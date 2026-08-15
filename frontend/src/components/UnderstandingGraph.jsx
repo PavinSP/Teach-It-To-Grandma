@@ -5,6 +5,8 @@ import {
   forceLink,
   forceCollide,
   forceCenter,
+  forceX,
+  forceY,
 } from "d3-force";
 import { useTicker, useReducedMotion, PRIORITY } from "../motion";
 
@@ -65,6 +67,15 @@ function pointState(index, point, progress, grade) {
   return progress?.[index] ? "partial" : "unexplored";
 }
 
+// Width dominates: these chips are wide and short, so a radius derived
+// from the label width is what stops them sitting on top of each other.
+// Vertical separation comes from the layout, not from the collision.
+function sizeOf(label, kind) {
+  const { text, w, h } = measureChip(label, kind);
+
+  return { __text: text, __w: w, __h: h, __r: w / 2 + 8 };
+}
+
 function buildGraph({ points = [], checks = [], progress = [], grade, topic }) {
   const nodes = [];
   const links = [];
@@ -76,13 +87,14 @@ function buildGraph({ points = [], checks = [], progress = [], grade, topic }) {
     label: topic || "",
     kind: "topic",
     state: "signal",
+    ...sizeOf(topic || "", "topic"),
   });
 
   points.forEach((point, i) => {
     const id = `p${i}`;
     const state = pointState(i, point, progress, grade);
 
-    nodes.push({ id, label: point, kind: "point", state });
+    nodes.push({ id, label: point, kind: "point", state, ...sizeOf(point, "point") });
     links.push({ source: "__topic", target: id, established: true });
 
     // Keywords are what the coverage pass actually matches on, so they are
@@ -95,6 +107,7 @@ function buildGraph({ points = [], checks = [], progress = [], grade, topic }) {
         id: kid,
         label: keyword,
         kind: "keyword",
+        ...sizeOf(keyword, "keyword"),
         // A keyword inherits its parent's state rather than claiming one of
         // its own: the grade is given per point, and colouring a child
         // green on its own evidence would assert more than is known.
@@ -108,6 +121,35 @@ function buildGraph({ points = [], checks = [], progress = [], grade, topic }) {
 }
 
 const RADIUS = { topic: 30, point: 22, keyword: 12 };
+
+const FONT = {
+  keyword: '500 10px "JetBrains Mono", ui-monospace, monospace',
+  point: '500 12px "JetBrains Mono", ui-monospace, monospace',
+  topic: '500 12px "JetBrains Mono", ui-monospace, monospace',
+};
+
+// forceCollide reads each radius ONCE, when the force initialises, and
+// caches it. Measuring during the draw was therefore useless: the accessor
+// only ever saw undefined and every node collided as a 22px disc while the
+// screen drew a 200px box. So the chip is measured before the simulation
+// exists, on a canvas that is never displayed.
+let measurer = null;
+
+function measureChip(label, kind) {
+  if (!measurer) measurer = document.createElement("canvas").getContext("2d");
+
+  measurer.font = FONT[kind];
+
+  const text =
+    label.length > 22 ? `${label.slice(0, 21)}…` : label;
+  const padX = kind === "keyword" ? 8 : 12;
+
+  return {
+    text,
+    w: measurer.measureText(text).width + padX * 2,
+    h: kind === "keyword" ? 22 : 30,
+  };
+}
 
 export function UnderstandingGraph({
   points,
@@ -160,10 +202,20 @@ export function UnderstandingGraph({
             .distance(90)
             .strength(0.6)
         )
+        // A chip is as wide as its label, not as wide as a circle. Collision
+        // against a fixed radius is why "Error leads to backpropagation" sat
+        // on top of "cost function": the simulation was resolving 22px discs
+        // while the screen drew 200px boxes. __r is measured during the draw
+        // and fed back here.
         .force(
           "collide",
-          forceCollide((d) => RADIUS[d.kind] + 6)
+          forceCollide((d) => d.__r ?? RADIUS[d.kind] + 6).iterations(2)
         )
+        // The panel is wide and short. Left to itself the layout is radially
+        // symmetric and taller than the box, so it spills out the top and
+        // bottom; a gentle vertical pull flattens it to the shape available.
+        .force("x", forceX().strength(0.02))
+        .force("y", forceY().strength(0.12))
         .velocityDecay(0.4)
         .stop();
     } else {
@@ -234,6 +286,8 @@ export function UnderstandingGraph({
 
       simRef.current
         ?.force("center", forceCenter(cssW / 2, cssH / 2))
+        .force("x", forceX(cssW / 2).strength(0.02))
+        .force("y", forceY(cssH / 2).strength(0.12))
         .alpha(0.3)
         .restart();
     };
@@ -265,6 +319,26 @@ export function UnderstandingGraph({
       io.disconnect();
     };
   }, []);
+
+  // d3-force has no walls. Without this the layout drifts out of the panel
+  // and chips are cut off by the frame — which reads as broken rather than
+  // as a graph that happens to be larger than its box.
+  const clampToPanel = () => {
+    const sim = simRef.current;
+    const { w, h } = sizeRef.current;
+
+    if (!sim || !w || !h) return;
+
+    for (const n of sim.nodes()) {
+      if (n.x === undefined) continue;
+
+      const halfW = (n.__w ?? 60) / 2 + 4;
+      const halfH = (n.__h ?? 26) / 2 + 4;
+
+      n.x = Math.max(halfW, Math.min(w - halfW, n.x));
+      n.y = Math.max(halfH, Math.min(h - halfH, n.y));
+    }
+  };
 
   const draw = () => {
     const canvas = canvasRef.current;
@@ -328,19 +402,13 @@ export function UnderstandingGraph({
           ? palette.signal
           : palette[node.state] ?? palette.unexplored;
 
-      const padX = node.kind === "keyword" ? 8 : 12;
 
-      ctx.font =
-        node.kind === "keyword"
-          ? '500 10px "JetBrains Mono", ui-monospace, monospace'
-          : '500 12px "JetBrains Mono", ui-monospace, monospace';
+      ctx.font = FONT[node.kind];
 
       // Chips, not circles — a label has to fit inside the thing it names.
-      const label =
-        node.label.length > 22 ? `${node.label.slice(0, 21)}…` : node.label;
-      const textWidth = ctx.measureText(label).width;
-      const boxW = textWidth + padX * 2;
-      const boxH = node.kind === "keyword" ? 22 : 30;
+      const label = node.__text ?? node.label;
+      const boxW = node.__w;
+      const boxH = node.__h;
       const x = node.x - boxW / 2;
       const y = node.y - boxH / 2;
 
@@ -355,8 +423,6 @@ export function UnderstandingGraph({
       ctx.fillStyle = node.state === "unexplored" ? palette.textMuted : colour;
       ctx.fillText(label, node.x, node.y + 0.5);
 
-      // Keeps the collision force honest about a chip's real footprint.
-      node.__w = boxW;
     }
   };
 
@@ -367,7 +433,10 @@ export function UnderstandingGraph({
     () => {
       if (!visibleRef.current) return;
 
-      if (!calm) simRef.current?.tick();
+      if (!calm) {
+        simRef.current?.tick();
+        clampToPanel();
+      }
 
       draw();
     },
