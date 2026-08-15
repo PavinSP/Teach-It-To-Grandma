@@ -14,7 +14,21 @@ const PORT = process.env.PORT || 3001;
 // TitanomGPT is OpenAI-compatible, so the OpenAI SDK works against it
 // once the base URL is swapped.
 const TITANOM_BASE_URL = "https://api.deutschlandgpt.de/v2";
-const MODEL = process.env.GRADING_MODEL || "claude-4.5-sonnet";
+// Measured on this project's own test cases, not chosen by reputation.
+//
+// gemini-3.1-flash-lite grades the jargon-stuffed answer at 1/4 and the
+// genuinely good one at 4/4, four runs each, at 1.7s — versus ~9s for
+// claude-4.5-sonnet at the same verdicts. Two faster models were tried and
+// rejected outright: claude-4.5-haiku passed the vague answer 3/4 and
+// gpt-5.4-mini passed it 4/4. A grader that rubber-stamps jargon destroys
+// the one thing this product claims.
+//
+// Judgement-heavy work (the jury's distinct personas, the closed-world
+// recall) stays on the stronger model, where a wrong answer is subtle
+// rather than obvious.
+const FAST_MODEL = process.env.FAST_MODEL || "gemini-3.1-flash-lite";
+const DEEP_MODEL = process.env.DEEP_MODEL || "claude-4.5-sonnet";
+const MODEL = FAST_MODEL;
 
 const apiKey = process.env.TITANOM_API_KEY;
 
@@ -663,7 +677,9 @@ Finally, in "unexplainedTerms", list every word the student used but never expla
 
   try {
     const completion = await client.chat.completions.create({
-      model: MODEL,
+      // The closed world is the hard part: she must reproduce only what
+      // she was told, and a weaker model quietly repairs the gaps.
+      model: DEEP_MODEL,
       max_completion_tokens: 1200,
       messages: [{ role: "user", content: prompt }],
       response_format: {
@@ -898,7 +914,9 @@ You are ${juror.name}. Judge this explanation ONLY as you would, by your own sta
 Give "score" out of 100 by that standard alone — do not moderate toward what another kind of listener would say. Then one sentence in your own voice saying what decided it, and the single word or short phrase that most defines your verdict as "headline".`;
 
     const completion = await client.chat.completions.create({
-      model: MODEL,
+      // Four jurors have to stay four distinct people, not one voice with
+      // four scores — that separation is what the panel is for.
+      model: DEEP_MODEL,
       max_completion_tokens: 300,
       messages: [{ role: "user", content: prompt }],
       response_format: {

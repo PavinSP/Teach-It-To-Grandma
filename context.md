@@ -685,3 +685,34 @@ Deliberately not built from those files: the live Understanding Graph
 (#1) — genuinely their best idea, but a live-updating concept graph
 during a voice call is a feature-sized risk, and the jury delivers a
 comparable "the AI is modelling this" moment for a fraction of it.
+
+## Session 32 — Why it was slow, and the model that fixed it
+
+Lesson generation took 13-14s and grading ~9s. The cause was one global
+`MODEL` constant on `claude-4.5-sonnet` doing every job, including jobs
+that need structure rather than judgement.
+
+**Benchmarked all the fast models on this project's own test cases**
+rather than picking by reputation, and the results split sharply:
+
+| model | vague answer | good answer | latency |
+|---|---|---|---|
+| claude-4.5-sonnet | 0/4 ✓ | 4/4 ✓ | ~9s |
+| **gemini-3.1-flash-lite** | **1/4 ✓** | **4/4 ✓** | **1.7s** |
+| gpt-4.1-mini | 4/4 ✗ | 4/4 | 2.7s |
+| claude-4.5-haiku | 3/4 ✗ | — | 4.9s |
+| gpt-5.4-mini | 4/4 ✗ | — | 1.5s |
+
+The two obvious "fast Claude/GPT" choices **rubber-stamp the
+jargon-stuffed answer** — either would have silently destroyed the one
+claim this product makes. gemini-3.1-flash-lite holds the line at 1/4
+and 4/4 consistently across four runs each way.
+
+Now split by job: `FAST_MODEL` (lesson, grade, challenge, mirror) and
+`DEEP_MODEL` (explain-back, jury), both overridable by env. Explain-back
+stays deep because the closed world is the hard part — a weaker model
+quietly repairs the student's gaps instead of exposing them. The jury
+stays deep because four jurors must remain four distinct people.
+
+**Result: lesson 13.9s → 2.9s, grading ~9s → 2.3s.** Smoke test 5/5,
+including the thesis check.
