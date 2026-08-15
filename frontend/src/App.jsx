@@ -1766,6 +1766,7 @@ function App() {
         setTopicInput={setTopicInput}
         startMirror={startMirror}
         startTeachoff={startTeachoff}
+        uiLang={uiLang}
         takeChallenge={takeChallenge}
         teachoff={teachoff}
         teachoffBoard={teachoffBoard}
