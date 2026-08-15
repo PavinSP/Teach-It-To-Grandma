@@ -1,4 +1,4 @@
-# Teach-Off (Teach It To Grandma)
+# Teach A Grandma
 
 A voice app that tests whether you actually understand something, using the Feynman technique: explain a concept out loud to an AI "Grandma" persona who catches jargon, logic gaps, and vagueness instead of teaching it back to you.
 
