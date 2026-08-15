@@ -45,6 +45,17 @@ export function bandForScore(score) {
   return "low";
 }
 
+// Which of a character's four recap headlines to use. Shares its thresholds
+// with verdictForScore above, so the character's own line and the verdict
+// under the score can never disagree about how the lesson went — a headline
+// saying "well done" over a red 36 was the bug this replaces.
+export function headlineBandForScore(score) {
+  if (score >= 85) return "aced";
+  if (score >= 60) return "followed";
+  if (score >= 40) return "partial";
+  return "lost";
+}
+
 // Converts one graded lesson into itemised XP events. Understanding XP comes
 // from the AI grade, never from the keyword bar — coverage earns its own,
 // visibly smaller award. Mistakes never subtract; events that didn't happen

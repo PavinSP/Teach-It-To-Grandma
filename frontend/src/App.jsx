@@ -9,6 +9,7 @@ import {
   feynmanScore,
   verdictForScore,
   bandForScore,
+  headlineBandForScore,
   xpForLesson,
   loadProfile,
   commitLessonXp,
@@ -18,6 +19,7 @@ import {
 import { CHARACTERS, buildPersonaPrompt, DIRECTOR } from "./characters";
 import { loadSnapshot, saveSnapshot } from "./snapshot";
 import { resetNow } from "./reset";
+import { t, speakerVars } from "./strings";
 import {
   YOU_OPTIONS,
   YOU_PRESETS,
@@ -255,7 +257,7 @@ function App() {
   const [paused, setPaused] = useState(false);
   // A preference, not lesson state: it survives topic changes and only
   // takes effect on the next lesson generated.
-  const [language, setLanguage] = useState("en");
+  const [language, setLanguage] = useState(snap?.language ?? "en");
   // 0 = mouth closed, 1 = open. Driven by her real output volume.
   const [mouthOpen, setMouthOpen] = useState(0);
   // What the student predicted before teaching, 0-100, or null if they
@@ -320,6 +322,11 @@ function App() {
   const subj = activeCharacter.subj;
   const obj = activeCharacter.obj;
   const voiceOnlyActive = FEATURES.voiceOnly && voiceOnly;
+  // The UI speaks whatever the lesson is being taught in — a German
+  // conversation captioned in English reads as half-finished.
+  const uiLang = FEATURES.multilingual ? language : "en";
+  const sv = speakerVars(uiLang, activeCharacter);
+  const tt = (key, extra) => t(uiLang, key, { ...sv, ...extra });
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -347,6 +354,7 @@ function App() {
       mirrorFlags: [...mirrorFlags],
       mirrorSubmitted,
       voiceOnly,
+      language,
       topicInput,
       confidence,
       jury,
@@ -1849,9 +1857,16 @@ function App() {
           <div className="eyebrow">{whoUpper}'S NOTES</div>
 
           <h1>
-            {gotEverythingAcross
-              ? activeCharacter.headlineWin
-              : activeCharacter.headlineRetry}
+            {activeCharacter.headlines[
+              // Before the AI grade lands there is no score to band, so fall
+              // back to what the keyword pass can see. Once it arrives the
+              // headline moves with the number under it.
+              lessonXp?.score != null
+                ? headlineBandForScore(lessonXp.score)
+                : gotEverythingAcross
+                  ? "aced"
+                  : "lost"
+            ]}
           </h1>
 
           <p className="recap-subtitle">
@@ -2817,7 +2832,7 @@ function App() {
             className="voice-only-toggle"
             onClick={() => setVoiceOnly((v) => !v)}
           >
-            {voiceOnlyActive ? "🗒️ Show the panels" : "🎙️ Voice only"}
+            {voiceOnlyActive ? tt("showPanels") : tt("voiceOnly")}
           </button>
         )}
 
@@ -2861,12 +2876,12 @@ function App() {
               <div className={`rail-activity state-${paused ? "resting" : channel}`}>
                 <span className="activity-dot" />
                 {paused
-                  ? "waiting for you"
+                  ? tt("waiting")
                   : channel === "speaking"
-                    ? `${who} is speaking`
+                    ? tt("isSpeaking")
                     : channel === "thinking"
-                      ? `${who} is thinking`
-                      : `${who} is listening`}
+                      ? tt("isThinking")
+                      : tt("isListening")}
               </div>
             )}
 
@@ -2890,8 +2905,7 @@ function App() {
                    sits inside the panel this mode removes. */
                 <div className="voice-only-stage">
                   <p className="voice-only-line">
-                    Just talk. {who} will tell you what {subj} understood
-                    at the end.
+                    {tt("justTalk")}
                   </p>
 
                   {messages.some(
@@ -2901,7 +2915,7 @@ function App() {
                       className="finish-button"
                       onClick={finishLesson}
                     >
-                      Finish lesson →
+                      {tt("finish")}
                     </button>
                   )}
                 </div>
@@ -2912,8 +2926,7 @@ function App() {
                     <div className="speaker">{whoUpper}</div>
 
                     <p>
-                      {who} is ready. Press the microphone and start
-                      teaching {obj} about {selectedTopic.name}.
+                      {tt("ready", { topic: selectedTopic.name })}
                     </p>
                   </div>
                 )}
@@ -3010,8 +3023,8 @@ function App() {
 
                   <p>
                     {conversation.status === "connecting"
-                      ? `Connecting to ${who}...`
-                      : "Press the microphone and start explaining."}
+                      ? tt("connecting")
+                      : tt("pressMic")}
                   </p>
                 </>
               ) : (
@@ -3047,7 +3060,7 @@ function App() {
                           : `Take a moment. ${who} waits, and won't ask if you're still there`
                       }
                     >
-                      {paused ? "▶︎ I'm ready" : "🤔 Let me think"}
+                      {paused ? tt("imReady") : tt("letMeThink")}
                     </button>
 
                     <button
@@ -3055,7 +3068,7 @@ function App() {
                       onClick={stopConversation}
                       title="End the conversation"
                     >
-                      ⏹️ End conversation
+                      {tt("endCall")}
                     </button>
                   </div>
 
@@ -3076,16 +3089,16 @@ function App() {
 
                   <p>
                     {paused
-                      ? `🤔 Take your time — ${who} is waiting quietly.`
+                      ? tt("restingHint")
                       : conversation.isMuted
-                      ? `🔇 Microphone muted — ${who} can't hear you.`
+                      ? tt("muted")
                       : conversation.isSpeaking
-                        ? `🔊 ${who} is speaking...`
+                        ? tt("speaking")
                         : lastSpeakerWasStudent
-                          ? `💭 ${who} is thinking...`
+                          ? tt("thinking")
                           : conversation.isListening
-                            ? `🎙️ ${who} is listening...`
-                            : `🎙️ Start teaching ${who}...`}
+                            ? tt("listening")
+                            : tt("startTeaching")}
                   </p>
                 </>
               )}
@@ -3095,7 +3108,7 @@ function App() {
           {!voiceOnlyActive && (
           <aside className="progress">
             <div className="progress-title">
-              POINTS MENTIONED
+              {tt("pointsMentioned")}
             </div>
 
             <div className="progress-count">
@@ -3174,7 +3187,7 @@ function App() {
 
             {FEATURES.weaknessTraining && challenge?.bannedTerms?.length > 0 && (
               <div className="banned-terms-panel">
-                <div className="banned-terms-title">DON'T SAY</div>
+                <div className="banned-terms-title">{tt("dontSay")}</div>
 
                 <div className="banned-chips">
                   {challenge.bannedTerms.map((term) => (
@@ -3201,7 +3214,7 @@ function App() {
             {FEATURES.challengeCards && selectedTopic.challenges.length > 0 && (
               <div className="challenge-deck">
                 <div className="challenge-deck-title">
-                  CHALLENGE {obj.toUpperCase()}
+                  {tt("challenge", { themAcc: sv.themAcc.toUpperCase() })}
                 </div>
 
                 <div className="challenge-chips">
@@ -3255,7 +3268,7 @@ function App() {
                   </div>
 
                   <div className="complete-message">
-                    <strong>You covered all four points.</strong>
+                    <strong>{tt("coveredAll")}</strong>
                     <span>
                       But did {who} actually follow it? Finish the lesson
                       and she'll tell you.
@@ -3269,7 +3282,7 @@ function App() {
                   className="finish-button"
                   onClick={finishLesson}
                 >
-                  See {who}'s Notes →
+                  {tt("seeNotes")}
                 </button>
               )}
             </div>

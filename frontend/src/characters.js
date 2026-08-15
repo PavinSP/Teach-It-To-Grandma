@@ -36,8 +36,12 @@ export const CHARACTERS = [
     },
     gradingStance:
       "Judge as a complete beginner. If a sentence needs prior knowledge to parse, it was not explained.",
-    headlineWin: "Well done, darling.",
-    headlineRetry: "Let's go over that again, darling.",
+    headlines: {
+      aced: "Well done, darling.",
+      followed: "I followed most of that, darling.",
+      partial: "Some of that landed, darling.",
+      lost: "Let's go over that again, darling.",
+    },
     firstMessageDe:
       "Oh, hallo mein Schatz! Du willst mir also {topic} erklären? Na los, Oma hört zu.",
     firstMessage:
@@ -69,8 +73,12 @@ export const CHARACTERS = [
     },
     gradingStance:
       "Judge as a seven-year-old. If it needs school beyond age seven, it was not explained. Analogies and stories count for a lot.",
-    headlineWin: "You're the best teacher ever!",
-    headlineRetry: "Wait... I'm still confused.",
+    headlines: {
+      aced: "You're the best teacher ever!",
+      followed: "I got most of it! But I still have questions.",
+      partial: "Some bits made sense... not the middle part though.",
+      lost: "Wait... I'm still confused.",
+    },
     firstMessageDe:
       "Hallo hallo hallo! Erklärst du mir wirklich {topic}? Okay okay okay — los!",
     firstMessage:
@@ -101,8 +109,12 @@ export const CHARACTERS = [
     },
     gradingStance:
       "Expect mechanism. Naming a concept without explaining how it works does not count as explained.",
-    headlineWin: "Okay, that actually made sense.",
-    headlineRetry: "I'd still fail the exam on this.",
+    headlines: {
+      aced: "Okay, that actually made sense.",
+      followed: "I could pass with that. Mostly.",
+      partial: "I'd scrape it. Half of it, anyway.",
+      lost: "I'd still fail the exam on this.",
+    },
     firstMessageDe:
       "Hey! Ich schreibe bald eine Prüfung über {topic}, also erklär's mir so, dass ich sie bestehe.",
     firstMessage:
@@ -133,8 +145,12 @@ export const CHARACTERS = [
     },
     gradingStance:
       "Judge on consequences and relevance. If the explanation never says why it matters or what would go wrong without it, it was not explained.",
-    headlineWin: "Good. That's a yes from me.",
-    headlineRetry: "I still don't see the bottom line.",
+    headlines: {
+      aced: "Good. That's a yes from me.",
+      followed: "I can work with that. Mostly there.",
+      partial: "Half a case. I'd need the rest.",
+      lost: "I still don't see the bottom line.",
+    },
     firstMessageDe:
       "Also — {topic}. Ich habe fünf Minuten bis zum nächsten Meeting. Machen Sie was draus.",
     firstMessage:
@@ -165,8 +181,12 @@ export const CHARACTERS = [
     },
     gradingStance:
       "Demand precision. A restatement without the underlying reason does not count as explained. Reward correct handling of edge cases.",
-    headlineWin: "Precise. I'm satisfied.",
-    headlineRetry: "Your assumptions need work.",
+    headlines: {
+      aced: "Precise. I'm satisfied.",
+      followed: "Largely sound. A few loose edges.",
+      partial: "Parts hold. Others don't survive scrutiny.",
+      lost: "Your assumptions need work.",
+    },
     firstMessageDe:
       "Also — {topic}. Ich kenne das Nachbargebiet gut. Überzeugen Sie mich, dass Sie dieses hier beherrschen.",
     firstMessage:
@@ -197,8 +217,12 @@ export const CHARACTERS = [
     },
     gradingStance:
       "Be strict. Contradictions, gaps, or borrowed phrasing without understanding all fail the point. Only a complete, coherent explanation counts.",
-    headlineWin: "A rigorous account. Well done.",
-    headlineRetry: "See me after class.",
+    headlines: {
+      aced: "A rigorous account. Well done.",
+      followed: "Competent, with gaps I noticed.",
+      partial: "A partial answer. You know some of it.",
+      lost: "See me after class.",
+    },
     firstMessageDe:
       "Guten Tag. {topic} also. Ich höre aufmerksam zu — beginnen Sie, wenn Sie bereit sind.",
     firstMessage:

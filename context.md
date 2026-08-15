@@ -788,3 +788,24 @@ flagged in the checklist before you speak, and the recap scores the
 prediction against what happened — "caught you out", "you beat it", or
 "as predicted". Backpropagation produced all three levels with distinct
 reasons, so it discriminates rather than labelling everything hard.
+
+## Session 36 — German that stayed English
+
+Two bugs from the first real German run.
+
+**She greeted in English over a German lesson.** `language` was never in
+the session snapshot, so a refresh restored the German lesson while the
+language silently reset to "en" — the greeting then came from
+`firstMessage` rather than `firstMessageDe`. It is snapshotted now.
+
+**The interface stayed English around a German conversation.** New
+`strings.js` holds the session view's text in both languages, selected by
+the lesson's language. Scope is deliberate — the screen where the German
+conversation happens — since the recap's own content already comes back
+translated from the grader.
+
+Two German grammar errors caught in testing, both the kind a German
+audience notices: "herausfordern" takes the accusative while "erklären"
+takes the dative, so one pronoun could not serve both ("FORDERE IHR
+HERAUS" was wrong); and the genitive of a name ending in s ("Professor
+Elliss Notizen") is avoided entirely with "Notizen von {name}".
