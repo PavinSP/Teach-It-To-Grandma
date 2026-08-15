@@ -34,13 +34,20 @@ const TTL_SECONDS = 60 * 60 * 24 * 14;
 
 const MAX_RUNS = 50;
 
+// Two naming schemes, because the Upstash integration has shipped both: the
+// UPSTASH_* pair its own SDK reads via Redis.fromEnv(), and the KV_* pair
+// inherited from Vercel KV, which its SvelteKit example still uses. Which
+// ones land in a given project is not worth finding out the hard way — a
+// missing variable and a wrong-named variable fail identically, as a crash
+// on the first request with nothing in the message to tell them apart.
+const redisUrl =
+  process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+
+const redisToken =
+  process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+
 const redis =
-  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-    ? new Redis({
-        url: process.env.UPSTASH_REDIS_REST_URL,
-        token: process.env.UPSTASH_REDIS_REST_TOKEN,
-      })
-    : null;
+  redisUrl && redisToken ? new Redis({ url: redisUrl, token: redisToken }) : null;
 
 export const backend = redis ? "redis" : "file";
 
