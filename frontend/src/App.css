@@ -3454,8 +3454,27 @@ details.misconceptions-panel .misconceptions-list {
     margin-top: 6px;
   }
 
+  /* Smaller type rather than a taller box. The transcript is capped at 52dvh
+     so it scrolls inside its own panel, which means the only way to see more
+     of the conversation on a phone is to fit more words into the same space.
+     Line-height stays at 1.5 — pulling in size and leading together is what
+     makes a transcript tiring to read. */
   .transcript-message {
     max-width: 100%;
+    font-size: 14px;
+    padding: 12px 14px;
+  }
+
+  .transcript-message .speaker {
+    font-size: 10px;
+  }
+
+  /* Her lines are deliberately larger than the student's — she is the one
+     being taught, and her confusion is the thing to read. That ratio is kept,
+     just scaled: 20px against a 390px screen wraps a single sentence over
+     four lines and pushes the student's own words out of the box. */
+  .grandma-message p {
+    font-size: 16px;
   }
 
   /* The walking portrait is 38px on a track that has to fit four numbered
