@@ -454,9 +454,13 @@ h2 {
   border-top-left-radius: 6px;
 }
 
+/* 16px, matching the student's own messages. At 20px her lines were a
+   third larger than yours in a column that is now twice as wide — sized
+   for a narrow rail where one sentence was the whole view, not for a
+   conversation you read several turns of at once. */
 .grandma-message p {
-  font-size: 20px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.55;
 }
 
 .user-message {
@@ -3940,4 +3944,22 @@ details.misconceptions-panel .misconceptions-list {
 
 .jargon-row.cleared .jargon-term {
   font-weight: 500;
+}
+
+/* Both sides of the conversation at one size, and a little tighter now
+   that the centre column carries the whole exchange. */
+.transcript-message {
+  padding: 13px 16px;
+}
+
+.transcript-message p {
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+@media (max-width: 900px) {
+  .transcript-message p,
+  .grandma-message p {
+    font-size: 15px;
+  }
 }
