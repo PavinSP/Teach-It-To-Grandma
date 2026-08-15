@@ -5,6 +5,30 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>frontend</title>
+    <!--
+      Runs before the first paint, on purpose, and duplicates a little of
+      src/theme.js for the same reason. Anything that waited for the module
+      graph would paint the default ground first and correct it a moment
+      later — a white flash on the way into a dark app, which is the one
+      thing a theme switch must never do.
+    -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("titanom-theme");
+          var theme =
+            saved === "light" || saved === "dark"
+              ? saved
+              : window.matchMedia &&
+                  window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "light");
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

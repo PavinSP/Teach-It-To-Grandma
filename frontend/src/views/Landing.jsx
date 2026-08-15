@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { FEATURES } from "../features";
 import { CHARACTERS } from "../characters";
 import { resetNow } from "../reset";
+import { rememberLanguage } from "../theme";
+import { ThemeToggle } from "../components/ThemeToggle";
+import { Thinking } from "../components/Thinking";
 import {
   YOU_OPTIONS,
   YOU_PRESETS,
@@ -143,7 +146,11 @@ export function Landing({
   return (
       <main className="app">
         <section className="hero">
-          <div className="eyebrow">TEACH IT TO GRANDMA</div>
+          <div className="hero-top">
+            <div className="eyebrow">TEACH IT TO GRANDMA</div>
+
+            <ThemeToggle tt={tt} />
+          </div>
 
           <h1>
             {tt("heroLine1")}
@@ -468,7 +475,7 @@ export function Landing({
                   className={`language-chip ${
                     language === l.code ? "selected" : ""
                   }`}
-                  onClick={() => setLanguage(l.code)}
+                  onClick={() => setLanguage(rememberLanguage(l.code))}
                   disabled={isBuildingLesson}
                 >
                   {l.flag} {l.label}
@@ -503,9 +510,7 @@ export function Landing({
           </form>
 
           {isBuildingLesson && (
-            <p className="topic-status">
-              {tt("workingOut")}
-            </p>
+            <Thinking tt={tt} who={taglineName} glyph={character?.glyph ?? "👵"} />
           )}
 
           {lessonError && (

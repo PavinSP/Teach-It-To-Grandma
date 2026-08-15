@@ -1,0 +1,549 @@
+/* The two looks, as one set of names.
+   ---------------------------------------------------------------------------
+   App.css was written with its colours spelled out — #26221d for ink, #f5f0e8
+   for paper, forty-seven and one uses of them respectively. That is a fine way
+   to build one look and the only way to guarantee you cannot build a second,
+   which is why tokens.css opens by forbidding it.
+
+   So the literals become these names, and the names are what change. There is
+   no third palette hiding here: dark is the same design with the paper and the
+   ink swapped and the accents pulled up to stay legible against a dark ground.
+
+   Every value below is a ROLE, not a colour. --ink is whatever text is written
+   in; in light that is near-black and in dark it is near-white. A rule that
+   says color: var(--ink) is correct in both without knowing which it is in.
+
+   Light is the default and lives on :root, deliberately. It is the look the
+   app shipped with, so a visitor who never touches the switch — a judge, a
+   phone that autoplays the wrong preference — sees exactly what was built and
+   demonstrated. Dark is opt-in, under [data-theme="dark"].
+   ------------------------------------------------------------------------- */
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* ground, back to front */
+  --paper: #f5f0e8;          /* the page itself */
+  --paper-raised: #fffdf8;   /* inputs, cards that sit on it */
+  --paper-sunken: #faf6ef;   /* wells, quiet panels */
+  --paper-alt: #efe9df;      /* alternating rows, subtle fills */
+
+  /* ink, in descending confidence */
+  --ink: #26221d;            /* body text, headings, primary buttons */
+  --ink-2: #4a443c;          /* secondary text */
+  --ink-3: #655e55;          /* supporting copy */
+  --ink-muted: #8a8176;      /* labels, eyebrows, placeholders */
+  --ink-faint: #a89f93;      /* the quietest text that is still text */
+  --on-ink: #ffffff;         /* text ON a primary button */
+
+  /* edges */
+  --line: #d8d0c4;
+  --line-soft: #e6ded2;
+  --line-strong: #cec5b8;
+
+  /* the four semantic colours — these ARE the product's vocabulary */
+  --good: #2f7a4f;           /* understood, correct, success */
+  --bad: #9c3327;            /* misunderstood, wrong, error */
+  --warn: #c98a2b;           /* partial, tricky, caution */
+  --info: #3388aa;           /* links, neutral emphasis */
+
+  /* tints of those, for backgrounds rather than text */
+  --good-tint: rgba(47, 122, 79, 0.08);
+  --good-edge: rgba(47, 122, 79, 0.3);
+  --bad-tint: rgba(176, 58, 46, 0.1);
+  --warn-tint: rgba(201, 138, 43, 0.12);
+
+  /* washes of ink, for hovers and hairlines */
+  --ink-wash-1: rgba(38, 34, 29, 0.04);
+  --ink-wash-2: rgba(38, 34, 29, 0.07);
+  --ink-wash-3: rgba(38, 34, 29, 0.12);
+  --ink-wash-4: rgba(38, 34, 29, 0.35);
+
+  --shadow: rgba(50, 40, 25, 0.1);
+}
+
+/* ---------------------------------------------------------------------------
+   Dark.
+
+   Not an inversion — inverting #f5f0e8 gives a blue-grey that looks nothing
+   like this app. The warmth is kept and moved: the ground is a warm near-black
+   rather than a cold one, so the characters' faces and the paper textures sit
+   on it without looking pasted on.
+
+   The accents are RAISED, not reused. #2f7a4f is a good green on paper and
+   nearly unreadable on near-black, so dark gets a lighter, less saturated
+   version at the same semantic role. This is the part that a naive dark mode
+   gets wrong and the reason the contrast audit exists.
+   ------------------------------------------------------------------------- */
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --paper: #17150f;
+  --paper-raised: #201d16;
+  --paper-sunken: #12100b;
+  --paper-alt: #262219;
+
+  --ink: #f0e9dd;
+  --ink-2: #d6cec1;
+  --ink-3: #b8b0a3;
+  --ink-muted: #948b7e;
+  --ink-faint: #756d62;
+  --on-ink: #17150f;         /* dark text on a light button — the swap */
+
+  --line: #3a352b;
+  --line-soft: #2c281f;
+  --line-strong: #4d4738;
+
+  --good: #6ec98d;
+  --bad: #ef7d6d;
+  --warn: #e5b566;
+  --info: #6fc2e0;
+
+  --good-tint: rgba(110, 201, 141, 0.13);
+  --good-edge: rgba(110, 201, 141, 0.38);
+  --bad-tint: rgba(239, 125, 109, 0.15);
+  --warn-tint: rgba(229, 181, 102, 0.15);
+
+  --ink-wash-1: rgba(240, 233, 221, 0.05);
+  --ink-wash-2: rgba(240, 233, 221, 0.09);
+  --ink-wash-3: rgba(240, 233, 221, 0.15);
+  --ink-wash-4: rgba(240, 233, 221, 0.4);
+
+  --shadow: rgba(0, 0, 0, 0.45);
+}
+
+/* The switch itself changes colour, so the change is not jarring — but only
+   the colour. Anything animating its own layout keeps its own timing, and a
+   visitor who has asked for less motion gets none of this. */
+body,
+.app,
+.topic-input,
+.topic-submit,
+.character-card,
+.recap-card {
+  transition:
+    background-color 0.28s var(--e-out-quad, ease),
+    border-color 0.28s var(--e-out-quad, ease),
+    color 0.28s var(--e-out-quad, ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body,
+  .app,
+  .topic-input,
+  .topic-submit,
+  .character-card,
+  .recap-card {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The switch itself.
+   ------------------------------------------------------------------------- */
+
+.hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4, 16px);
+  flex-wrap: wrap;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-raised);
+  color: var(--ink-3);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.theme-toggle-glyph {
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* The label is the one thing that can crowd a narrow screen, and the glyph
+   alone still says which mode you are in. */
+@media (max-width: 520px) {
+  .theme-toggle-label {
+    display: none;
+  }
+
+  .theme-toggle {
+    padding: 8px 11px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Two things dark needs that light does not.
+
+   Both are cases where a rule that is correct on paper stops being correct on
+   near-black, and neither is caught by a contrast check — the first because a
+   disabled control is *supposed* to be low contrast, the second because both
+   buttons pass on their own and the bug is the relationship between them.
+   ------------------------------------------------------------------------- */
+
+/* A disabled primary button. On paper this is dark ink faded into the page and
+   still obviously a button. On near-black the same 35% takes a cream fill down
+   into the ground and the main action of the whole page reads as absent rather
+   than as waiting for a topic. Dark keeps more of the fill and drops the text
+   instead, so it still looks like a control that is not ready yet. */
+[data-theme="dark"] .topic-submit:disabled,
+[data-theme="dark"] .join-button:disabled,
+[data-theme="dark"] .teachoff-button:disabled,
+[data-theme="dark"] .quiz-button:disabled,
+[data-theme="dark"] .quiz-primary:disabled,
+[data-theme="dark"] .quiz-join:disabled {
+  opacity: 1;
+  background: var(--paper-alt);
+  /* --ink-faint here measured 3.11 against this fill, which is below the 4.5
+     a contrast check asks of body text. A disabled control is formally exempt
+     from that, and it is still the wrong call for the main action on the page:
+     the label has to be readable for "waiting for a topic" to be legible as a
+     state rather than as a broken button. --ink-3 clears it. */
+  color: var(--ink-3);
+}
+
+/* The side mode must never out-shout the thing the product is actually about.
+   In light both buttons are dark-on-paper and the hierarchy holds by size and
+   position. In dark, a cream fill is the loudest thing on the screen, so the
+   quiz entry — which is deliberately not a headline — was arriving louder than
+   the teaching action beside it. It becomes an outline here and gives the
+   emphasis back. */
+[data-theme="dark"] .quiz-entry-button {
+  background: transparent;
+  color: var(--ink-2);
+  border: 1px solid var(--line-strong);
+}
+
+[data-theme="dark"] .quiz-entry-button:hover {
+  background: var(--ink-wash-1);
+  color: var(--ink);
+  border-color: var(--ink-muted);
+}
+
+/* ---------------------------------------------------------------------------
+   The wait after a topic is named.
+   ------------------------------------------------------------------------- */
+
+.thinking {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  max-width: 780px;
+  margin-top: 26px;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper-raised);
+}
+
+.thinking-face {
+  position: relative;
+  flex: 0 0 auto;
+  font-size: 34px;
+  line-height: 1;
+}
+
+/* A slow, small breath. Anything faster reads as a loading spinner, which is
+   the thing this is deliberately not. */
+.thinking-glyph {
+  display: inline-block;
+  animation: thinking-breathe 2.6s var(--e-inout-quart, ease-in-out) infinite;
+}
+
+@keyframes thinking-breathe {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50%      { transform: scale(1.09) rotate(-3deg); }
+}
+
+.thinking-pulse {
+  position: absolute;
+  left: 50%;
+  bottom: -12px;
+  display: flex;
+  gap: 4px;
+  transform: translateX(-50%);
+}
+
+.thinking-pulse i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--ink-muted);
+  animation: thinking-dot 1.25s ease-in-out infinite;
+}
+
+.thinking-pulse i:nth-child(2) { animation-delay: 0.16s; }
+.thinking-pulse i:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes thinking-dot {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  50%      { opacity: 1;    transform: translateY(-3px); }
+}
+
+.thinking-lines {
+  flex: 1;
+  min-width: 0;
+}
+
+.thinking-line {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin: 0 0 7px;
+  font-size: 15px;
+  line-height: 1.45;
+  transition: color 0.4s ease, opacity 0.4s ease;
+}
+
+.thinking-line:last-child { margin-bottom: 0; }
+
+.thinking-tick {
+  flex: 0 0 12px;
+  font-weight: 700;
+}
+
+/* Done, doing, not yet — three weights of the same list, so the eye can see
+   progress without anything moving. */
+.thinking-line.done { color: var(--ink-muted); opacity: 0.75; }
+.thinking-line.done .thinking-tick { color: var(--good); }
+.thinking-line.now  { color: var(--ink); font-weight: 600; }
+.thinking-line.next { color: var(--ink-faint); opacity: 0.5; }
+
+@media (prefers-reduced-motion: reduce) {
+  .thinking-glyph,
+  .thinking-pulse i {
+    animation: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .thinking {
+    padding: 18px;
+    gap: 14px;
+  }
+
+  .thinking-line { font-size: 14px; }
+}
+
+/* ---------------------------------------------------------------------------
+   The arrival.
+
+   Full-bleed and typographic — the one screen in the app that is allowed to
+   be loud, because it has one job and four seconds to do it.
+   ------------------------------------------------------------------------- */
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6vw;
+  background: var(--paper);
+  overflow: hidden;
+}
+
+/* A slow warm bloom behind the words. Sits under everything and never moves
+   enough to distract from reading. */
+.intro::before {
+  content: "";
+  position: absolute;
+  width: 80vmax;
+  height: 80vmax;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--warn) 12%, transparent) 0%,
+    transparent 62%
+  );
+  animation: intro-bloom 14s var(--e-inout-quart, ease-in-out) infinite;
+}
+
+@keyframes intro-bloom {
+  0%, 100% { transform: translate(-14%, -12%) scale(1); }
+  50%      { transform: translate(12%, 10%) scale(1.16); }
+}
+
+.intro-stage {
+  position: relative;
+  width: 100%;
+  max-width: 1000px;
+}
+
+.intro-eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 26px;
+  animation: intro-rise 0.5s var(--e-out-quart, ease) both;
+}
+
+.intro-title {
+  margin: 0 0 26px;
+  font-size: clamp(44px, 9vw, 108px);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.intro-line {
+  display: block;
+  animation: intro-rise 0.62s var(--e-out-quart, ease) both;
+  animation-delay: 0.08s;
+}
+
+/* The second line is the one that lands, so it arrives just after the first
+   rather than with it. */
+.intro-line-2 {
+  animation-delay: 0.2s;
+  font-style: italic;
+}
+
+.intro-body {
+  max-width: 46ch;
+  margin: 0 0 38px;
+  font-size: clamp(16px, 2vw, 21px);
+  line-height: 1.5;
+  color: var(--ink-3);
+  animation: intro-rise 0.62s var(--e-out-quart, ease) both;
+  animation-delay: 0.32s;
+}
+
+.intro-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  animation: intro-rise 0.62s var(--e-out-quart, ease) both;
+  animation-delay: 0.44s;
+}
+
+.intro-enter {
+  padding: 17px 38px;
+  border: none;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s var(--e-out-quart, ease), opacity 0.18s ease;
+}
+
+.intro-enter:hover { transform: translateY(-2px); }
+.intro-enter:active { transform: translateY(0); }
+
+.intro-enter:focus-visible {
+  outline: 3px solid var(--warn);
+  outline-offset: 3px;
+}
+
+/* --ink-3 rather than --ink-muted. The muted tone measures 3.38 against
+   paper, which is below the 4.5 these need at this size — inherited from the
+   rest of the app, where it is long-standing, but this screen is new and
+   there is no reason to reproduce a known problem in it. */
+.intro-hint,
+.intro-skip {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+
+.intro-skip {
+  position: absolute;
+  top: 4vw;
+  right: 5vw;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  cursor: pointer;
+  z-index: 2;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.intro-skip:hover {
+  color: var(--ink);
+  border-color: var(--ink-muted);
+}
+
+.intro-beats {
+  display: flex;
+  gap: 7px;
+  margin-top: 44px;
+}
+
+.intro-beats i {
+  width: 26px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--line);
+  transition: background-color 0.3s ease;
+}
+
+.intro-beats i.on { background: var(--ink); }
+
+@keyframes intro-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Asked for less motion: everything still arrives, nothing travels. */
+.intro.calm .intro-eyebrow,
+.intro.calm .intro-line,
+.intro.calm .intro-body,
+.intro.calm .intro-actions {
+  animation: intro-fade 0.3s ease both;
+}
+
+.intro.calm::before { animation: none; }
+
+@keyframes intro-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro::before { animation: none; }
+
+  .intro-eyebrow,
+  .intro-line,
+  .intro-body,
+  .intro-actions {
+    animation: intro-fade 0.3s ease both;
+  }
+}
+
+@media (max-width: 560px) {
+  .intro-skip { top: 16px; right: 16px; }
+  .intro-beats { margin-top: 30px; }
+}

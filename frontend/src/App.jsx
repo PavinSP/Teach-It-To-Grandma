@@ -14,6 +14,7 @@ import {
 } from "./progression";
 import { CHARACTERS, buildPersonaPrompt, DIRECTOR } from "./characters";
 import { loadSnapshot, saveSnapshot } from "./snapshot";
+import { storedLanguage } from "./theme";
 import { activeGame } from "./quiz";
 
 import { t, speakerVars } from "./strings";
@@ -25,6 +26,7 @@ import {
   youOptionValues,
   photoToDataUrl,
 } from "./you";
+import { Intro } from "./views/Intro";
 import { Landing } from "./views/Landing";
 import { Quiz } from "./views/Quiz";
 import { Recap } from "./views/Recap";
@@ -237,6 +239,18 @@ function App() {
   // The page you were on, restored across refresh (per tab).
   const [snap] = useState(loadSnapshot);
 
+  // The arrival screen, on every load, as asked. Two things keep that from
+  // becoming a nuisance: it is skippable with a single key, and it is
+  // suppressed entirely when this tab is resuming something — a saved lesson,
+  // a quiz invite — because interrupting someone on their way back into work
+  // they already started is the one case where an intro is pure obstruction.
+  const [introDone, setIntroDone] = useState(
+    () =>
+      Boolean(loadSnapshot()?.selectedTopic) ||
+      (typeof window !== "undefined" &&
+        new URLSearchParams(window.location.search).has("quiz"))
+  );
+
   const [selectedTopic, setSelectedTopic] = useState(snap?.selectedTopic ?? null);
   const [error, setError] = useState("");
   const [messages, setMessages] = useState(snap?.messages ?? []);
@@ -283,7 +297,18 @@ function App() {
   const [paused, setPaused] = useState(false);
   // A preference, not lesson state: it survives topic changes and only
   // takes effect on the next lesson generated.
-  const [language, setLanguage] = useState(snap?.language ?? "en");
+  // A lesson in progress keeps the language it was taught in; anything else
+  // follows the remembered preference.
+  //
+  // The order matters and the guard on selectedTopic is the whole point. A
+  // snapshot is written on almost every render, so an idle tab still holds
+  // `language: "en"` from before anyone touched the switch — and "en" is not
+  // nullish, so it won every `??` chain and quietly outranked a preference
+  // the person had explicitly set. The symptom was the arrival screen coming
+  // back in English after each reload while the page behind it was German.
+  const [language, setLanguage] = useState(
+    (snap?.selectedTopic ? snap.language : null) ?? storedLanguage() ?? "en"
+  );
   // 0 = mouth closed, 1 = open. Driven by her real output volume.
   const [mouthOpen, setMouthOpen] = useState(0);
   // What the student predicted before teaching, 0-100, or null if they
@@ -1628,6 +1653,10 @@ function App() {
         onExit={() => setQuizOpen(false)}
       />
     );
+  }
+
+  if (!introDone) {
+    return <Intro tt={tt} onDone={() => setIntroDone(true)} />;
   }
 
   if (!selectedTopic) {

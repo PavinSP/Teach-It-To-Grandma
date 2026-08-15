@@ -12,8 +12,8 @@
 .quiz {
   min-height: 100vh;
   padding: 48px;
-  background: #f5f0e8;
-  color: #26221d;
+  background: var(--paper);
+  color: var(--ink);
 }
 
 .quiz-inner {
@@ -27,7 +27,7 @@
   font-size: 12px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #8c8378;
+  color: var(--ink-muted);
 }
 
 /* The way out of a game in progress. Quieter than the menu's exit and
@@ -61,10 +61,11 @@
   border: none;
   background: none;
   cursor: pointer;
+  color: var(--ink-3);
 }
 
 .quiz-exit:hover {
-  color: #26221d;
+  color: var(--ink);
 }
 
 .quiz-h1 {
@@ -79,14 +80,14 @@
   margin: 0 0 12px;
   font-size: 17px;
   line-height: 1.55;
-  color: #655e55;
+  color: var(--ink-3);
 }
 
 .quiz-rules {
   margin: 0 0 36px;
   font-size: 13px;
   letter-spacing: 0.04em;
-  color: #8c8378;
+  color: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
 
@@ -100,11 +101,20 @@
 
 .quiz-label {
   display: block;
+  /* Space above as well as below. The name field is not wrapped in a
+     .quiz-form, so it had nothing separating it from the label of the field
+     underneath and the two collided. Dark mode only made it visible. */
+  margin-top: 22px;
   margin-bottom: 10px;
   font-size: 12px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #8c8378;
+  color: var(--ink-muted);
+}
+
+.quiz-label:first-child,
+.quiz-form > .quiz-label:first-child {
+  margin-top: 0;
 }
 
 .quiz-row {
@@ -117,20 +127,20 @@
 .quiz-input {
   padding: 14px 20px;
   font-size: 16px;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fffdf8;
-  color: #26221d;
+  background: var(--paper-raised);
+  color: var(--ink);
   outline: none;
   transition: border-color 0.2s ease;
 }
 
 .quiz-input:focus {
-  border-color: #26221d;
+  border-color: var(--ink);
 }
 
 .quiz-input::placeholder {
-  color: #a89f93;
+  color: var(--ink-faint);
 }
 
 .quiz-grow {
@@ -151,8 +161,8 @@
   font-weight: 600;
   border: none;
   border-radius: 999px;
-  background: #26221d;
-  color: #fff;
+  background: var(--ink);
+  color: var(--on-ink);
   cursor: pointer;
   white-space: nowrap;
   transition: opacity 0.2s ease;
@@ -165,19 +175,19 @@
 
 .quiz-secondary {
   background: none;
-  color: #26221d;
-  border: 1px solid #d8d0c4;
+  color: var(--ink);
+  border: 1px solid var(--line);
 }
 
 .quiz-progress {
   margin: 12px 0 0;
   font-style: italic;
-  color: #746c62;
+  color: var(--ink-3);
 }
 
 .quiz-error {
   margin: 16px 0 0;
-  color: #9c3327;
+  color: var(--bad);
 }
 
 /* -----------------------------
@@ -209,7 +219,7 @@
   gap: 12px;
   padding: 14px 18px;
   border-radius: 12px;
-  background: rgba(38, 34, 29, 0.04);
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
 }
 
 .quiz-player-name {
@@ -221,13 +231,13 @@
   font-size: 12px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #8c8378;
+  color: var(--ink-muted);
 }
 
 .quiz-empty-seat {
   font-style: italic;
-  color: #8c8378;
-  border: 1px dashed #d8d0c4;
+  color: var(--ink-muted);
+  border: 1px dashed var(--line);
   background: none !important;
 }
 
@@ -256,6 +266,18 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
+  /* Room for the leave button, which is absolutely positioned in this same
+     top-right corner. Without it the countdown sits underneath the button and
+     the two render on top of each other — "11" printed through the middle of
+     LEAVE THIS GAME. The escape button was added after this header existed,
+     which is how they came to share a corner. */
+  padding-right: 150px;
+}
+
+@media (max-width: 560px) {
+  .quiz-topline {
+    padding-right: 108px;
+  }
 }
 
 .quiz-seconds {
@@ -268,7 +290,7 @@
   height: 4px;
   margin: 10px 0 40px;
   border-radius: 999px;
-  background: rgba(38, 34, 29, 0.1);
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
   overflow: hidden;
 }
 
@@ -278,7 +300,7 @@
    the other one, without a frame of it being redrawn from here. */
 .quiz-timer-fill {
   height: 100%;
-  background: #26221d;
+  background: var(--ink);
   transform-origin: left center;
   animation-name: quiz-drain;
   animation-timing-function: linear;
@@ -314,10 +336,10 @@
   gap: 14px;
   padding: 20px 22px;
   text-align: left;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fffdf8;
-  color: #26221d;
+  background: var(--paper-raised);
+  color: var(--ink);
   font-size: 17px;
   cursor: pointer;
   transition:
@@ -327,7 +349,7 @@
 }
 
 .quiz-option:hover:not(:disabled) {
-  border-color: #26221d;
+  border-color: var(--ink);
 }
 
 .quiz-option-letter {
@@ -337,7 +359,7 @@
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: rgba(38, 34, 29, 0.08);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
   font-size: 13px;
   font-weight: 700;
 }
@@ -345,13 +367,13 @@
 /* Chosen, not correct. Nothing on this screen may hint at which one was
    right — that is the whole reason the answers wait until the end. */
 .quiz-option.chosen {
-  border-color: #26221d;
-  background: #26221d;
-  color: #fff;
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
 }
 
 .quiz-option.chosen .quiz-option-letter {
-  background: rgba(255, 255, 255, 0.18);
+  background: color-mix(in srgb, var(--on-ink) 18%, transparent);
 }
 
 .quiz-option.dimmed {
@@ -371,12 +393,12 @@
 }
 
 .quiz-status .in {
-  color: #2f7a4f;
+  color: var(--good);
   font-weight: 600;
 }
 
 .quiz-status .out {
-  color: #8c8378;
+  color: var(--ink-muted);
 }
 
 /* -----------------------------
@@ -401,12 +423,12 @@
   min-width: 200px;
   padding: 20px 24px;
   border-radius: 14px;
-  background: rgba(38, 34, 29, 0.04);
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
 }
 
 .quiz-score-card.mine {
-  background: rgba(47, 122, 79, 0.08);
-  border: 1px solid rgba(47, 122, 79, 0.3);
+  background: color-mix(in srgb, var(--good) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--good) 30%, transparent);
 }
 
 .quiz-score-name {
@@ -423,17 +445,17 @@
 
 .quiz-score-detail {
   font-size: 13px;
-  color: #746c62;
+  color: var(--ink-3);
 }
 
 .quiz-recall-note {
   max-width: 62ch;
   margin: 0 0 40px;
   padding-left: 16px;
-  border-left: 2px solid #d8d0c4;
+  border-left: 2px solid var(--line);
   font-size: 15px;
   line-height: 1.6;
-  color: #655e55;
+  color: var(--ink-3);
 }
 
 .quiz-review {
@@ -448,11 +470,11 @@
 .quiz-review-item {
   padding: 18px 22px;
   border-radius: 14px;
-  background: rgba(38, 34, 29, 0.03);
+  background: color-mix(in srgb, var(--ink) 3%, transparent);
 }
 
 .quiz-review-item.tricky {
-  background: rgba(156, 51, 39, 0.05);
+  background: color-mix(in srgb, var(--bad) 5%, transparent);
 }
 
 .quiz-review-top {
@@ -465,15 +487,15 @@
 .quiz-review-n {
   font-size: 12px;
   font-weight: 700;
-  color: #8c8378;
+  color: var(--ink-muted);
   font-variant-numeric: tabular-nums;
 }
 
 .quiz-badge {
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(156, 51, 39, 0.12);
-  color: #9c3327;
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+  color: var(--bad);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -492,7 +514,7 @@
   gap: 8px;
   margin: 0 0 8px;
   font-size: 16px;
-  color: #2f7a4f;
+  color: var(--good);
   font-weight: 600;
 }
 
@@ -504,7 +526,7 @@
   margin: 0 0 12px;
   font-size: 14px;
   line-height: 1.55;
-  color: #655e55;
+  color: var(--ink-3);
 }
 
 .quiz-review-picks {
@@ -517,18 +539,18 @@
   padding: 4px 12px;
   border-radius: 999px;
   font-size: 13px;
-  background: rgba(38, 34, 29, 0.06);
-  color: #655e55;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  color: var(--ink-3);
 }
 
 .quiz-pick.right {
-  background: rgba(47, 122, 79, 0.12);
-  color: #2f7a4f;
+  background: color-mix(in srgb, var(--good) 12%, transparent);
+  color: var(--good);
 }
 
 .quiz-pick.wrong {
-  background: rgba(156, 51, 39, 0.1);
-  color: #9c3327;
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
+  color: var(--bad);
 }
 
 .quiz-pick.none {

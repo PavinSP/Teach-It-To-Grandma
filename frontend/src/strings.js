@@ -334,6 +334,35 @@ const STRINGS = {
     quizPlayAgain: "New game",
     quizLeave: "← Back to teaching",
     quizLeaveGame: "← Leave this game",
+
+    // The display-mode switch. The label names the mode you are IN; the
+    // tooltip names the one you would get.
+    themeLight: "Light",
+    themeDark: "Dark",
+    themeToLight: "Switch to light mode",
+    themeToDark: "Switch to dark mode",
+
+    // The wait after a topic is named. These are the real steps the server
+    // takes, in order, so the pause reads as work rather than as lag.
+    thinkingStep1: "Reading your topic…",
+    thinkingStep2: "Working out what it really involves…",
+    thinkingStep3: "Deciding what {name} would struggle with…",
+    thinkingStep4: "Writing the four points you'll need to cover…",
+
+    // The arrival. Two beats: the provocation, then who is waiting.
+    // Written to be read in about four seconds and to make someone slightly
+    // uncomfortable, because that discomfort IS the product's argument.
+    introEyebrow: "TEACH IT TO GRANDMA",
+    introLine1: "You think",
+    introLine2: "you know it.",
+    introBody: "You've read it. You've nodded along. You could probably pass the test.",
+    introEnter: "Prove it →",
+    introSkip: "Skip",
+    intro2Line1: "Now say it to someone",
+    intro2Line2: "who knows nothing.",
+    intro2Body: "Grandma is 78. She has never heard of your subject. She asks \"why?\" until you run out of answers.",
+    intro2Enter: "I'm ready →",
+    introHint: "Press Enter",
     quizRecallNote:
       "Fifteen right answers is a good memory. Whether you could explain any one of them out loud is a different question — and that one is upstairs.",
     quizNoGame: "No game with that code.",
@@ -660,6 +689,28 @@ const STRINGS = {
     quizPlayAgain: "Neues Spiel",
     quizLeave: "← Zurück zum Unterrichten",
     quizLeaveGame: "← Dieses Spiel verlassen",
+
+    themeLight: "Hell",
+    themeDark: "Dunkel",
+    themeToLight: "Zum hellen Modus wechseln",
+    themeToDark: "Zum dunklen Modus wechseln",
+
+    thinkingStep1: "Dein Thema wird gelesen…",
+    thinkingStep2: "Es wird herausgearbeitet, worum es wirklich geht…",
+    thinkingStep3: "Es wird überlegt, womit {name} Schwierigkeiten hätte…",
+    thinkingStep4: "Die vier Punkte werden geschrieben, die du abdecken musst…",
+
+    introEyebrow: "ERKLÄR ES DER OMA",
+    introLine1: "Du glaubst,",
+    introLine2: "du weißt es.",
+    introBody: "Du hast es gelesen. Du hast genickt. Die Prüfung würdest du wohl bestehen.",
+    introEnter: "Beweise es →",
+    introSkip: "Überspringen",
+    intro2Line1: "Jetzt erklär es jemandem,",
+    intro2Line2: "der nichts davon weiß.",
+    intro2Body: "Oma ist 78. Sie hat von deinem Thema noch nie gehört. Sie fragt \"warum?\", bis dir die Antworten ausgehen.",
+    intro2Enter: "Ich bin bereit →",
+    introHint: "Enter drücken",
     quizRecallNote:
       "Fünfzehn richtige Antworten sind ein gutes Gedächtnis. Ob du eine davon laut erklären könntest, ist eine andere Frage — und die stellt die Lektion.",
     quizNoGame: "Kein Spiel mit diesem Code.",

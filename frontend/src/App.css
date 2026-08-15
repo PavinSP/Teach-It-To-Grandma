@@ -1,4 +1,5 @@
 @import "./styles/tokens.css";
+@import "./styles/theme.css";
 @import "./styles/grain.css";
 
 * {
@@ -15,8 +16,8 @@ body {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  background: #f5f0e8;
-  color: #26221d;
+  background: var(--paper);
+  color: var(--ink);
 }
 
 button {
@@ -25,13 +26,27 @@ button {
 
 .app {
   min-height: 100vh;
-  padding: 48px;
+  /* Scales with the viewport instead of sitting at a fixed 48px. On a phone
+     that reclaims nearly 60px of width for the content; on a large screen it
+     opens up rather than pinning everything to a narrow column. */
+  padding: clamp(20px, 3.5vw, 56px);
 }
 
 .hero {
-  max-width: 1050px;
+  /* Was a flat 1050px, which left wide empty gutters on a laptop while the
+     character grid below it wrapped for want of a few dozen pixels. The cap
+     still exists — prose past ~75 characters a line is harder to read, and
+     the hero is prose — but it now grows with the window instead of ignoring
+     it. */
+  max-width: min(1320px, 94vw);
   margin: 0 auto;
-  padding: 60px 0;
+  padding: clamp(28px, 4vw, 60px) 0;
+}
+
+/* The hero's own prose stays narrow even as the page widens: the measure is
+   about reading, not about the container. */
+.hero > .subtitle {
+  max-width: 62ch;
 }
 
 .eyebrow {
@@ -58,7 +73,7 @@ h1 span {
   margin: 32px 0 56px;
   font-size: 20px;
   line-height: 1.5;
-  color: #655e55;
+  color: var(--ink-3);
 }
 
 h2 {
@@ -74,26 +89,42 @@ h2 {
   display: flex;
   gap: 12px;
   max-width: 780px;
+  /* The submit button pushed 24px past the right edge of a 390px phone and
+     gave the whole page a horizontal scrollbar. The row has to be allowed to
+     wrap, and the input needs a min-width small enough to let it: a flex item
+     defaults to min-width:auto, which refuses to shrink below its content and
+     is what forced the row wider than the screen. */
+  flex-wrap: wrap;
+}
+
+.topic-form .topic-input {
+  min-width: 0;
+}
+
+@media (max-width: 560px) {
+  .topic-form .topic-submit {
+    width: 100%;
+  }
 }
 
 .topic-input {
   flex: 1;
   padding: 18px 22px;
   font-size: 17px;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fffdf8;
-  color: #26221d;
+  background: var(--paper-raised);
+  color: var(--ink);
   outline: none;
   transition: border-color 0.2s ease;
 }
 
 .topic-input:focus {
-  border-color: #26221d;
+  border-color: var(--ink);
 }
 
 .topic-input::placeholder {
-  color: #a89f93;
+  color: var(--ink-faint);
 }
 
 .topic-input:disabled {
@@ -106,8 +137,8 @@ h2 {
   font-weight: 600;
   border: none;
   border-radius: 999px;
-  background: #26221d;
-  color: #fff;
+  background: var(--ink);
+  color: var(--on-ink);
   cursor: pointer;
   white-space: nowrap;
   transition: opacity 0.2s ease;
@@ -120,7 +151,7 @@ h2 {
 
 .topic-status {
   margin-top: 16px;
-  color: #746c62;
+  color: var(--ink-3);
   font-style: italic;
 }
 
@@ -148,10 +179,10 @@ h2 {
 .topic-chip {
   padding: 9px 16px;
   font-size: 14px;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fffdf8;
-  color: #4a443c;
+  background: var(--paper-raised);
+  color: var(--ink-2);
   cursor: pointer;
   transition:
     border-color 0.15s ease,
@@ -159,7 +190,7 @@ h2 {
 }
 
 .topic-chip:hover:not(:disabled) {
-  border-color: #26221d;
+  border-color: var(--ink);
   transform: translateY(-1px);
 }
 
@@ -172,15 +203,15 @@ h2 {
   margin-left: 10px;
   padding: 3px 10px;
   border-radius: 999px;
-  background: rgba(38, 34, 29, 0.09);
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
   font-size: 11px;
   letter-spacing: 0.08em;
 }
 
 .topic-card {
   text-align: left;
-  border: 1px solid #d8d0c4;
-  background: #fffdf8;
+  border: 1px solid var(--line);
+  background: var(--paper-raised);
   padding: 28px;
   border-radius: 18px;
   cursor: pointer;
@@ -191,7 +222,7 @@ h2 {
 
 .topic-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(50, 40, 25, 0.1);
+  box-shadow: 0 12px 30px var(--shadow);
 }
 
 .topic-name {
@@ -201,7 +232,7 @@ h2 {
 }
 
 .topic-description {
-  color: #746c62;
+  color: var(--ink-3);
   line-height: 1.5;
 }
 
@@ -218,7 +249,7 @@ h2 {
   border: none;
   background: transparent;
   cursor: pointer;
-  color: #746c62;
+  color: var(--ink-3);
   padding: 0;
   margin-bottom: 40px;
 }
@@ -237,7 +268,7 @@ h2 {
 }
 
 .session-header p {
-  color: #746c62;
+  color: var(--ink-3);
   font-size: 15px;
   margin: 0;
 }
@@ -266,8 +297,8 @@ h2 {
 
 .conversation,
 .progress {
-  background: #fffdf8;
-  border: 1px solid #d8d0c4;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
   border-radius: 24px;
 }
 
@@ -364,7 +395,7 @@ h2 {
   margin-top: 6px;
   font-size: 12px;
   font-weight: 700;
-  color: #8a8176;
+  color: var(--ink-muted);
   opacity: 0;
   transform: translateY(-4px);
   transition:
@@ -386,7 +417,7 @@ h2 {
 }
 
 .speaking-dot {
-  background: #26221d;
+  background: var(--ink);
   animation: speaking-dot 0.8s ease-in-out infinite alternate;
 }
 
@@ -401,7 +432,7 @@ h2 {
 }
 
 .listening-dot {
-  background: #8a8176;
+  background: var(--ink-muted);
   animation: listening-dot 1.2s ease-in-out infinite alternate;
 }
 
@@ -450,7 +481,7 @@ h2 {
 .grandma-message {
   align-self: flex-start;
   max-width: 650px;
-  background: #f1eadf;
+  background: var(--paper-alt);
   border-top-left-radius: 6px;
 }
 
@@ -465,7 +496,7 @@ h2 {
 
 .user-message {
   align-self: flex-end;
-  background: #26221d;
+  background: var(--ink);
   color: white;
   border-bottom-right-radius: 6px;
 }
@@ -488,7 +519,7 @@ h2 {
 
 .transcript::-webkit-scrollbar-thumb {
   border-radius: 10px;
-  background: #d8d0c4;
+  background: var(--line);
 }
 
 /* -----------------------------
@@ -504,7 +535,7 @@ h2 {
   height: 82px;
   border: none;
   border-radius: 50%;
-  background: #26221d;
+  background: var(--ink);
   color: white;
   font-size: 32px;
   cursor: pointer;
@@ -531,15 +562,15 @@ h2 {
 }
 
 .mic-area p {
-  color: #746c62;
+  color: var(--ink-3);
 }
 
 .error-message {
   margin-top: 20px;
   padding: 14px 18px;
   border-radius: 12px;
-  background: #f5dede;
-  color: #7a2929;
+  background: var(--bad-tint);
+  color: var(--bad);
 }
 
 /* -----------------------------
@@ -566,14 +597,14 @@ h2 {
   height: 8px;
   margin-bottom: 24px;
   border-radius: 999px;
-  background: #e8e1d7;
+  background: var(--paper-alt);
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
   border-radius: 999px;
-  background: #26221d;
+  background: var(--ink);
   transition: width 0.5s ease;
 }
 
@@ -582,7 +613,7 @@ h2 {
   gap: 12px;
   align-items: flex-start;
   padding: 14px 0;
-  border-bottom: 1px solid #ebe5dc;
+  border-bottom: 1px solid var(--paper-alt);
   line-height: 1.4;
 }
 
@@ -591,7 +622,7 @@ h2 {
 }
 
 .progress-item.completed {
-  color: #26221d;
+  color: var(--ink);
   font-weight: 650;
 }
 
@@ -606,7 +637,7 @@ h2 {
 .completion-area {
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px solid #ebe5dc;
+  border-top: 1px solid var(--paper-alt);
   text-align: center;
 }
 
@@ -617,7 +648,7 @@ h2 {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #26221d;
+  background: var(--ink);
   color: white;
   font-size: 26px;
   font-weight: 800;
@@ -636,14 +667,14 @@ h2 {
 }
 
 .complete-message span {
-  color: #746c62;
+  color: var(--ink-3);
   font-size: 14px;
 }
 
 .finish-button,
 .new-lesson-button {
   border: none;
-  background: #26221d;
+  background: var(--ink);
   color: white;
   border-radius: 14px;
   padding: 15px 18px;
@@ -697,7 +728,7 @@ h2 {
 
 .recap-subtitle {
   font-size: 20px;
-  color: #746c62;
+  color: var(--ink-3);
   max-width: 650px;
   line-height: 1.5;
 }
@@ -750,9 +781,9 @@ h2 {
   align-items: flex-start;
   gap: 18px;
   padding: 24px;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 22px;
-  background: #fffdf8;
+  background: var(--paper-raised);
 }
 
 .grandma-verdict-avatar {
@@ -762,7 +793,7 @@ h2 {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #f1eadf;
+  background: var(--paper-alt);
   font-size: 26px;
 }
 
@@ -771,13 +802,13 @@ h2 {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.12em;
-  color: #8a8176;
+  color: var(--ink-muted);
 }
 
 .grandma-verdict p {
   margin: 0;
   line-height: 1.55;
-  color: #403a34;
+  color: var(--ink-2);
 }
 
 .recap-grid {
@@ -787,8 +818,8 @@ h2 {
 }
 
 .recap-card {
-  background: #fffdf8;
-  border: 1px solid #d8d0c4;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
   border-radius: 22px;
   padding: 28px;
 }
@@ -829,7 +860,7 @@ h2 {
 
 .recap-card p {
   line-height: 1.6;
-  color: #655e55;
+  color: var(--ink-3);
 }
 
 
@@ -846,16 +877,16 @@ h2 {
 }
 
 .mic-button.muted {
-  background: rgba(38, 34, 29, 0.35);
+  background: var(--ink-wash-4);
   animation: none;
 }
 
 .end-call-button {
   padding: 12px 20px;
-  border: 1px solid rgba(38, 34, 29, 0.2);
+  border: 1px solid color-mix(in srgb, var(--ink) 20%, transparent);
   border-radius: 999px;
   background: transparent;
-  color: #26221d;
+  color: var(--ink);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -863,8 +894,8 @@ h2 {
 }
 
 .end-call-button:hover {
-  background: rgba(38, 34, 29, 0.06);
-  border-color: rgba(38, 34, 29, 0.35);
+  background: var(--ink-wash-1);
+  border-color: var(--ink-wash-4);
 }
 
 /* -----------------------------
@@ -889,7 +920,7 @@ h2 {
   display: flex;
   gap: 12px;
   padding: 14px 0;
-  border-bottom: 1px solid rgba(38, 34, 29, 0.08);
+  border-bottom: 1px solid var(--ink-wash-2);
 }
 
 .ai-grade-list li:last-child {
@@ -909,13 +940,13 @@ h2 {
 }
 
 .ai-grade-list li.understood .ai-grade-mark {
-  background: #1f7a4d;
-  color: #fff;
+  background: var(--good);
+  color: var(--on-ink);
 }
 
 .ai-grade-list li.unclear .ai-grade-mark {
-  background: rgba(38, 34, 29, 0.1);
-  color: rgba(38, 34, 29, 0.5);
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  color: color-mix(in srgb, var(--ink) 50%, transparent);
 }
 
 .ai-grade-list strong {
@@ -1050,16 +1081,16 @@ h2 {
   padding: 11px 20px;
   font-size: 14px;
   font-weight: 600;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fffdf8;
-  color: #4a443c;
+  background: var(--paper-raised);
+  color: var(--ink-2);
   cursor: pointer;
   transition: border-color 0.15s ease;
 }
 
 .recall-button:hover:not(:disabled) {
-  border-color: #26221d;
+  border-color: var(--ink);
 }
 
 .recall-button:disabled {
@@ -1068,7 +1099,7 @@ h2 {
 }
 
 .recap-pending {
-  color: #746c62;
+  color: var(--ink-3);
   font-style: italic;
 }
 
@@ -1083,9 +1114,9 @@ h2 {
   flex: 1;
   min-width: 130px;
   padding: 14px 16px;
-  border: 1px solid #e6ded2;
+  border: 1px solid var(--line-soft);
   border-radius: 12px;
-  background: #fffdf8;
+  background: var(--paper-raised);
 }
 
 .gap-label {
@@ -1106,7 +1137,7 @@ h2 {
 .grandma-recall {
   padding: 18px 20px;
   border-radius: 12px;
-  background: rgba(38, 34, 29, 0.04);
+  background: var(--ink-wash-1);
   margin-bottom: 20px;
 }
 
@@ -1147,17 +1178,17 @@ h2 {
   place-items: center;
   border-radius: 50%;
   font-size: 13px;
-  background: rgba(38, 34, 29, 0.08);
+  background: var(--ink-wash-2);
 }
 
 .recall-correct .recall-mark {
-  background: #2f7a4f;
-  color: #fff;
+  background: var(--good);
+  color: var(--on-ink);
 }
 
 .recall-garbled .recall-mark {
-  background: #c98a2b;
-  color: #fff;
+  background: var(--warn);
+  color: var(--on-ink);
 }
 
 .recall-said {
@@ -1181,8 +1212,8 @@ h2 {
 .term-chip {
   padding: 5px 12px;
   border-radius: 999px;
-  background: rgba(176, 58, 46, 0.1);
-  color: #9c3327;
+  background: var(--bad-tint);
+  color: var(--bad);
   font-size: 14px;
 }
 
@@ -1203,8 +1234,8 @@ h2 {
   font-weight: 700;
   border: none;
   border-radius: 999px;
-  background: #b0522e;
-  color: #fff;
+  background: var(--bad);
+  color: var(--on-ink);
   cursor: pointer;
   transition: opacity 0.15s ease;
 }
@@ -1222,8 +1253,8 @@ h2 {
   margin: 0 0 18px;
   padding: 16px 20px;
   border-radius: 12px;
-  border: 1px solid rgba(176, 82, 46, 0.35);
-  background: rgba(176, 82, 46, 0.06);
+  border: 1px solid color-mix(in srgb, var(--bad) 35%, transparent);
+  background: color-mix(in srgb, var(--bad) 6%, transparent);
 }
 
 .challenge-banner-title {
@@ -1245,7 +1276,7 @@ h2 {
 .banned-terms-panel {
   margin-top: 22px;
   padding-top: 18px;
-  border-top: 1px solid #e6ded2;
+  border-top: 1px solid var(--line-soft);
 }
 
 .banned-terms-title {
@@ -1265,17 +1296,17 @@ h2 {
 .banned-chip {
   padding: 6px 13px;
   border-radius: 999px;
-  border: 1px solid rgba(176, 58, 46, 0.35);
-  color: #9c3327;
+  border: 1px solid color-mix(in srgb, var(--bad) 35%, transparent);
+  color: var(--bad);
   font-size: 14px;
   font-weight: 600;
   transition: all 0.2s ease;
 }
 
 .banned-chip.hit {
-  background: #9c3327;
-  border-color: #9c3327;
-  color: #fff;
+  background: var(--bad);
+  border-color: var(--bad);
+  color: var(--on-ink);
   text-decoration: line-through;
   opacity: 0.7;
 }
@@ -1318,11 +1349,11 @@ h2 {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: rgba(38, 34, 29, 0.15);
+  background: color-mix(in srgb, var(--ink) 15%, transparent);
 }
 
 .meter-dot.filled {
-  background: #b0522e;
+  background: var(--bad);
 }
 
 .prereq-chips {
@@ -1335,20 +1366,20 @@ h2 {
 .prereq-chip {
   padding: 4px 11px;
   border-radius: 999px;
-  background: rgba(38, 34, 29, 0.06);
+  background: var(--ink-wash-1);
   font-size: 12px;
   opacity: 0.75;
 }
 
 /* -----------------------------
-   Challenge deck (#39) & misconceptions (#38a)
+   Challenge deck (#39) & misconceptions (var(--info))
 ----------------------------- */
 
 .challenge-deck,
 .misconceptions-panel {
   margin-top: 22px;
   padding-top: 18px;
-  border-top: 1px solid #e6ded2;
+  border-top: 1px solid var(--line-soft);
 }
 
 .challenge-deck-title,
@@ -1369,16 +1400,16 @@ h2 {
 .challenge-chip {
   padding: 10px 14px;
   text-align: left;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fffdf8;
+  background: var(--paper-raised);
   font-size: 14px;
   cursor: pointer;
   transition: border-color 0.15s ease;
 }
 
 .challenge-chip:hover:not(:disabled) {
-  border-color: #26221d;
+  border-color: var(--ink);
 }
 
 .challenge-chip:disabled {
@@ -1413,14 +1444,14 @@ h2 {
 
 .completion-band {
   padding: 20px 24px;
-  border: 1px solid #e6ded2;
+  border: 1px solid var(--line-soft);
   border-radius: 14px;
-  background: #fffdf8;
+  background: var(--paper-raised);
 }
 
 .score-pending {
   margin: 0;
-  color: #746c62;
+  color: var(--ink-3);
   font-style: italic;
 }
 
@@ -1437,19 +1468,19 @@ h2 {
   gap: 4px;
   padding: 10px 18px;
   border-radius: 12px;
-  color: #fff;
+  color: var(--on-ink);
 }
 
 .score-good {
-  background: #2f7a4f;
+  background: var(--good);
 }
 
 .score-mid {
-  background: #c98a2b;
+  background: var(--warn);
 }
 
 .score-low {
-  background: #9c3327;
+  background: var(--bad);
 }
 
 .score-number {
@@ -1501,7 +1532,7 @@ h2 {
   flex-shrink: 0;
   min-width: 46px;
   font-weight: 800;
-  color: #2f7a4f;
+  color: var(--good);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1512,7 +1543,7 @@ h2 {
 
 .xp-total {
   padding-top: 12px;
-  border-top: 1px solid #e6ded2;
+  border-top: 1px solid var(--line-soft);
   font-size: 15px;
 }
 
@@ -1538,9 +1569,9 @@ h2 {
   align-items: center;
   gap: 6px;
   padding: 16px 12px 14px;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fffdf8;
+  background: var(--paper-raised);
   cursor: pointer;
   text-align: center;
   transition:
@@ -1549,12 +1580,12 @@ h2 {
 }
 
 .character-card:hover:not(:disabled) {
-  border-color: #26221d;
+  border-color: var(--ink);
   transform: translateY(-2px);
 }
 
 .character-card.selected {
-  border-color: #26221d;
+  border-color: var(--ink);
   border-width: 2px;
   padding: 15px 11px 13px; /* keep size stable as the border thickens */
 }
@@ -1624,16 +1655,16 @@ h2 {
   padding: 9px 18px;
   font-size: 13px;
   font-weight: 600;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fffdf8;
-  color: #4a443c;
+  background: var(--paper-raised);
+  color: var(--ink-2);
   cursor: pointer;
   transition: border-color 0.15s ease;
 }
 
 .voice-only-toggle:hover {
-  border-color: #26221d;
+  border-color: var(--ink);
 }
 
 .session-layout.voice-only {
@@ -1685,11 +1716,11 @@ h2 {
 }
 
 .myth-verdict.caught {
-  color: #2f7a4f;
+  color: var(--good);
 }
 
 .myth-verdict.missed {
-  color: #9c3327;
+  color: var(--bad);
 }
 
 .myth-verdict em {
@@ -1705,7 +1736,7 @@ h2 {
 .strongest-quote {
   margin: 0 0 10px;
   padding-left: 16px;
-  border-left: 3px solid #2f7a4f;
+  border-left: 3px solid var(--good);
   font-size: 19px;
   line-height: 1.5;
   font-style: italic;
@@ -1721,8 +1752,8 @@ h2 {
   margin: 0 0 14px;
   padding: 12px 16px;
   border-radius: 10px;
-  background: rgba(176, 82, 46, 0.07);
-  border: 1px solid rgba(176, 82, 46, 0.25);
+  background: color-mix(in srgb, var(--bad) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bad) 25%, transparent);
   font-weight: 600;
 }
 
@@ -1745,8 +1776,8 @@ h2 {
   margin-left: 8px;
   padding: 2px 10px;
   border-radius: 999px;
-  background: rgba(176, 58, 46, 0.1);
-  color: #9c3327;
+  background: var(--bad-tint);
+  color: var(--bad);
   font-size: 13px;
   font-style: normal;
   font-weight: 600;
@@ -1794,16 +1825,16 @@ details.misconceptions-panel .misconceptions-list {
 .join-input {
   min-width: 200px;
   padding: 11px 16px;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fffdf8;
+  background: var(--paper-raised);
   font-size: 14px;
   outline: none;
 }
 
 .teachoff-input:focus,
 .join-input:focus {
-  border-color: #26221d;
+  border-color: var(--ink);
 }
 
 .teachoff-button,
@@ -1811,8 +1842,8 @@ details.misconceptions-panel .misconceptions-list {
   padding: 11px 20px;
   border: none;
   border-radius: 999px;
-  background: #26221d;
-  color: #fff;
+  background: var(--ink);
+  color: var(--on-ink);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -1833,7 +1864,7 @@ details.misconceptions-panel .misconceptions-list {
   letter-spacing: 0.06em;
   padding: 3px 12px;
   border-radius: 8px;
-  background: rgba(38, 34, 29, 0.07);
+  background: var(--ink-wash-2);
 }
 
 .teachoff-first {
@@ -1857,12 +1888,12 @@ details.misconceptions-panel .misconceptions-list {
   gap: 12px;
   padding: 10px 14px;
   border-radius: 10px;
-  background: rgba(38, 34, 29, 0.03);
+  background: color-mix(in srgb, var(--ink) 3%, transparent);
 }
 
 .teachoff-board li.current-player {
-  background: rgba(47, 122, 79, 0.08);
-  border: 1px solid rgba(47, 122, 79, 0.3);
+  background: var(--good-tint);
+  border: 1px solid var(--good-edge);
 }
 
 .board-rank {
@@ -1894,7 +1925,7 @@ details.misconceptions-panel .misconceptions-list {
 }
 
 .join-error {
-  color: #9c3327;
+  color: var(--bad);
   font-size: 14px;
 }
 
@@ -1908,15 +1939,15 @@ details.misconceptions-panel .misconceptions-list {
   gap: 8px;
   margin-top: 16px;
   padding-top: 14px;
-  border-top: 1px solid #e6ded2;
+  border-top: 1px solid var(--line-soft);
 }
 
 .achievement-chip {
   padding: 6px 12px;
   border-radius: 999px;
   font-size: 13px;
-  border: 1px solid #d8d0c4;
-  background: #fffdf8;
+  border: 1px solid var(--line);
+  background: var(--paper-raised);
   cursor: default;
 }
 
@@ -1926,11 +1957,11 @@ details.misconceptions-panel .misconceptions-list {
 }
 
 .achievement-chip.owned {
-  border-color: #2f7a4f;
+  border-color: var(--good);
 }
 
 .achievement-chip.fresh {
-  background: rgba(47, 122, 79, 0.09);
+  background: var(--good-tint);
   animation: achievement-pop 0.5s ease;
 }
 
@@ -1940,7 +1971,7 @@ details.misconceptions-panel .misconceptions-list {
   font-weight: 800;
   font-style: normal;
   letter-spacing: 0.08em;
-  color: #2f7a4f;
+  color: var(--good);
 }
 
 @keyframes achievement-pop {
@@ -1973,8 +2004,8 @@ details.misconceptions-panel .misconceptions-list {
   padding: 12px 22px;
   border: none;
   border-radius: 999px;
-  background: #26221d;
-  color: #fff;
+  background: var(--ink);
+  color: var(--on-ink);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -2007,9 +2038,9 @@ details.misconceptions-panel .misconceptions-list {
   justify-content: space-between;
   gap: 14px;
   padding: 13px 16px;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fffdf8;
+  background: var(--paper-raised);
   font-size: 15px;
   line-height: 1.45;
   cursor: pointer;
@@ -2027,16 +2058,16 @@ details.misconceptions-panel .misconceptions-list {
 }
 
 .mirror-claim:hover:not(:disabled) {
-  border-color: #26221d;
+  border-color: var(--ink);
 }
 
 .mirror-claim.flagged {
-  border-color: #9c3327;
-  background: rgba(176, 58, 46, 0.05);
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 5%, transparent);
 }
 
 .mirror-flag-mark {
-  color: #9c3327;
+  color: var(--bad);
   font-weight: 700;
   white-space: nowrap;
 }
@@ -2046,18 +2077,18 @@ details.misconceptions-panel .misconceptions-list {
 }
 
 .mirror-claim.caught {
-  border-color: #2f7a4f;
-  background: rgba(47, 122, 79, 0.06);
+  border-color: var(--good);
+  background: var(--good-tint);
 }
 
 .mirror-claim.missed {
-  border-color: #9c3327;
-  background: rgba(176, 58, 46, 0.08);
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 8%, transparent);
 }
 
 .mirror-claim.false-flag {
-  border-color: #c98a2b;
-  background: rgba(201, 138, 43, 0.07);
+  border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 7%, transparent);
 }
 
 .mirror-verdict {
@@ -2065,9 +2096,9 @@ details.misconceptions-panel .misconceptions-list {
   white-space: nowrap;
 }
 
-.mirror-verdict.caught { color: #2f7a4f; }
-.mirror-verdict.missed { color: #9c3327; }
-.mirror-verdict.false-flag { color: #c98a2b; }
+.mirror-verdict.caught { color: var(--good); }
+.mirror-verdict.missed { color: var(--bad); }
+.mirror-verdict.false-flag { color: var(--warn); }
 
 .mirror-why {
   margin: 6px 0 0 22px;
@@ -2094,9 +2125,9 @@ details.misconceptions-panel .misconceptions-list {
   align-items: center;
   gap: 10px;
   padding: 8px 16px 8px 8px;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fffdf8;
+  background: var(--paper-raised);
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
@@ -2104,7 +2135,7 @@ details.misconceptions-panel .misconceptions-list {
 }
 
 .you-chip:hover {
-  border-color: #26221d;
+  border-color: var(--ink);
 }
 
 .you-chip-empty {
@@ -2127,16 +2158,16 @@ details.misconceptions-panel .misconceptions-list {
 .you-editor {
   margin-top: 14px;
   padding: 18px;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 16px;
-  background: #fffdf8;
+  background: var(--paper-raised);
   max-width: 560px;
 }
 
 .you-name-input {
   width: 100%;
   padding: 11px 16px;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 10px;
   font-size: 15px;
   outline: none;
@@ -2144,7 +2175,7 @@ details.misconceptions-panel .misconceptions-list {
 }
 
 .you-name-input:focus {
-  border-color: #26221d;
+  border-color: var(--ink);
 }
 
 .you-presets {
@@ -2226,16 +2257,16 @@ details.misconceptions-panel .misconceptions-list {
 .you-step {
   width: 28px;
   height: 28px;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 50%;
-  background: #fffdf8;
+  background: var(--paper-raised);
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
 }
 
 .you-step:hover {
-  border-color: #26221d;
+  border-color: var(--ink);
 }
 
 .you-swatches {
@@ -2252,7 +2283,7 @@ details.misconceptions-panel .misconceptions-list {
 }
 
 .you-swatch.selected {
-  border-color: #26221d;
+  border-color: var(--ink);
 }
 
 @media (max-width: 600px) {
@@ -2266,8 +2297,8 @@ details.misconceptions-panel .misconceptions-list {
   padding: 10px 20px;
   border: none;
   border-radius: 999px;
-  background: #26221d;
-  color: #fff;
+  background: var(--ink);
+  color: var(--on-ink);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -2307,7 +2338,7 @@ details.misconceptions-panel .misconceptions-list {
   left: 4%;
   right: 4%;
   top: 42px;
-  border-top: 2px dashed #d8d0c4;
+  border-top: 2px dashed var(--line);
 }
 
 .journey-stone {
@@ -2319,18 +2350,18 @@ details.misconceptions-panel .misconceptions-list {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #efe9df;
-  border: 1px solid #d8d0c4;
+  background: var(--paper-alt);
+  border: 1px solid var(--line);
   font-size: 11px;
   font-weight: 700;
-  color: #8d857a;
+  color: var(--ink-muted);
   transition: all 0.4s ease;
 }
 
 .journey-stone.reached {
-  background: #2f7a4f;
-  border-color: #2f7a4f;
-  color: #fff;
+  background: var(--good);
+  border-color: var(--good);
+  color: var(--on-ink);
 }
 
 .journey-walker {
@@ -2354,7 +2385,7 @@ details.misconceptions-panel .misconceptions-list {
   display: grid;
   place-items: center;
   font-size: 20px;
-  box-shadow: 0 2px 6px rgba(38, 34, 29, 0.18);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--ink) 18%, transparent);
 }
 
 @keyframes journey-hop {
@@ -2459,25 +2490,25 @@ details.misconceptions-panel .misconceptions-list {
   letter-spacing: 0.04em;
   padding: 3px 12px;
   border-radius: 999px;
-  background: rgba(38, 34, 29, 0.07);
-  color: #6d655b;
+  background: var(--ink-wash-2);
+  color: var(--ink-3);
   transition: background 0.3s ease, color 0.3s ease;
 }
 
 .rail-mood.mood-confused {
-  background: rgba(156, 51, 39, 0.12);
-  color: #9c3327;
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+  color: var(--bad);
 }
 
 .rail-mood.mood-understanding,
 .rail-mood.mood-impressed {
-  background: rgba(47, 122, 79, 0.13);
-  color: #2f7a4f;
+  background: var(--good-tint);
+  color: var(--good);
 }
 
 .rail-mood.mood-interested {
-  background: rgba(201, 138, 43, 0.14);
-  color: #a06a17;
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+  color: var(--warn);
 }
 
 /* Thinking time (pause) */
@@ -2486,30 +2517,30 @@ details.misconceptions-panel .misconceptions-list {
   padding: 11px 20px;
   font-size: 14px;
   font-weight: 600;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fffdf8;
-  color: #4a443c;
+  background: var(--paper-raised);
+  color: var(--ink-2);
   cursor: pointer;
   white-space: nowrap;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .pause-button:hover {
-  border-color: #26221d;
+  border-color: var(--ink);
 }
 
 .pause-button.resting {
-  background: #26221d;
-  border-color: #26221d;
-  color: #fff;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
 }
 
 /* Paused overrides every mood colour — she is not feeling anything about
    the explanation right now, she is waiting. */
 .rail-mood.resting {
-  background: rgba(38, 34, 29, 0.07);
-  color: #6d655b;
+  background: var(--ink-wash-2);
+  color: var(--ink-3);
   font-style: italic;
 }
 
@@ -2528,7 +2559,7 @@ details.misconceptions-panel .misconceptions-list {
   gap: 10px;
   margin-top: 56px;
   padding-top: 20px;
-  border-top: 1px solid rgba(38, 34, 29, 0.08);
+  border-top: 1px solid var(--ink-wash-2);
 }
 
 .reset-link {
@@ -2536,22 +2567,22 @@ details.misconceptions-panel .misconceptions-list {
   background: none;
   padding: 0;
   font-size: 13px;
-  color: #8a8176;
+  color: var(--ink-muted);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 .reset-link:hover {
-  color: #26221d;
+  color: var(--ink);
 }
 
 .reset-link.danger:hover {
-  color: #9c3327;
+  color: var(--bad);
 }
 
 .reset-sep {
-  color: #cec5b8;
+  color: var(--line-strong);
   font-size: 13px;
 }
 
@@ -2587,22 +2618,22 @@ details.misconceptions-panel .misconceptions-list {
   gap: 7px;
   font-size: 12px;
   font-weight: 700;
-  color: #8a8176;
+  color: var(--ink-muted);
 }
 
 .activity-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #8a8176;
+  background: var(--ink-muted);
 }
 
 .rail-activity.state-speaking {
-  color: #26221d;
+  color: var(--ink);
 }
 
 .rail-activity.state-speaking .activity-dot {
-  background: #26221d;
+  background: var(--ink);
   animation: speaking-dot 0.8s ease-in-out infinite alternate;
 }
 
@@ -2647,15 +2678,15 @@ details.misconceptions-panel .misconceptions-list {
   gap: 7px;
   padding: 9px 16px;
   font-size: 14px;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fffdf8;
+  background: var(--paper-raised);
   cursor: pointer;
   transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
 .confidence-option:hover {
-  border-color: #26221d;
+  border-color: var(--ink);
   transform: translateY(-1px);
 }
 
@@ -2671,7 +2702,7 @@ details.misconceptions-panel .misconceptions-list {
   margin: 4px 0 14px;
   padding: 12px 16px;
   border-radius: 12px;
-  background: rgba(38, 34, 29, 0.04);
+  background: var(--ink-wash-1);
 }
 
 .cc-cell {
@@ -2742,16 +2773,16 @@ details.misconceptions-panel .misconceptions-list {
 }
 
 .juror-seat:hover {
-  background: #faf6ef;
+  background: var(--paper-sunken);
 }
 
 .juror-seat.open {
-  background: #faf6ef;
-  border-color: #d8d0c4;
+  background: var(--paper-sunken);
+  border-color: var(--line);
 }
 
 .juror-seat:focus-visible {
-  outline: 2px solid #26221d;
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
@@ -2766,7 +2797,7 @@ details.misconceptions-panel .misconceptions-list {
   justify-content: center;
   /* The ring carries the band colour, so a juror's verdict is legible from
      the portrait alone before anything is clicked. */
-  box-shadow: 0 0 0 3px #fffdf8, 0 0 0 6px currentColor;
+  box-shadow: 0 0 0 3px var(--paper-raised), 0 0 0 6px currentColor;
   transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
@@ -2786,14 +2817,14 @@ details.misconceptions-panel .misconceptions-list {
   transform: scale(1.08);
 }
 
-.juror-portrait.band-good { color: #2f7a4f; }
-.juror-portrait.band-mid  { color: #c98a2b; }
-.juror-portrait.band-low  { color: #9c3327; }
+.juror-portrait.band-good { color: var(--good); }
+.juror-portrait.band-mid  { color: var(--warn); }
+.juror-portrait.band-low  { color: var(--bad); }
 
 .juror-seat-name {
   font-size: 13px;
   font-weight: 700;
-  color: #26221d;
+  color: var(--ink);
 }
 
 .juror-seat-score {
@@ -2803,26 +2834,26 @@ details.misconceptions-panel .misconceptions-list {
   line-height: 1;
 }
 
-.juror-seat-score.band-good { color: #2f7a4f; }
-.juror-seat-score.band-mid  { color: #c98a2b; }
-.juror-seat-score.band-low  { color: #9c3327; }
+.juror-seat-score.band-good { color: var(--good); }
+.juror-seat-score.band-mid  { color: var(--warn); }
+.juror-seat-score.band-low  { color: var(--bad); }
 
 .jury-hint {
   margin: 0 0 16px;
   padding: 16px;
-  border: 1px dashed #d8d0c4;
+  border: 1px dashed var(--line);
   border-radius: 16px;
   text-align: center;
   font-size: 14px;
-  color: #8a8176;
+  color: var(--ink-muted);
 }
 
 .juror-verdict {
   margin-bottom: 16px;
   padding: 20px;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 18px;
-  background: #faf6ef;
+  background: var(--paper-sunken);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -2874,14 +2905,14 @@ details.misconceptions-panel .misconceptions-list {
   margin: 12px 0 0;
   font-size: 14px;
   line-height: 1.55;
-  color: #655e55;
+  color: var(--ink-3);
 }
 
 .juror-bar {
   display: block;
   height: 10px;
   border-radius: 999px;
-  background: rgba(38, 34, 29, 0.08);
+  background: var(--ink-wash-2);
   overflow: hidden;
 }
 
@@ -2892,14 +2923,14 @@ details.misconceptions-panel .misconceptions-list {
   transition: width 0.9s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-.juror-fill.band-good { background: #2f7a4f; }
-.juror-fill.band-mid  { background: #c98a2b; }
-.juror-fill.band-low  { background: #9c3327; }
+.juror-fill.band-good { background: var(--good); }
+.juror-fill.band-mid  { background: var(--warn); }
+.juror-fill.band-low  { background: var(--bad); }
 
 .jury-spread {
   margin: 0;
   padding-top: 14px;
-  border-top: 1px solid #e6ded2;
+  border-top: 1px solid var(--line-soft);
   font-size: 14px;
 }
 
@@ -2924,20 +2955,20 @@ details.misconceptions-panel .misconceptions-list {
 .language-chip {
   padding: 7px 15px;
   font-size: 14px;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fffdf8;
-  color: #4a443c;
+  background: var(--paper-raised);
+  color: var(--ink-2);
   cursor: pointer;
   transition: border-color 0.15s ease;
 }
 
 .language-chip:hover:not(:disabled) {
-  border-color: #26221d;
+  border-color: var(--ink);
 }
 
 .language-chip.selected {
-  border-color: #26221d;
+  border-color: var(--ink);
   border-width: 2px;
   padding: 6px 14px;
   font-weight: 700;
@@ -2990,16 +3021,16 @@ details.misconceptions-panel .misconceptions-list {
 }
 
 .depth-rung.below .depth-mark {
-  color: #2f7a4f;
+  color: var(--good);
 }
 
 .depth-rung.here {
-  background: rgba(47, 122, 79, 0.1);
-  border: 1px solid rgba(47, 122, 79, 0.3);
+  background: var(--good-tint);
+  border: 1px solid var(--good-edge);
 }
 
 .depth-rung.here .depth-mark {
-  color: #2f7a4f;
+  color: var(--good);
 }
 
 .depth-rung.above {
@@ -3012,7 +3043,7 @@ details.misconceptions-panel .misconceptions-list {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #2f7a4f;
+  color: var(--good);
 }
 
 .depth-evidence {
@@ -3033,8 +3064,8 @@ details.misconceptions-panel .misconceptions-list {
   margin-left: auto;
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(176, 82, 46, 0.12);
-  color: #9c5127;
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+  color: var(--bad);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -3077,7 +3108,7 @@ details.misconceptions-panel .misconceptions-list {
 }
 
 .surprise .predict-verdict {
-  color: #2f7a4f;
+  color: var(--good);
 }
 
 .predict-point {
@@ -3100,7 +3131,7 @@ details.misconceptions-panel .misconceptions-list {
 .delivery-intro {
   margin: 0 0 22px;
   font-size: 15px;
-  color: #746c62;
+  color: var(--ink-3);
 }
 
 /* The track is the lesson from first word to last. Marks sit at the
@@ -3110,7 +3141,7 @@ details.misconceptions-panel .misconceptions-list {
   position: relative;
   height: 10px;
   border-radius: 999px;
-  background: #ece5da;
+  background: var(--paper-alt);
   margin-bottom: 8px;
 }
 
@@ -3121,24 +3152,24 @@ details.misconceptions-panel .misconceptions-list {
   height: 16px;
   margin: -8px 0 0 -8px;
   border-radius: 50%;
-  border: 3px solid #fffdf8;
+  border: 3px solid var(--paper-raised);
   cursor: default;
 }
 
 .forensics-mark.landed {
-  background: #2f7a4f;
+  background: var(--good);
 }
 
 .forensics-mark.lost {
-  background: #9c3327;
+  background: var(--bad);
 }
 
 .forensics-mark.recovered {
-  background: #c98a2b;
+  background: var(--warn);
 }
 
 .forensics-mark.jargon {
-  background: #b0522e;
+  background: var(--bad);
 }
 
 .forensics-axis {
@@ -3148,7 +3179,7 @@ details.misconceptions-panel .misconceptions-list {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #8a8176;
+  color: var(--ink-muted);
   opacity: 0.7;
   margin-bottom: 26px;
 }
@@ -3164,23 +3195,23 @@ details.misconceptions-panel .misconceptions-list {
 
 .forensics-list li {
   padding-left: 16px;
-  border-left: 3px solid #d8d0c4;
+  border-left: 3px solid var(--line);
 }
 
 .forensics-list li.landed {
-  border-left-color: #2f7a4f;
+  border-left-color: var(--good);
 }
 
 .forensics-list li.lost {
-  border-left-color: #9c3327;
+  border-left-color: var(--bad);
 }
 
 .forensics-list li.recovered {
-  border-left-color: #c98a2b;
+  border-left-color: var(--warn);
 }
 
 .forensics-list li.jargon {
-  border-left-color: #b0522e;
+  border-left-color: var(--bad);
 }
 
 .forensics-kind {
@@ -3189,7 +3220,7 @@ details.misconceptions-panel .misconceptions-list {
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #8a8176;
+  color: var(--ink-muted);
   margin-bottom: 8px;
 }
 
@@ -3198,13 +3229,13 @@ details.misconceptions-panel .misconceptions-list {
   font-size: 16px;
   font-style: italic;
   line-height: 1.5;
-  color: #26221d;
+  color: var(--ink);
 }
 
 .forensics-list p {
   margin: 0;
   font-size: 14px;
-  color: #746c62;
+  color: var(--ink-3);
 }
 
 /* -----------------------------
@@ -3222,16 +3253,16 @@ details.misconceptions-panel .misconceptions-list {
 
 .delivery-readings li {
   padding: 18px;
-  border: 1px solid #e4ddd2;
+  border: 1px solid var(--line-soft);
   border-radius: 16px;
-  background: #faf6ef;
+  background: var(--paper-sunken);
 }
 
 /* "watch" is not a failure — it only marks the reading worth a second look,
    so it borrows the amber rather than the red. */
 .delivery-readings li.watch {
-  border-color: #e2c48c;
-  background: #fdf7ea;
+  border-color: var(--warn);
+  background: var(--paper-sunken);
 }
 
 .delivery-figure {
@@ -3252,20 +3283,20 @@ details.misconceptions-panel .misconceptions-list {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #8a8176;
+  color: var(--ink-muted);
 }
 
 .delivery-unit {
   margin-top: 6px;
   font-size: 13px;
-  color: #8a8176;
+  color: var(--ink-muted);
 }
 
 .delivery-readings .delivery-note {
   margin: 10px 0 0;
   font-size: 13px;
   line-height: 1.5;
-  color: #655e55;
+  color: var(--ink-3);
 }
 
 /* -----------------------------
@@ -3273,10 +3304,10 @@ details.misconceptions-panel .misconceptions-list {
 ----------------------------- */
 
 .replay-sheet {
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 18px;
   padding: 24px;
-  background: #faf6ef;
+  background: var(--paper-sunken);
 }
 
 .replay-topline {
@@ -3295,7 +3326,7 @@ details.misconceptions-panel .misconceptions-list {
 
 .replay-taught {
   font-size: 14px;
-  color: #8a8176;
+  color: var(--ink-muted);
 }
 
 .replay-stats {
@@ -3303,7 +3334,7 @@ details.misconceptions-panel .misconceptions-list {
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #e4ddd2;
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .replay-stats div {
@@ -3324,7 +3355,7 @@ details.misconceptions-panel .misconceptions-list {
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: #8a8176;
+  color: var(--ink-muted);
 }
 
 .replay-quote {
@@ -3332,19 +3363,19 @@ details.misconceptions-panel .misconceptions-list {
   font-size: 16px;
   font-style: italic;
   line-height: 1.55;
-  color: #26221d;
+  color: var(--ink);
 }
 
 .replay-code {
   margin: 16px 0 0;
   font-size: 13px;
-  color: #8a8176;
+  color: var(--ink-muted);
 }
 
 .replay-code strong {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.06em;
-  color: #26221d;
+  color: var(--ink);
 }
 
 .replay-copy {
@@ -3352,16 +3383,16 @@ details.misconceptions-panel .misconceptions-list {
   padding: 11px 22px;
   font-size: 14px;
   font-weight: 600;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fffdf8;
-  color: #26221d;
+  background: var(--paper-raised);
+  color: var(--ink);
   cursor: pointer;
   transition: border-color 0.15s ease;
 }
 
 .replay-copy:hover {
-  border-color: #26221d;
+  border-color: var(--ink);
 }
 
 @media (max-width: 600px) {
@@ -3376,7 +3407,7 @@ details.misconceptions-panel .misconceptions-list {
   margin: 12px 0 0;
   font-size: 13px;
   line-height: 1.5;
-  color: #8a8176;
+  color: var(--ink-muted);
 }
 
 /* =========================================================================
@@ -3669,7 +3700,7 @@ details.misconceptions-panel .misconceptions-list {
   margin: 0 0 14px;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--text-muted, #8a8176);
+  color: var(--text-muted, var(--ink-muted));
 }
 
 /* =========================================================================
@@ -3737,17 +3768,17 @@ details.misconceptions-panel .misconceptions-list {
   padding: 10px 18px;
   font-size: 14px;
   font-weight: 600;
-  border: 1px solid #d8d0c4;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fffdf8;
-  color: #26221d;
+  background: var(--paper-raised);
+  color: var(--ink);
   cursor: pointer;
   white-space: nowrap;
   transition: border-color 0.15s ease;
 }
 
 .you-photo-button:hover:not(:disabled) {
-  border-color: #26221d;
+  border-color: var(--ink);
 }
 
 .you-photo-button:disabled {
@@ -3759,11 +3790,11 @@ details.misconceptions-panel .misconceptions-list {
   flex: 1 1 200px;
   font-size: 12px;
   line-height: 1.45;
-  color: #8a8176;
+  color: var(--ink-muted);
 }
 
 .you-photo-note.failed {
-  color: #9c3327;
+  color: var(--bad);
 }
 
 /* The bottom of the instrument. Sits directly under the graph with no gap,
@@ -3808,7 +3839,7 @@ details.misconceptions-panel .misconceptions-list {
 
 .you-photo-button.subtle {
   font-weight: 500;
-  color: #746c62;
+  color: var(--ink-3);
 }
 
 /* Mirrored, because an un-mirrored preview of your own face reads as wrong
@@ -3824,8 +3855,8 @@ details.misconceptions-panel .misconceptions-list {
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: 18px;
-  border: 1px solid #d8d0c4;
-  background: #26221d;
+  border: 1px solid var(--line);
+  background: var(--ink);
   transform: scaleX(-1);
   display: block;
 }
@@ -3848,7 +3879,7 @@ details.misconceptions-panel .misconceptions-list {
 .jargon {
   margin-bottom: 24px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #ebe5dc;
+  border-bottom: 1px solid var(--paper-alt);
 }
 
 .jargon-head {
@@ -3861,7 +3892,7 @@ details.misconceptions-panel .misconceptions-list {
 
 .jargon-count {
   font-size: 13px;
-  color: #8a8176;
+  color: var(--ink-muted);
   letter-spacing: 0.04em;
 }
 
@@ -3872,7 +3903,7 @@ details.misconceptions-panel .misconceptions-list {
 }
 
 .jargon-count strong.hot {
-  color: #9c3327;
+  color: var(--bad);
 }
 
 .jargon-empty,
@@ -3880,7 +3911,7 @@ details.misconceptions-panel .misconceptions-list {
   margin: 10px 0 0;
   font-size: 13px;
   line-height: 1.5;
-  color: #8a8176;
+  color: var(--ink-muted);
 }
 
 .jargon-list {
@@ -3898,9 +3929,9 @@ details.misconceptions-panel .misconceptions-list {
   justify-content: space-between;
   gap: 10px;
   padding: 7px 10px;
-  border: 1px solid #e6ded2;
+  border: 1px solid var(--line-soft);
   border-radius: 8px;
-  background: #fffdf8;
+  background: var(--paper-raised);
   transition:
     border-color 0.2s var(--e-out-quad, ease),
     background 0.2s var(--e-out-quad, ease);
@@ -3909,37 +3940,37 @@ details.misconceptions-panel .misconceptions-list {
 .jargon-term {
   font-size: 14px;
   font-weight: 600;
-  color: #26221d;
+  color: var(--ink);
 }
 
 .jargon-state {
   font-size: 11px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #8a8176;
+  color: var(--ink-muted);
   white-space: nowrap;
 }
 
 /* She stopped you on this one. It is the only thing on the panel that
    should pull your eye mid-sentence. */
 .jargon-row.queried {
-  border-color: #9c3327;
-  background: rgba(156, 51, 39, 0.06);
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 6%, transparent);
 }
 
 .jargon-row.queried .jargon-term,
 .jargon-row.queried .jargon-state {
-  color: #9c3327;
+  color: var(--bad);
 }
 
 .jargon-row.cleared {
-  border-color: rgba(47, 122, 79, 0.35);
-  background: rgba(47, 122, 79, 0.06);
+  border-color: var(--good-edge);
+  background: var(--good-tint);
 }
 
 .jargon-row.cleared .jargon-term,
 .jargon-row.cleared .jargon-state {
-  color: #2f7a4f;
+  color: var(--good);
 }
 
 .jargon-row.cleared .jargon-term {
