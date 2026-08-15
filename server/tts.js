@@ -45,6 +45,16 @@ const TIMEOUT_MS = 12000;
 
 export const voiceConfigured = () => Boolean(process.env.ELEVENLABS_API_KEY);
 
+// Once the account says quota_exceeded it will say it for every request
+// until the credits reset, and finding that out costs a full round trip per
+// clip — fifteen doomed API calls every time a game warms its audio, each
+// one delaying the 404 the client is about to fall back on. Remembered here
+// for ten minutes, per instance, failing open: a topped-up account is
+// noticed within minutes, and a fresh serverless instance simply tries.
+const QUOTA_BACKOFF_MS = 10 * 60 * 1000;
+
+let quotaDeadUntil = 0;
+
 // Returns { b64, ms }, or throws. Callers treat a throw as "this question
 // has no audio yet", never as a dead game — the question is on screen in
 // text, so a silent round is a worse round rather than a broken one.
@@ -53,6 +63,10 @@ export async function speak(text) {
 
   if (!key) {
     throw new Error("ELEVENLABS_API_KEY is not set");
+  }
+
+  if (Date.now() < quotaDeadUntil) {
+    throw new Error("ElevenLabs quota exhausted — backing off");
   }
 
   // Free and starter plans cap concurrent requests, and a batch of questions
@@ -82,9 +96,13 @@ export async function speak(text) {
       }
 
       if (!response.ok) {
-        throw new Error(
-          `ElevenLabs returned ${response.status}: ${(await response.text()).slice(0, 200)}`
-        );
+        const body = (await response.text()).slice(0, 200);
+
+        if (body.includes("quota_exceeded")) {
+          quotaDeadUntil = Date.now() + QUOTA_BACKOFF_MS;
+        }
+
+        throw new Error(`ElevenLabs returned ${response.status}: ${body}`);
       }
 
       const bytes = Buffer.from(await response.arrayBuffer());

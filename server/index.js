@@ -2331,12 +2331,38 @@ app.get("/api/quiz/:code/audio/:index", async (req, res) => {
 // event that cannot be predicted from the clock — both players answering
 // early — can only happen once somebody has answered. So the loop only pays
 // for a fast tick during the window where it might learn something.
-function nextPollDelay(state) {
+function nextPollDelay(state, now) {
   if (state.phase === "over") {
     return 3000;
   }
 
-  return state.answered.length > 0 || state.phase === "lobby" ? 500 : 1500;
+  if (state.phase === "lobby") {
+    return 500;
+  }
+
+  // Sleep until the projection changes rather than on a fixed tick. The
+  // moment a question opens or closes is arithmetic, known exactly, so
+  // there is no reason to find out about it late.
+  //
+  // A flat delay here meant a device could be told about a new question up
+  // to a second and a half after it began. It still landed on the right
+  // question — the timeline is derived, not pushed — but the audio had
+  // already been running that long, and the client seeks to where the round
+  // is rather than restarting a sentence. So a player heard a question with
+  // its first few words missing while the other player, whose tick happened
+  // to fall closer to the boundary, heard all of it.
+  const boundary =
+    state.phase === "countdown"
+      ? state.opensAt
+      : state.phase === "gap"
+        ? state.resumesAt
+        : state.closesAt;
+
+  // The one thing the clock cannot predict is the round ending early, and
+  // that can only happen once somebody has answered.
+  const cap = state.answered.length > 0 ? 500 : 1500;
+
+  return Math.max(100, Math.min(cap, (boundary ?? 0) - now));
 }
 
 // Sync, such as it is.
@@ -2407,7 +2433,9 @@ app.get("/api/quiz/:code/stream", async (req, res) => {
       res.write(`event: tick\ndata: ${JSON.stringify({ serverNow: Date.now() })}\n\n`);
     }
 
-    await new Promise((resolve) => setTimeout(resolve, nextPollDelay(state)));
+    await new Promise((resolve) =>
+      setTimeout(resolve, nextPollDelay(state, Date.now()))
+    );
   }
 
   res.end();

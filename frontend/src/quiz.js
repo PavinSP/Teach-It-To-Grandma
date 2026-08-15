@@ -185,10 +185,24 @@ export function makeDeck() {
       }
     },
 
-    // `into` is how long the question has already been playing for on the
-    // other device — a device that joined late, or reconnected, seeks to
-    // where the game already is instead of starting the sentence again.
-    play(code, index, into = 0) {
+    // Always from the first word. Never from where the round happens to be.
+    //
+    // This used to seek to how far into the question the game already was,
+    // so that two devices in a room stayed audibly aligned. That is exactly
+    // backwards for a quiz that is READ ALOUD. A device learning about a
+    // round a little late — a slow phone, a mobile network, a tab coming
+    // back — would skip that far into the clip, and a spoken question loses
+    // its meaning from the front: "what is the mathematical operation..."
+    // arrives as "...mathematical operation", which cannot be answered. It
+    // was reported exactly that way: one player heard every question whole
+    // and the other kept missing the first few words.
+    //
+    // The alignment it bought was worth nothing. Both devices show the same
+    // question text and count down to the same server deadline, so nothing
+    // in the game depends on the audio being in step — the only cost of
+    // starting late is a slight echo between two phones in one room, and
+    // the only cost of seeking was the question itself.
+    play(code, index) {
       if (disposed) {
         return;
       }
@@ -197,13 +211,11 @@ export function makeDeck() {
       element.src = url(code, index);
       element.load();
 
-      const start = () => {
-        if (into > 250 && Number.isFinite(element.duration)) {
-          element.currentTime = Math.min(into / 1000, element.duration);
-        }
-
-        element.play().catch(() => {});
-      };
+      // Started from the metadata event rather than straight after load().
+      // Playing immediately fails on every question — load() puts the
+      // element back to HAVE_NOTHING and the play() that follows it in the
+      // same tick is aborted, silently, because the rejection is caught.
+      const start = () => element.play().catch(() => {});
 
       if (element.readyState >= 1) {
         start();

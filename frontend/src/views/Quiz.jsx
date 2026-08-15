@@ -226,9 +226,8 @@ export function Quiz({ language, initialCode = "", onExit }) {
     return () => clearInterval(timer);
   }, [screen, code]);
 
-  // One question, one playing. Seeking to where the round already is rather
-  // than starting the sentence over is what keeps a device that reloaded
-  // mid-question level with the one that did not.
+  // One question, one playing, always from its first word — however late
+  // this device found out the round had started. See makeDeck().play().
   useEffect(() => {
     if (!state || !deck.current) {
       return;
@@ -236,15 +235,12 @@ export function Quiz({ language, initialCode = "", onExit }) {
 
     if (state.phase === "question" && spoken.current !== state.index) {
       spoken.current = state.index;
-      deck.current.play(code, state.index, Date.now() + offset - state.opensAt);
+      deck.current.play(code, state.index);
     }
 
     if (state.phase === "over") {
       deck.current.stop();
     }
-    // offset is deliberately absent: it settles within one message and a
-    // change to it must not re-trigger a question that already spoke.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state?.phase, state?.index, code]);
 
   const enter = async (gameCode, playerName) => {
