@@ -30,13 +30,14 @@ export function feynmanScore({
 // The celebration copy derives from the score — a failing lesson gets told
 // so, with the same prominence as a win. A game that congratulates you for
 // failing is worse than no game. Only Grandma gets to say "darling".
-export function verdictForScore(score, who = "Grandma") {
-  if (score >= 85) return `${who} really got it.`;
-  if (score >= 60) return `${who} mostly followed you.`;
-  if (score >= 40) return `${who} got some of it.`;
-  return who === "Grandma"
-    ? "Grandma is still lost, darling."
-    : `${who} is still lost.`;
+// Returns a string KEY, not a sentence — the caller translates it, because
+// this file has no idea what language the lesson is being taught in. The
+// {name} placeholder is filled from the active character either way.
+export function verdictForScore(score, isGrandma = false) {
+  if (score >= 85) return "verdictGot";
+  if (score >= 60) return "verdictMostly";
+  if (score >= 40) return "verdictSome";
+  return isGrandma ? "verdictLostGrandma" : "verdictLost";
 }
 
 export function bandForScore(score) {
@@ -60,9 +61,9 @@ export function headlineBandForScore(score) {
 // are listed on the recap. The xp values are the tie-break when the grader
 // hangs two of them on the same sentence.
 const MOMENT_AWARDS = [
-  { key: "simplifiedJargon", label: "Dropped the jargon when asked", xp: 30 },
-  { key: "selfCorrected", label: "Caught your own mistake", xp: 40 },
-  { key: "usedGoodAnalogy", label: "Found a good analogy", xp: 50 },
+  { key: "simplifiedJargon", label: "xpJargon", xp: 30 },
+  { key: "selfCorrected", label: "xpSelfCorrect", xp: 40 },
+  { key: "usedGoodAnalogy", label: "xpAnalogy", xp: 50 },
 ];
 
 // Two quotes are the same evidence if they read the same aloud: case,
@@ -124,10 +125,14 @@ export function xpForLesson({ results, moments, coveredCount, totalPoints, saidA
 
   const events = [];
 
-  events.push({ label: "Completed the lesson", xp: 100 });
+  // Labels are string keys throughout; the recap translates them. A label
+  // stored in an older snapshot is an English sentence, and t() returns any
+  // key it does not recognise unchanged — so a restored recap still reads
+  // correctly instead of showing a bare key.
+  events.push({ label: "xpCompleted", xp: 100 });
 
   if (coveredCount === totalPoints) {
-    events.push({ label: "Mentioned every concept", xp: 100 });
+    events.push({ label: "xpEveryConcept", xp: 100 });
   }
 
   if (Array.isArray(results)) {
@@ -135,13 +140,14 @@ export function xpForLesson({ results, moments, coveredCount, totalPoints, saidA
 
     if (understood > 0) {
       events.push({
-        label: `Explained ${understood} point${understood > 1 ? "s" : ""} clearly`,
+        label: understood > 1 ? "xpExplainedMany" : "xpExplainedOne",
+        vars: { count: understood },
         xp: 50 * understood,
       });
     }
 
     if (understood === results.length && results.length > 0) {
-      events.push({ label: "Grandma understood all of it", xp: 100 });
+      events.push({ label: "xpUnderstoodAll", xp: 100 });
     }
 
     const earnedKeys = paidMomentKeys(moments);
@@ -229,50 +235,50 @@ export const ACHIEVEMENTS = [
   {
     id: "jargon-slayer",
     icon: "🗣️",
-    name: "Jargon Slayer",
-    how: "Swap a technical term for plain language when asked",
+    name: "achJargonSlayer",
+    how: "achJargonSlayerHow",
   },
   {
     id: "approved",
     icon: "✅",
-    name: "Fully Followed",
-    how: "Every point understood, at most one interruption",
+    name: "achApproved",
+    how: "achApprovedHow",
   },
   {
     id: "deep-thinker",
     icon: "🧠",
-    name: "Deep Thinker",
-    how: "Give five of their questions a real answer",
+    name: "achDeepThinker",
+    how: "achDeepThinkerHow",
   },
   {
     id: "perfect",
     icon: "🎯",
-    name: "Perfect Explanation",
-    how: "Score 95 or higher",
+    name: "achPerfect",
+    how: "achPerfectHow",
   },
   {
     id: "speed-teacher",
     icon: "🔥",
-    name: "Speed Teacher",
-    how: "Every point understood in under three minutes",
+    name: "achSpeed",
+    how: "achSpeedHow",
   },
   {
     id: "myth-buster",
     icon: "🧨",
-    name: "Myth Buster",
-    how: "Catch them confidently stating a false belief",
+    name: "achMythBuster",
+    how: "achMythBusterHow",
   },
   {
     id: "analogy-master",
     icon: "🪄",
-    name: "Analogy Master",
-    how: "A genuine analogy in three different lessons",
+    name: "achAnalogyMaster",
+    how: "achAnalogyMasterHow",
   },
   {
     id: "feynman-master",
     icon: "🏆",
-    name: "Feynman Master",
-    how: "Ten lessons scoring 75 or higher",
+    name: "achFeynmanMaster",
+    how: "achFeynmanMasterHow",
   },
 ];
 

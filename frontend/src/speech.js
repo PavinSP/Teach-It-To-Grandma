@@ -122,57 +122,52 @@ export function deliveryReadings(delivery) {
 
     readings.push({
       id: "pace",
-      label: "Pace",
+      label: "dlPace",
       value: `${wpm}`,
-      unit: "words per minute",
+      unit: "dlPaceUnit",
       band: wpm > 185 || wpm < 75 ? "watch" : "good",
       note:
         wpm > 185
-          ? "Quick. A beginner needs longer to catch up than a peer does."
+          ? "dlPaceFast"
           : wpm < 75
-            ? "Unhurried — which suits a listener meeting this for the first time."
-            : "A steady conversational pace.",
+            ? "dlPaceSlow"
+            : "dlPaceSteady",
     });
   }
 
   readings.push({
     id: "fillers",
-    label: "Filler words",
+    label: "dlFillers",
     value: `${delivery.fillerCount}`,
-    unit: delivery.topFillers.length
-      ? `most often "${delivery.topFillers[0].term}"`
-      : "none counted",
+    unit: delivery.topFillers.length ? "dlFillersTop" : "dlNoneCounted",
+    unitVars: delivery.topFillers.length
+      ? { term: delivery.topFillers[0].term }
+      : null,
     band: delivery.fillerRate > 6 ? "watch" : "good",
-    note:
-      delivery.fillerRate > 6
-        ? `${delivery.fillerRate.toFixed(1)} per 100 words — enough that they carry into the explanation.`
-        : "Within the range of ordinary spoken explanation.",
+    note: delivery.fillerRate > 6 ? "dlFillersHigh" : "dlFillersOk",
+    noteVars: { rate: delivery.fillerRate.toFixed(1) },
   });
 
   readings.push({
     id: "hedges",
-    label: "Hedging",
+    label: "dlHedges",
     value: `${delivery.hedgeCount}`,
-    unit: delivery.topHedges.length
-      ? `most often "${delivery.topHedges[0].term}"`
-      : "none counted",
+    unit: delivery.topHedges.length ? "dlFillersTop" : "dlNoneCounted",
+    unitVars: delivery.topHedges.length
+      ? { term: delivery.topHedges[0].term }
+      : null,
     band: delivery.hedgeRate > 3 ? "watch" : "good",
-    note:
-      delivery.hedgeRate > 3
-        ? "Softened claims give a beginner less to hold onto than a plain statement does."
-        : "Claims were mostly stated plainly.",
+    note: delivery.hedgeRate > 3 ? "dlHedgesHigh" : "dlHedgesOk",
   });
 
   readings.push({
     id: "sentences",
-    label: "Sentence length",
+    label: "dlSentences",
     value: `${delivery.avgSentenceWords}`,
-    unit: "words on average",
+    unit: "dlSentencesUnit",
     band: delivery.avgSentenceWords > 28 ? "watch" : "good",
     note:
-      delivery.avgSentenceWords > 28
-        ? "Long sentences ask a listener to hold several ideas at once."
-        : "Short enough to follow one idea at a time.",
+      delivery.avgSentenceWords > 28 ? "dlSentencesLong" : "dlSentencesOk",
   });
 
   return readings;

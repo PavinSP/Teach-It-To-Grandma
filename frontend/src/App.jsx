@@ -1574,6 +1574,7 @@ function App() {
         topicInput={topicInput}
         tt={tt}
         uiLang={uiLang}
+        uiLang={uiLang}
         you={you}
         youDraftName={youDraftName}
         youDraftParams={youDraftParams}
@@ -1683,7 +1684,6 @@ function App() {
         teachoffName={teachoffName}
         toggleMirrorFlag={toggleMirrorFlag}
         tt={tt}
-        who={who}
         whoUpper={whoUpper}
       />
     );

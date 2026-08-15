@@ -44,6 +44,12 @@ export const CHARACTERS = [
       partial: "Some of that landed, darling.",
       lost: "Let's go over that again, darling.",
     },
+    headlinesDe: {
+      aced: "Gut gemacht, mein Schatz.",
+      followed: "Das meiste habe ich verstanden, mein Schatz.",
+      partial: "Ein bisschen davon ist angekommen, mein Schatz.",
+      lost: "Das gehen wir nochmal durch, mein Schatz.",
+    },
     firstMessageDe:
       "Oh, hallo mein Schatz! Du willst mir also {topic} erklären? Na los, Oma hört zu.",
     firstMessage:
@@ -83,6 +89,12 @@ export const CHARACTERS = [
       partial: "Some bits made sense... not the middle part though.",
       lost: "Wait... I'm still confused.",
     },
+    headlinesDe: {
+      aced: "Du bist die beste Lehrerin der Welt!",
+      followed: "Das meiste hab ich verstanden! Aber ich hab noch Fragen.",
+      partial: "Manches hat Sinn ergeben... die Mitte aber nicht.",
+      lost: "Warte... ich bin immer noch verwirrt.",
+    },
     firstMessageDe:
       "Hallo hallo hallo! Erklärst du mir wirklich {topic}? Okay okay okay — los!",
     firstMessage:
@@ -120,6 +132,12 @@ export const CHARACTERS = [
       followed: "I could pass with that. Mostly.",
       partial: "I'd scrape it. Half of it, anyway.",
       lost: "I'd still fail the exam on this.",
+    },
+    headlinesDe: {
+      aced: "Okay, das hat wirklich Sinn ergeben.",
+      followed: "Damit käme ich durch die Prüfung. So halbwegs.",
+      partial: "Ich würde es gerade so schaffen. Die Hälfte jedenfalls.",
+      lost: "Damit würde ich die Prüfung immer noch verhauen.",
     },
     firstMessageDe:
       "Hey! Ich schreibe bald eine Prüfung über {topic}, also erklär's mir so, dass ich sie bestehe.",
@@ -159,6 +177,12 @@ export const CHARACTERS = [
       partial: "Half a case. I'd need the rest.",
       lost: "I still don't see the bottom line.",
     },
+    headlinesDe: {
+      aced: "Gut. Von mir ein Ja.",
+      followed: "Damit kann ich arbeiten. Fast alles da.",
+      partial: "Ein halbes Argument. Den Rest bräuchte ich noch.",
+      lost: "Ich sehe immer noch nicht, worauf es hinausläuft.",
+    },
     firstMessageDe:
       "Also — {topic}. Ich habe fünf Minuten bis zum nächsten Meeting. Machen Sie was draus.",
     firstMessage:
@@ -197,6 +221,12 @@ export const CHARACTERS = [
       partial: "Parts hold. Others don't survive scrutiny.",
       lost: "Your assumptions need work.",
     },
+    headlinesDe: {
+      aced: "Präzise. Ich bin zufrieden.",
+      followed: "Weitgehend stimmig. Ein paar lose Enden.",
+      partial: "Teile halten stand. Andere nicht.",
+      lost: "An Ihren Annahmen müssen Sie arbeiten.",
+    },
     firstMessageDe:
       "Also — {topic}. Ich kenne das Nachbargebiet gut. Überzeugen Sie mich, dass Sie dieses hier beherrschen.",
     firstMessage:
@@ -234,6 +264,12 @@ export const CHARACTERS = [
       followed: "Competent, with gaps I noticed.",
       partial: "A partial answer. You know some of it.",
       lost: "See me after class.",
+    },
+    headlinesDe: {
+      aced: "Eine saubere Darstellung. Gut gemacht.",
+      followed: "Kompetent, mit Lücken, die mir aufgefallen sind.",
+      partial: "Eine halbe Antwort. Einen Teil beherrschen Sie.",
+      lost: "Kommen Sie nach der Stunde zu mir.",
     },
     firstMessageDe:
       "Guten Tag. {topic} also. Ich höre aufmerksam zu — beginnen Sie, wenn Sie bereit sind.",

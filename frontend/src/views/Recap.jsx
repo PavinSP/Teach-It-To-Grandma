@@ -101,7 +101,7 @@ export function Recap({
   teachoffName,
   toggleMirrorFlag,
   tt,
-  who,
+  uiLang,
   whoUpper,
 }) {
     // Once Grandma has judged the explanation, her verdict is the one that
@@ -134,6 +134,7 @@ export function Recap({
     // never picks which one shows.
     const recapHeadline =
       (FEATURES.aiHeadline && aiGrade?.headlines?.[headlineBand]) ||
+      (uiLang === "de" && activeCharacter.headlinesDe?.[headlineBand]) ||
       activeCharacter.headlines[headlineBand];
 
     const openVerdict =
@@ -232,7 +233,12 @@ export function Recap({
                   <div>
                     <div className="score-label">{tt("feynmanScore")}</div>
                     <div className="score-verdict">
-                      {verdictForScore(lessonXp.score, who)}
+                      {tt(
+                        verdictForScore(
+                          lessonXp.score,
+                          activeCharacter.id === "grandma"
+                        )
+                      )}
                     </div>
                   </div>
                 </div>
@@ -246,7 +252,7 @@ export function Recap({
                     <span className="xp-amount">+{event.xp}</span>
 
                     <span className="xp-what">
-                      {event.label}
+                      {tt(event.label, event.vars)}
                       {event.quote && (
                         <em className="xp-quote"> — “{event.quote}”</em>
                       )}
@@ -309,9 +315,9 @@ export function Recap({
                         className={`achievement-chip ${
                           owned ? "owned" : "locked"
                         } ${isNew ? "fresh" : ""}`}
-                        title={a.how}
+                        title={tt(a.how)}
                       >
-                        {a.icon} {a.name}
+                        {a.icon} {tt(a.name)}
                         {isNew && <em className="achievement-new">NEW</em>}
                       </span>
                     );
@@ -938,10 +944,16 @@ export function Recap({
                   <li key={reading.id} className={reading.band}>
                     <div className="delivery-figure">
                       <span className="delivery-value">{reading.value}</span>
-                      <span className="delivery-label">{reading.label}</span>
+                      <span className="delivery-label">
+                        {tt(reading.label)}
+                      </span>
                     </div>
-                    <div className="delivery-unit">{reading.unit}</div>
-                    <p className="delivery-note">{reading.note}</p>
+                    <div className="delivery-unit">
+                      {tt(reading.unit, reading.unitVars)}
+                    </div>
+                    <p className="delivery-note">
+                      {tt(reading.note, reading.noteVars)}
+                    </p>
                   </li>
                 ))}
               </ul>
