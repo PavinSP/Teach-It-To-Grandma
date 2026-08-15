@@ -53,7 +53,17 @@ import "./App.css";
 
 const AGENT_ID = "agent_8901kzzhzexhe2qt3903amp09nnq";
 
-const GRADING_API = import.meta.env.VITE_GRADING_API || "http://localhost:3001";
+// Dev talks to the server on its own port. A deployed build reads
+// VITE_GRADING_API, which the frontend's Vercel project sets to the API
+// project's URL — the two halves deploy separately so each gets Vercel's
+// zero-config detection, Vite on one side and Express on the other.
+//
+// `??` rather than `||` on purpose: an explicitly empty value means "same
+// origin", which is what a single-domain setup would want, and `||` would
+// silently discard it and fall back to localhost in production.
+const GRADING_API =
+  import.meta.env.VITE_GRADING_API ??
+  (import.meta.env.DEV ? "http://localhost:3001" : "");
 
 // Starting points, not limits — any topic can be typed in.
 // Both codes are in ElevenLabs' supported set and configured on the agent.
