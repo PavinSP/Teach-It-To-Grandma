@@ -3174,7 +3174,7 @@ function App() {
       setConfidence(null);
       resetProgression();
             }}      >
-            ← Teach something else
+            {tt("teachSomethingElse")}
           </button>
         </section>
       </main>
@@ -3202,7 +3202,7 @@ function App() {
       resetMirror();
           }}
         >
-          ← Teach something else
+          {tt("teachSomethingElse")}
         </button>
 
         <div className="session-header">
@@ -3543,11 +3543,9 @@ function App() {
                       className="recall-button"
                       onClick={askGrandmaToRecall}
                       disabled={askedForRecall}
-                      title="She'll say back what she thinks she understood"
+                      title={tt("recallHint")}
                     >
-                      {askedForRecall
-                        ? `${activeCharacter.glyph} Asked — listen to what ${subj} got`
-                        : `${activeCharacter.glyph} Ask ${who} what ${subj} understood`}
+                      {askedForRecall ? tt("asked") : tt("askUnderstood")}
                     </button>
                   )}
 
@@ -3732,10 +3730,7 @@ function App() {
 
                   <div className="complete-message">
                     <strong>{tt("coveredAll")}</strong>
-                    <span>
-                      But did {who} actually follow it? Finish the lesson
-                      and she'll tell you.
-                    </span>
+                    <span>{tt("butDid")}</span>
                   </div>
                 </>
               )}
