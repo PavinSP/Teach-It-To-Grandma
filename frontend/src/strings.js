@@ -115,8 +115,8 @@ const STRINGS = {
     Advanced: "Fortgeschritten",
     butDid: "Aber hat {name} es wirklich verstanden? Beende die Lektion und du erfährst es.",
 
-    heroLine1: "Wenn du es {name}",
-    heroLine2: "nicht erklären kannst,",
+    heroLine1: "Wenn du es",
+    heroLine2: "{name} nicht erklären kannst,",
     heroLine3: "verstehst du es dann wirklich?",
     heroSub: "Nenne etwas, das du kennst. Dann erkläre es jemandem, der absolut nichts darüber weiß.",
     createCharacter: "Erstelle deinen Charakter",

@@ -19,6 +19,26 @@ import {
 import { CHARACTERS, buildPersonaPrompt, DIRECTOR } from "./characters";
 import { loadSnapshot, saveSnapshot } from "./snapshot";
 import { analyseDelivery, deliveryReadings } from "./speech";
+
+// Kinds of turning point, labelled for whoever was listening — "Lost him"
+// when it was Marcus. Everywhere else in the recap is character-aware and a
+// hardcoded "her" here would stand out.
+function turningPointLabel(kind, obj) {
+  if (kind === "landed") return "Landed";
+  if (kind === "lost") return `Lost ${obj}`;
+  if (kind === "recovered") return "Recovered";
+  return "Jargon";
+}
+
+function formatDuration(ms) {
+  if (!ms || ms < 1000) return "—";
+
+  const total = Math.round(ms / 1000);
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+
+  return minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
+}
 import { resetNow } from "./reset";
 import { t, speakerVars } from "./strings";
 import {
@@ -328,6 +348,7 @@ function App() {
   const [lessonDurationMs, setLessonDurationMs] = useState(
     snap?.lessonDurationMs ?? null
   );
+  const [replayCopied, setReplayCopied] = useState(false);
 
   // With the picker off, every derived name resolves to Grandma and the app
   // reads exactly as it did before characters existed.
@@ -367,6 +388,10 @@ function App() {
   // conversation captioned in English reads as half-finished.
   const uiLang = FEATURES.multilingual ? language : "en";
   const sv = speakerVars(uiLang, activeCharacter);
+  const taglineName =
+    uiLang === "de" && activeCharacter.shortName === activeCharacter.role
+      ? activeCharacter.roleDe ?? activeCharacter.shortName
+      : activeCharacter.shortName;
   const tt = (key, extra) => t(uiLang, key, { ...sv, ...extra });
 
   useEffect(() => {
@@ -1502,11 +1527,11 @@ function App() {
           <div className="eyebrow">TEACH IT TO GRANDMA</div>
 
           <h1>
-            If you can't explain it
+            {tt("heroLine1")}
             <br />
-            <span>{tt("heroLine2", { name: sv.name })}</span>
+            <span>{tt("heroLine2", { name: taglineName })}</span>
             <br />
-            do you really understand it?
+            {tt("heroLine3")}
           </h1>
 
           <p className="subtitle">
@@ -1930,6 +1955,59 @@ function App() {
     const recapHeadline =
       (FEATURES.aiHeadline && aiGrade?.headlines?.[headlineBand]) ||
       activeCharacter.headlines[headlineBand];
+
+    const delivery = FEATURES.deliveryAnalysis
+      ? analyseDelivery(recap.userMessages, lessonDurationMs)
+      : null;
+    const readings = deliveryReadings(delivery);
+
+    // Turning points are placed by where their quote falls in the student's
+    // own words, so the track shows the lesson's real shape rather than the
+    // order the model happened to list them in. A quote the server verified
+    // but that spans two utterances won't be found here — it drops out
+    // rather than piling up at position zero.
+    const studentTranscript = recap.userMessages.join(" ").toLowerCase();
+    const turningPoints = (
+      FEATURES.forensics && Array.isArray(aiGrade?.turningPoints)
+        ? aiGrade.turningPoints
+        : []
+    )
+      .map((tp) => {
+        const at = studentTranscript.indexOf(tp.quote.toLowerCase());
+
+        return {
+          ...tp,
+          at: at < 0 ? null : at / Math.max(studentTranscript.length, 1),
+        };
+      })
+      .filter((tp) => tp.at !== null)
+      .sort((a, b) => a.at - b.at);
+
+    const understoodCount = clearPoints.length;
+    const totalPoints = selectedTopic.points.length;
+
+    const copyReplay = async () => {
+      const lines = [
+        `${selectedTopic.name} — taught to ${who}`,
+        lessonXp?.score != null ? `Feynman score: ${lessonXp.score}/100` : null,
+        `Points followed: ${understoodCount}/${totalPoints}`,
+        lessonDurationMs ? `Time on the mic: ${formatDuration(lessonDurationMs)}` : null,
+        aiGrade?.strongestMoment?.quote
+          ? `Best line: "${aiGrade.strongestMoment.quote}"`
+          : null,
+        teachoff ? `Teach-Off code: ${teachoff.code}` : null,
+      ].filter(Boolean);
+
+      try {
+        await navigator.clipboard.writeText(lines.join("\n"));
+        setReplayCopied(true);
+        setTimeout(() => setReplayCopied(false), 2000);
+      } catch {
+        // Clipboard permission is the browser's call, not ours. The card
+        // itself is the deliverable — it stays on screen either way.
+        setReplayCopied(false);
+      }
+    };
 
     return (
       <main className="app">
@@ -2536,6 +2614,80 @@ function App() {
             )}
           </div>
 
+          {FEATURES.forensics && turningPoints.length > 0 && (
+            <section className="recap-card forensics-card">
+              <div className="recap-head">
+                <div className="recap-icon">🕵️</div>
+                <h2>Where it turned</h2>
+              </div>
+
+              <p className="forensics-intro">
+                The moments that decided this lesson, in the order they
+                happened.
+              </p>
+
+              <div className="forensics-track">
+                {turningPoints.map((tp, index) => (
+                  <span
+                    key={index}
+                    className={`forensics-mark ${tp.kind}`}
+                    style={{
+                      left: `${Math.min(Math.max(tp.at * 100, 1.5), 98.5)}%`,
+                    }}
+                    title={tp.note}
+                  />
+                ))}
+              </div>
+
+              <div className="forensics-axis">
+                <span>start of your lesson</span>
+                <span>end</span>
+              </div>
+
+              <ol className="forensics-list">
+                {turningPoints.map((tp, index) => (
+                  <li key={index} className={tp.kind}>
+                    <span className="forensics-kind">
+                      {turningPointLabel(tp.kind, activeCharacter.obj)}
+                    </span>
+                    <blockquote>“{tp.quote}”</blockquote>
+                    <p>{tp.note}</p>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+
+          {FEATURES.deliveryAnalysis && delivery && (
+            <section className="recap-card delivery-card">
+              <div className="recap-head">
+                <div className="recap-icon">🗣️</div>
+                <h2>How you said it</h2>
+              </div>
+
+              <p className="delivery-intro">
+                Counted from your own words — {delivery.wordCount} of them
+                {lessonDurationMs
+                  ? ` over ${formatDuration(lessonDurationMs)}`
+                  : ""}
+                . This is about delivery, not whether you were right.
+              </p>
+
+              <ul className="delivery-readings">
+                {readings.map((reading) => (
+                  <li key={reading.id} className={reading.band}>
+                    <div className="delivery-figure">
+                      <span className="delivery-value">{reading.value}</span>
+                      <span className="delivery-label">{reading.label}</span>
+                    </div>
+                    <div className="delivery-unit">{reading.unit}</div>
+                    <p className="delivery-note">{reading.note}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           {FEATURES.mirrorMode && recap.userMessages.length > 0 && (
             <section className="recap-card mirror-card">
               <div className="recap-head">
@@ -2739,6 +2891,59 @@ function App() {
                   You're first on the board. Hand someone the mic.
                 </p>
               )}
+            </section>
+          )}
+
+          {FEATURES.lessonReplay && lessonXp && (
+            <section className="recap-card replay-card">
+              <div className="recap-head">
+                <div className="recap-icon">🎞️</div>
+                <h2>The run</h2>
+              </div>
+
+              <div className="replay-sheet">
+                <div className="replay-topline">
+                  <span className="replay-topic">{selectedTopic.name}</span>
+                  <span className="replay-taught">taught to {who}</span>
+                </div>
+
+                <div className="replay-stats">
+                  <div>
+                    <strong>{lessonXp.score ?? "—"}</strong>
+                    <span>Feynman score</span>
+                  </div>
+                  <div>
+                    <strong>
+                      {understoodCount}/{totalPoints}
+                    </strong>
+                    <span>points followed</span>
+                  </div>
+                  <div>
+                    <strong>{formatDuration(lessonDurationMs)}</strong>
+                    <span>on the mic</span>
+                  </div>
+                  <div>
+                    <strong>+{lessonXp.total}</strong>
+                    <span>XP earned</span>
+                  </div>
+                </div>
+
+                {aiGrade?.strongestMoment?.quote && (
+                  <blockquote className="replay-quote">
+                    “{aiGrade.strongestMoment.quote}”
+                  </blockquote>
+                )}
+
+                {teachoff && (
+                  <p className="replay-code">
+                    Teach-Off <strong>{teachoff.code}</strong>
+                  </p>
+                )}
+              </div>
+
+              <button className="replay-copy" onClick={copyReplay}>
+                {replayCopied ? "Copied ✓" : "Copy summary"}
+              </button>
             </section>
           )}
 

@@ -2910,3 +2910,282 @@ details.misconceptions-panel .misconceptions-list {
   font-style: normal;
   opacity: 0.55;
 }
+
+/* -----------------------------
+   Explanation forensics (#19)
+----------------------------- */
+
+.forensics-intro,
+.delivery-intro {
+  margin: 0 0 22px;
+  font-size: 15px;
+  color: #746c62;
+}
+
+/* The track is the lesson from first word to last. Marks sit at the
+   proportion of the transcript where the quote actually appears, so the
+   spacing carries information rather than decoration. */
+.forensics-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: #ece5da;
+  margin-bottom: 8px;
+}
+
+.forensics-mark {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  border: 3px solid #fffdf8;
+  cursor: default;
+}
+
+.forensics-mark.landed {
+  background: #2f7a4f;
+}
+
+.forensics-mark.lost {
+  background: #9c3327;
+}
+
+.forensics-mark.recovered {
+  background: #c98a2b;
+}
+
+.forensics-mark.jargon {
+  background: #b0522e;
+}
+
+.forensics-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a8176;
+  opacity: 0.7;
+  margin-bottom: 26px;
+}
+
+.forensics-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.forensics-list li {
+  padding-left: 16px;
+  border-left: 3px solid #d8d0c4;
+}
+
+.forensics-list li.landed {
+  border-left-color: #2f7a4f;
+}
+
+.forensics-list li.lost {
+  border-left-color: #9c3327;
+}
+
+.forensics-list li.recovered {
+  border-left-color: #c98a2b;
+}
+
+.forensics-list li.jargon {
+  border-left-color: #b0522e;
+}
+
+.forensics-kind {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8a8176;
+  margin-bottom: 8px;
+}
+
+.forensics-list blockquote {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-style: italic;
+  line-height: 1.5;
+  color: #26221d;
+}
+
+.forensics-list p {
+  margin: 0;
+  font-size: 14px;
+  color: #746c62;
+}
+
+/* -----------------------------
+   Delivery analysis (#22)
+----------------------------- */
+
+.delivery-readings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.delivery-readings li {
+  padding: 18px;
+  border: 1px solid #e4ddd2;
+  border-radius: 16px;
+  background: #faf6ef;
+}
+
+/* "watch" is not a failure — it only marks the reading worth a second look,
+   so it borrows the amber rather than the red. */
+.delivery-readings li.watch {
+  border-color: #e2c48c;
+  background: #fdf7ea;
+}
+
+.delivery-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.delivery-value {
+  font-size: 30px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.delivery-label {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a8176;
+}
+
+.delivery-unit {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #8a8176;
+}
+
+.delivery-readings .delivery-note {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #655e55;
+}
+
+/* -----------------------------
+   Lesson replay card (#20)
+----------------------------- */
+
+.replay-sheet {
+  border: 1px solid #d8d0c4;
+  border-radius: 18px;
+  padding: 24px;
+  background: #faf6ef;
+}
+
+.replay-topline {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.replay-topic {
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.replay-taught {
+  font-size: 14px;
+  color: #8a8176;
+}
+
+.replay-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e4ddd2;
+}
+
+.replay-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.replay-stats strong {
+  font-size: 26px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.replay-stats span {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #8a8176;
+}
+
+.replay-quote {
+  margin: 20px 0 0;
+  font-size: 16px;
+  font-style: italic;
+  line-height: 1.55;
+  color: #26221d;
+}
+
+.replay-code {
+  margin: 16px 0 0;
+  font-size: 13px;
+  color: #8a8176;
+}
+
+.replay-code strong {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  color: #26221d;
+}
+
+.replay-copy {
+  margin-top: 18px;
+  padding: 11px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid #d8d0c4;
+  border-radius: 999px;
+  background: #fffdf8;
+  color: #26221d;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.replay-copy:hover {
+  border-color: #26221d;
+}
+
+@media (max-width: 600px) {
+  .delivery-readings,
+  .replay-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
