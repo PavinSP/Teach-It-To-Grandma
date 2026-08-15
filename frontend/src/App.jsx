@@ -76,7 +76,12 @@ const LEAKS = [
   // are instructions to the voice, not words she says, and the TTS strips
   // them from the audio. They only need removing from the screen.
   // Short and lowercase by design, so a real bracketed aside survives.
-  /\[[a-z][a-z' -]{0,22}\]\s*/g,
+  //
+  // \p{Ll} rather than a-z: the tag is written in whatever language the
+  // character is speaking, and an ASCII class silently passed [enttäuscht]
+  // and [überrascht] straight to the screen. English tags always matched,
+  // so this only ever broke in German.
+  /\[\p{Ll}[\p{Ll}' -]{0,22}\]\s*/gu,
   /\bset_mood\s*\([^)]*\)\s*/gi,
   /\b(?:Next reply only|From now on)\s*:[^.?!]*[.?!]\s*/gi,
 ];

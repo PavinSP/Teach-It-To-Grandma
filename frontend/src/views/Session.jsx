@@ -516,7 +516,7 @@ export function Session({
                         className="predict-flag"
                         title={selectedTopic.predictions[index].hardWhy}
                       >
-                        tricky
+                        {tt("levelTricky")}
                       </span>
                     )}
                 </div>
