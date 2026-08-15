@@ -1573,7 +1573,7 @@ function App() {
                     className="you-name-input"
                     value={youDraftName}
                     onChange={(event) => setYouDraftName(event.target.value)}
-                    placeholder="Your name"
+                    placeholder={tt("yourName")}
                     maxLength={24}
                     autoFocus
                   />
@@ -1595,15 +1595,15 @@ function App() {
                     <img
                       className="you-preview"
                       src={buildYouUrl(youDraftParams, 192)}
-                      alt="Your character"
+                      alt={tt("yourCharacter")}
                     />
 
                     <div className="you-dials">
                       {[
-                        ["head", "Hair"],
-                        ["facialHair", "Facial hair"],
-                        ["accessories", "Glasses"],
-                        ["face", "Expression"],
+                        ["head", tt("hair")],
+                        ["facialHair", tt("facialHair")],
+                        ["accessories", tt("glasses")],
+                        ["face", tt("expression")],
                       ].map(([key, title]) => {
                         const current = YOU_OPTIONS[key].find(
                           (o) => o.value === (youDraftParams[key] ?? "")
@@ -1622,7 +1622,9 @@ function App() {
                               </button>
 
                               <span className="you-dial-value">
-                                {current?.label ?? "—"}
+                                {(uiLang === "de"
+                                  ? current?.labelDe ?? current?.label
+                                  : current?.label) ?? "—"}
                               </span>
 
                               <button
@@ -1637,7 +1639,7 @@ function App() {
                       })}
 
                       <div className="you-dial">
-                        <span className="you-dial-title">Skin</span>
+                        <span className="you-dial-title">{tt("skin")}</span>
 
                         <span className="you-swatches">
                           {YOU_OPTIONS.skin.map((o) => (
@@ -1649,7 +1651,9 @@ function App() {
                                   : ""
                               }`}
                               style={{ background: `#${o.value}` }}
-                              title={o.label}
+                              title={
+                                uiLang === "de" ? o.labelDe ?? o.label : o.label
+                              }
                               onClick={() =>
                                 setYouDraftParams((prev) => ({
                                   ...prev,
@@ -1662,7 +1666,7 @@ function App() {
                       </div>
 
                       <div className="you-dial">
-                        <span className="you-dial-title">Backdrop</span>
+                        <span className="you-dial-title">{tt("backdrop")}</span>
 
                         <span className="you-swatches">
                           {YOU_OPTIONS.bg.map((o) => (
@@ -1672,7 +1676,9 @@ function App() {
                                 youDraftParams.bg === o.value ? "selected" : ""
                               }`}
                               style={{ background: `#${o.value}` }}
-                              title={o.label}
+                              title={
+                                uiLang === "de" ? o.labelDe ?? o.label : o.label
+                              }
                               onClick={() =>
                                 setYouDraftParams((prev) => ({
                                   ...prev,
@@ -1691,7 +1697,7 @@ function App() {
                     onClick={saveYouProfile}
                     disabled={!youDraftName.trim() || isSavingYou}
                   >
-                    {isSavingYou ? "Saving…" : "That's me →"}
+                    {isSavingYou ? tt("saving") : tt("thatsMe")}
                   </button>
                 </div>
               )}

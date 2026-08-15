@@ -70,6 +70,17 @@ const STRINGS = {
     orTry: "Or try",
     clearLesson: "Clear saved lesson",
     resetAll: "Reset everything",
+
+    // Character builder
+    yourCharacter: "Your character",
+    hair: "Hair",
+    facialHair: "Facial hair",
+    glasses: "Glasses",
+    expression: "Expression",
+    skin: "Skin",
+    backdrop: "Backdrop",
+    thatsMe: "That's me →",
+    saving: "Saving…",
   },
 
   de: {
@@ -134,6 +145,16 @@ const STRINGS = {
     orTry: "Oder probiere",
     clearLesson: "Gespeicherte Lektion löschen",
     resetAll: "Alles zurücksetzen",
+
+    yourCharacter: "Dein Charakter",
+    hair: "Haare",
+    facialHair: "Bart",
+    glasses: "Brille",
+    expression: "Gesichtsausdruck",
+    skin: "Hautton",
+    backdrop: "Hintergrund",
+    thatsMe: "Das bin ich →",
+    saving: "Wird gespeichert…",
   },
 };
 
