@@ -5,6 +5,7 @@ import { resetNow } from "../reset";
 import { rememberLanguage } from "../theme";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { Thinking } from "../components/Thinking";
+import { KeyPrompt } from "../components/KeyPrompt";
 import {
   YOU_OPTIONS,
   YOU_PRESETS,
@@ -53,6 +54,8 @@ export function Landing({
   joinTeachoff,
   language,
   lessonError,
+  needsKey,
+  onKeySaved,
   applyPhotoToAvatar,
   openQuiz,
   youPhotoState,
@@ -516,6 +519,8 @@ export function Landing({
           {lessonError && (
             <p className="error-message topic-error">{lessonError}</p>
           )}
+
+          {needsKey && <KeyPrompt tt={tt} onSaved={onKeySaved} />}
 
           {FEATURES.teachOff && (
             <div className="teachoff-join">

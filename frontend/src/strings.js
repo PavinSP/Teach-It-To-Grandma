@@ -363,6 +363,16 @@ const STRINGS = {
     intro2Body: "Grandma is 78. She has never heard of your subject. She asks \"why?\" until you run out of answers.",
     intro2Enter: "I'm ready →",
     introHint: "Press Enter",
+
+    // Shown when the deploy's own key has expired and a visitor can carry on
+    // with their own.
+    keyTitle: "This demo needs an API key",
+    keyBody: "The key this demo shipped with is no longer active. If you have a TitanomGPT key, paste it below and everything works again — lessons, grading and the quiz.",
+    keyPlaceholder: "sk_…",
+    keySave: "Use this key",
+    keySaved: "Saved — try again",
+    keyForget: "Forget it",
+    keyPrivacy: "Kept in this browser tab only, sent with your requests, and never stored on the server. Closing the tab forgets it.",
     quizRecallNote:
       "Fifteen right answers is a good memory. Whether you could explain any one of them out loud is a different question — and that one is upstairs.",
     quizNoGame: "No game with that code.",
@@ -711,6 +721,14 @@ const STRINGS = {
     intro2Body: "Oma ist 78. Sie hat von deinem Thema noch nie gehört. Sie fragt \"warum?\", bis dir die Antworten ausgehen.",
     intro2Enter: "Ich bin bereit →",
     introHint: "Enter drücken",
+
+    keyTitle: "Diese Demo braucht einen API-Schlüssel",
+    keyBody: "Der Schlüssel, mit dem diese Demo ausgeliefert wurde, ist nicht mehr aktiv. Wenn du einen TitanomGPT-Schlüssel hast, füge ihn unten ein — dann funktioniert alles wieder: Lektionen, Bewertung und das Quiz.",
+    keyPlaceholder: "sk_…",
+    keySave: "Diesen Schlüssel verwenden",
+    keySaved: "Gespeichert — versuch es nochmal",
+    keyForget: "Verwerfen",
+    keyPrivacy: "Wird nur in diesem Browser-Tab gespeichert, mit deinen Anfragen gesendet und nie auf dem Server abgelegt. Beim Schließen des Tabs ist er weg.",
     quizRecallNote:
       "Fünfzehn richtige Antworten sind ein gutes Gedächtnis. Ob du eine davon laut erklären könntest, ist eine andere Frage — und die stellt die Lektion.",
     quizNoGame: "Kein Spiel mit diesem Code.",

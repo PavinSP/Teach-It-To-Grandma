@@ -5,6 +5,8 @@
 // than imported — App.jsx is the teaching flow's file and a side mode is not
 // a reason to edit it. `??` not `||`, because an explicitly empty value means
 // same-origin and `||` would throw that away for localhost in production.
+import { keyHeaders } from "./apikey";
+
 export const QUIZ_API =
   import.meta.env.VITE_GRADING_API ??
   (import.meta.env.DEV ? "http://localhost:3001" : "");
@@ -127,7 +129,7 @@ async function call(path, options) {
 const post = (path, body) =>
   call(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...keyHeaders() },
     body: JSON.stringify(body ?? {}),
   });
 

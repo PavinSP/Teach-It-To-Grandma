@@ -15,6 +15,7 @@ import {
 import { CHARACTERS, buildPersonaPrompt, DIRECTOR } from "./characters";
 import { loadSnapshot, saveSnapshot } from "./snapshot";
 import { storedLanguage } from "./theme";
+import { keyHeaders } from "./apikey";
 import { activeGame } from "./quiz";
 
 import { t, speakerVars } from "./strings";
@@ -260,6 +261,10 @@ function App() {
   const [topicInput, setTopicInput] = useState(snap?.topicInput ?? "");
   const [isBuildingLesson, setIsBuildingLesson] = useState(false);
   const [lessonError, setLessonError] = useState("");
+
+  // Set when the server reports that neither it nor this visitor has a usable
+  // key. Surfaces the paste-your-own panel rather than a dead end.
+  const [needsKey, setNeedsKey] = useState(false);
   const [explainBack, setExplainBack] = useState(snap?.explainBack ?? null);
   const [isExplaining, setIsExplaining] = useState(false);
   const [recallText, setRecallText] = useState(snap?.recallText ?? "");
@@ -625,7 +630,7 @@ function App() {
     try {
       const response = await fetch(`${GRADING_API}/api/jury`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...keyHeaders() },
         body: JSON.stringify({
           topicName: selectedTopic.name,
           points: selectedTopic.points,
@@ -1114,7 +1119,7 @@ function App() {
     try {
       const response = await fetch(`${GRADING_API}/api/grade`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...keyHeaders() },
         body: JSON.stringify({
           topicName: selectedTopic.name,
           points: selectedTopic.points,
@@ -1169,7 +1174,7 @@ function App() {
     try {
       const response = await fetch(`${GRADING_API}/api/explainback`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...keyHeaders() },
         body: JSON.stringify({
           topicName: selectedTopic.name,
           points: selectedTopic.points,
@@ -1304,7 +1309,7 @@ function App() {
     try {
       const response = await fetch(`${GRADING_API}/api/challenge`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...keyHeaders() },
         body: JSON.stringify({
           topicName: selectedTopic.name,
           points: selectedTopic.points,
@@ -1363,7 +1368,7 @@ function App() {
     try {
       const response = await fetch(`${GRADING_API}/api/mirror`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...keyHeaders() },
         body: JSON.stringify({
           topicName: selectedTopic.name,
           points: selectedTopic.points,
@@ -1411,7 +1416,7 @@ function App() {
 
       const response = await fetch(`${GRADING_API}/api/face`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...keyHeaders() },
         body: JSON.stringify({ image, options: youOptionValues() }),
       });
 
@@ -1493,7 +1498,7 @@ function App() {
         `${GRADING_API}/api/teachoff/${code}/runs`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...keyHeaders() },
           body: JSON.stringify({
             player,
             score,
@@ -1529,7 +1534,7 @@ function App() {
     try {
       const response = await fetch(`${GRADING_API}/api/teachoff`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...keyHeaders() },
         body: JSON.stringify({ lesson: selectedTopic }),
       });
 
@@ -1602,7 +1607,7 @@ function App() {
     try {
       const response = await fetch(`${GRADING_API}/api/lesson`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...keyHeaders() },
         body: JSON.stringify({
           topic: wanted,
           ...(FEATURES.multilingual ? { language } : {}),
@@ -1612,9 +1617,12 @@ function App() {
       const body = await response.json();
 
       if (!response.ok) {
+        setNeedsKey(Boolean(body.needsKey));
         setLessonError(body.error || "Could not build a lesson for that.");
         return;
       }
+
+      setNeedsKey(false);
 
       setSelectedTopic(toLesson(body));
       setMessages([]);
@@ -1671,6 +1679,11 @@ function App() {
         joinTeachoff={joinTeachoff}
         language={language}
         lessonError={lessonError}
+        needsKey={needsKey}
+        onKeySaved={() => {
+          setNeedsKey(false);
+          setLessonError("");
+        }}
         applyPhotoToAvatar={applyPhotoToAvatar}
         openQuiz={() => setQuizOpen(true)}
         youPhotoState={youPhotoState}

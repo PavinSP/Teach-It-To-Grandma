@@ -46,14 +46,70 @@ const MODEL = FAST_MODEL;
 
 const apiKey = process.env.TITANOM_API_KEY;
 
+// No longer fatal. A deploy whose own key has expired is still worth serving:
+// the quiz's stored games, the teach-off boards and every screen that does not
+// call a model keep working, and a visitor carrying their own key can use the
+// rest. Refusing to boot would take all of that down too.
 if (!apiKey) {
-  console.error(
-    "Missing TITANOM_API_KEY. Add it to titanom-hack-2026/.env before starting the server."
+  console.warn(
+    "No TITANOM_API_KEY set. Model-backed features will only work for callers who bring their own key."
   );
-  process.exit(1);
 }
 
-const client = new OpenAI({ apiKey, baseURL: TITANOM_BASE_URL });
+const client = apiKey ? new OpenAI({ apiKey, baseURL: TITANOM_BASE_URL }) : null;
+
+// A caller may bring their own key, which is what keeps this demo usable after
+// the key it shipped with is archived — as happened.
+//
+// The rules that make that safe are all about NOT keeping it. The key arrives
+// on a header, is used to build a client for the life of one request, and is
+// dropped when the request ends. It is never written to Redis, never persisted
+// to disk, never put in a log line, and never echoed back in a response. There
+// is nowhere in this process it outlives the call it came in on.
+//
+// It is also never accepted over anything but the app's own origins, because
+// the CORS allowlist above runs first.
+const BYO_HEADER = "x-titanom-key";
+
+function clientFor(req) {
+  const supplied = String(req.get(BYO_HEADER) ?? "").trim();
+
+  if (supplied) {
+    // Built per request and thrown away with it. Deliberately not cached by
+    // key: a cache keyed on a secret is a store of secrets.
+    return new OpenAI({ apiKey: supplied, baseURL: TITANOM_BASE_URL });
+  }
+
+  return client;
+}
+
+// The distinction a caller needs: "this deploy has no working key" is a
+// different problem from "your topic failed", and only one of them is fixable
+// by the person reading the message.
+// An archived, revoked or plain wrong key is not a failed request — it is a
+// deploy that cannot serve anyone until somebody supplies a working key. The
+// two need telling apart, because only one of them is fixable by the person
+// reading the message, and the provider reports it as an ordinary 401.
+function isKeyProblem(err) {
+  const status = err?.status ?? err?.response?.status;
+  const text = String(err?.message ?? "").toLowerCase();
+
+  return (
+    status === 401 ||
+    status === 403 ||
+    text.includes("archived") ||
+    text.includes("invalid api key") ||
+    text.includes("incorrect api key")
+  );
+}
+
+function noKey(res) {
+  return res.status(503).json({
+    error:
+      "This demo's own API key is no longer active. Paste your own TitanomGPT key to carry on — it stays in your browser and is never stored.",
+    needsKey: true,
+  });
+}
 
 // Languages a lesson can be taught in. Validated against this list before
 // a code ever reaches a prompt.
@@ -131,6 +187,9 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGIN
 // endpoint that spends API credits is an invitation.
 app.use(
   cors({
+    // Without naming it here the browser's preflight refuses the request and
+    // a visitor's own key never reaches the server at all.
+    allowedHeaders: ["Content-Type", "x-titanom-key"],
     origin(origin, callback) {
       // No Origin header at all is curl, a health check, or a same-origin
       // request. None of those are the attack this list exists to stop.
@@ -202,6 +261,12 @@ app.get("/health", (_req, res) => {
 // Turns any topic the student types into a lesson: what they should cover,
 // how hard it is, and what people usually get wrong about it.
 app.post("/api/lesson", rateLimit, async (req, res) => {
+  const ai = clientFor(req);
+
+  if (!ai) {
+    return noKey(res);
+  }
+
   const topic = (req.body?.topic ?? "").trim();
   const language = req.body?.language ?? "en";
 
@@ -236,7 +301,7 @@ Also write three challenges that would test whether a student really understands
 If the topic is too vague to teach, or is not a real subject, set "ok" to false and say why in "problem" — otherwise set "ok" to true and leave "problem" empty.${inLanguage(language)}`;
 
   try {
-    const completion = await client.chat.completions.create({
+    const completion = await ai.chat.completions.create({
       model: MODEL,
       max_completion_tokens: 1900,
       messages: [{ role: "user", content: prompt }],
@@ -398,6 +463,10 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
     res.json(lesson);
   } catch (err) {
     console.error("Lesson generation failed:", err);
+    if (isKeyProblem(err)) {
+      return noKey(res);
+    }
+
     res.status(502).json({ error: "Could not build a lesson for that topic." });
   }
 });
@@ -405,6 +474,12 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
 // Judges whether the student genuinely explained each learning point,
 // as opposed to merely saying the right keywords.
 app.post("/api/grade", rateLimit, async (req, res) => {
+  const ai = clientFor(req);
+
+  if (!ai) {
+    return noKey(res);
+  }
+
   // `character` is strictly optional — a client that doesn't send it gets
   // the original Grandma behaviour, unchanged.
   const { topicName, points, transcript, character, ambushedMisconception } =
@@ -549,7 +624,7 @@ Respond with JSON only, in exactly this shape:
 }${inLanguage(language)}`;
 
   try {
-    const completion = await client.chat.completions.create({
+    const completion = await ai.chat.completions.create({
       model: MODEL,
       // Note: TitanomGPT silently ignores max_tokens — it wants this name.
       max_completion_tokens: 1700,
@@ -823,6 +898,10 @@ Respond with JSON only, in exactly this shape:
     res.json(graded);
   } catch (err) {
     console.error("Grading failed:", err);
+    if (isKeyProblem(err)) {
+      return noKey(res);
+    }
+
     res.status(502).json({ error: "Grading failed." });
   }
 });
@@ -831,6 +910,12 @@ Respond with JSON only, in exactly this shape:
 // student's own words. She is not allowed to repair a broken explanation,
 // because the broken version is exactly what the student needs to see.
 app.post("/api/explainback", rateLimit, async (req, res) => {
+  const ai = clientFor(req);
+
+  if (!ai) {
+    return noKey(res);
+  }
+
   const { topicName, points, transcript, grandmaRecall, characterName } =
     req.body ?? {};
   const language = req.body?.language ?? "en";
@@ -921,7 +1006,7 @@ Put the words you used for it in "grandmaSaid". In "gap", name what they left ou
 Finally, in "unexplainedTerms", list every word the student used but never explained to you. Copy those words exactly as the student said them. If they explained everything, return an empty list.${inLanguage(language)}`;
 
   try {
-    const completion = await client.chat.completions.create({
+    const completion = await ai.chat.completions.create({
       // The closed world is the hard part: she must reproduce only what
       // she was told, and a weaker model quietly repairs the gaps.
       model: DEEP_MODEL,
@@ -981,6 +1066,10 @@ Finally, in "unexplainedTerms", list every word the student used but never expla
     res.json(parsed);
   } catch (err) {
     console.error("Explain-back failed:", err);
+    if (isKeyProblem(err)) {
+      return noKey(res);
+    }
+
     res.status(502).json({ error: "Explain-back failed." });
   }
 });
@@ -989,6 +1078,12 @@ Finally, in "unexplainedTerms", list every word the student used but never expla
 // jargon specifically, builds a banned-word list the student can be held to
 // on a re-run — enforced live, client-side, against words they used.
 app.post("/api/challenge", rateLimit, async (req, res) => {
+  const ai = clientFor(req);
+
+  if (!ai) {
+    return noKey(res);
+  }
+
   const {
     topicName,
     points,
@@ -1059,7 +1154,7 @@ Respond with JSON only, in exactly this shape:
 }${inLanguage(language)}`;
 
   try {
-    const completion = await client.chat.completions.create({
+    const completion = await ai.chat.completions.create({
       model: MODEL,
       max_completion_tokens: 600,
       messages: [{ role: "user", content: prompt }],
@@ -1114,6 +1209,10 @@ Respond with JSON only, in exactly this shape:
     res.json(parsed);
   } catch (err) {
     console.error("Challenge generation failed:", err);
+    if (isKeyProblem(err)) {
+      return noKey(res);
+    }
+
     res.status(502).json({ error: "Could not build a challenge." });
   }
 });
@@ -1123,6 +1222,12 @@ Respond with JSON only, in exactly this shape:
 // marks precision, the Child marks whether it was made tangible, and a
 // wide spread between them is itself the finding.
 app.post("/api/jury", rateLimit, async (req, res) => {
+  const ai = clientFor(req);
+
+  if (!ai) {
+    return noKey(res);
+  }
+
   const { topicName, points, transcript, jurors } = req.body ?? {};
   const language = req.body?.language ?? "en";
 
@@ -1170,7 +1275,7 @@ You are ${juror.name}. Judge this explanation ONLY as you would, by your own sta
 
 Give "score" out of 100 by that standard alone — do not moderate toward what another kind of listener would say. Then one sentence in your own voice saying what decided it, and the single word or short phrase that most defines your verdict as "headline".${inLanguage(language)}`;
 
-    const completion = await client.chat.completions.create({
+    const completion = await ai.chat.completions.create({
       // Four jurors have to stay four distinct people, not one voice with
       // four scores — that separation is what the panel is for.
       model: DEEP_MODEL,
@@ -1235,6 +1340,10 @@ Give "score" out of 100 by that standard alone — do not moderate toward what a
     });
   } catch (err) {
     console.error("Jury failed:", err);
+    if (isKeyProblem(err)) {
+      return noKey(res);
+    }
+
     res.status(502).json({ error: "The jury couldn't reach a verdict." });
   }
 });
@@ -1245,6 +1354,12 @@ Give "score" out of 100 by that standard alone — do not moderate toward what a
 // scores the flagging itself (it knows which claims were planted), so
 // this endpoint runs once per game, before it starts.
 app.post("/api/mirror", rateLimit, async (req, res) => {
+  const ai = clientFor(req);
+
+  if (!ai) {
+    return noKey(res);
+  }
+
   const {
     topicName,
     points,
@@ -1309,7 +1424,7 @@ Respond with JSON only:
 }${inLanguage(language)}`;
 
   try {
-    const completion = await client.chat.completions.create({
+    const completion = await ai.chat.completions.create({
       model: MODEL,
       max_completion_tokens: 900,
       messages: [{ role: "user", content: prompt }],
@@ -1364,6 +1479,10 @@ Respond with JSON only:
     res.json(parsed);
   } catch (err) {
     console.error("Mirror generation failed:", err);
+    if (isKeyProblem(err)) {
+      return noKey(res);
+    }
+
     res.status(502).json({ error: "Could not build the retelling." });
   }
 });
@@ -1376,6 +1495,12 @@ Respond with JSON only:
 // The photo is used for exactly one request and then dropped: never written
 // to disk, never logged, never attached to a lesson or a teach-off.
 app.post("/api/face", rateLimit, async (req, res) => {
+  const ai = clientFor(req);
+
+  if (!ai) {
+    return noKey(res);
+  }
+
   const { image, options } = req.body ?? {};
 
   if (
@@ -1441,7 +1566,7 @@ face — expression: ${lists.face.join(", ")}
 Where something is not visible, or you are unsure, choose the most neutral option in that list rather than guessing. Never return a value that is not in its list.`;
 
   try {
-    const completion = await client.chat.completions.create({
+    const completion = await ai.chat.completions.create({
       model: MODEL,
       max_completion_tokens: 200,
       messages: [
@@ -1586,7 +1711,7 @@ const QUIZ_COUNT = 15;
 // two copies of this prompt would drift apart the first time either was
 // tuned. Throws with .status set, so both callers can pass the distinction
 // between "that topic is not quizzable" and "something broke" straight on.
-async function generateQuiz(topic, language) {
+async function generateQuiz(topic, language, ai) {
   const prompt = `Write ${QUIZ_COUNT} multiple-choice questions about "${topic}" for a fast two-player game. Both players hear each question read aloud and then race to tap an answer, so every question must work when HEARD rather than read.
 
 Keep each question under 18 words and answerable in a few seconds. Four options, each under 8 words.
@@ -1615,7 +1740,7 @@ For each question write "why" — one sentence, under 25 words, saying what make
 
 If the topic is too vague or is not a real subject, set "ok" to false and say why in "problem".${inLanguage(language)}`;
 
-  const completion = await client.chat.completions.create({
+  const completion = await ai.chat.completions.create({
     model: MODEL,
     max_completion_tokens: 3000,
     messages: [{ role: "user", content: prompt }],
@@ -1750,6 +1875,12 @@ function readTopic(req) {
 }
 
 app.post("/api/quiz", rateLimit, async (req, res) => {
+  const ai = clientFor(req);
+
+  if (!ai) {
+    return noKey(res);
+  }
+
   const { topic, language, error } = readTopic(req);
 
   if (error) {
@@ -1757,9 +1888,13 @@ app.post("/api/quiz", rateLimit, async (req, res) => {
   }
 
   try {
-    res.json(await generateQuiz(topic, language));
+    res.json(await generateQuiz(topic, language, ai));
   } catch (err) {
     console.error("Could not build quiz:", err);
+
+    if (isKeyProblem(err)) {
+      return noKey(res);
+    }
 
     res
       .status(err.status ?? 500)
@@ -2054,6 +2189,12 @@ async function loadGame(code) {
 }
 
 app.post("/api/quiz/game", rateLimit, async (req, res) => {
+  const ai = clientFor(req);
+
+  if (!ai) {
+    return noKey(res);
+  }
+
   const { topic, language, error } = readTopic(req);
 
   if (error) {
@@ -2068,7 +2209,7 @@ app.post("/api/quiz/game", rateLimit, async (req, res) => {
   }
 
   try {
-    const quiz = await generateQuiz(topic, language);
+    const quiz = await generateQuiz(topic, language, ai);
 
     const meta = await createQuizGame({
       topic,
@@ -2095,6 +2236,10 @@ app.post("/api/quiz/game", rateLimit, async (req, res) => {
     });
   } catch (err) {
     console.error("Could not start a quiz game:", err);
+
+    if (isKeyProblem(err)) {
+      return noKey(res);
+    }
 
     res
       .status(err.status ?? 500)
