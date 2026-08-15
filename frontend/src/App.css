@@ -269,11 +269,21 @@ h2 {
 }
 
 .conversation {
-  min-height: 380px;
   padding: 32px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  position: sticky;
+  top: 16px;
+  height: calc(100vh - 140px);
+  min-height: 420px;
+}
+
+.conversation > div:first-child {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* -----------------------------
@@ -410,7 +420,8 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-height: 38vh;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 8px 10px 8px 0;
   scroll-behavior: smooth;
@@ -899,8 +910,15 @@ h2 {
     align-items: flex-start;
   }
 
+  .conversation {
+    position: static;
+    height: auto;
+    min-height: 380px;
+  }
+
   .transcript {
     max-height: 360px;
+    flex: none;
   }
 
   .recap-grid {

@@ -2522,10 +2522,15 @@ function App() {
               <div
                 className="journey-walker"
                 style={{
-                  left: `${(completedCount / (totalCount + 1)) * 100}%`,
+                  left: `${
+                    ((progress.lastIndexOf(true) + 1) / (totalCount + 1)) * 100
+                  }%`,
                 }}
               >
-                <span className="journey-hop" key={completedCount}>
+                <span
+                  className="journey-hop"
+                  key={`${completedCount}-${progress.lastIndexOf(true)}`}
+                >
                   {activeCharacter.image ? (
                     <img src={activeCharacter.image} alt={who} />
                   ) : (
