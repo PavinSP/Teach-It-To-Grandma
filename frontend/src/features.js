@@ -97,9 +97,18 @@ const DEFAULTS = {
   // cannot say which of those you reached.
   depthLadder: true,
 
+  // The recap headline written about this lesson rather than picked from a
+  // table. The score still chooses which band shows, so the line can never
+  // contradict the number under it. Off falls back to the static lines.
+  aiHeadline: true,
+
   // It predicts which points trip teachers up before a word is spoken,
   // then the recap says where it was right and where you beat it.
   difficultyPrediction: true,
+
+  // Bias speech recognition toward the lesson's own technical terms.
+  // Needs the ASR keywords override enabled on the agent; harmless if not.
+  asrKeywords: true,
 
   // #34 — several people teach the SAME stored lesson in turn, one board.
   // Same machine, sequential — the only multiplayer that honestly works

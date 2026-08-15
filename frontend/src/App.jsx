@@ -322,6 +322,32 @@ function App() {
   const subj = activeCharacter.subj;
   const obj = activeCharacter.obj;
   const voiceOnlyActive = FEATURES.voiceOnly && voiceOnly;
+
+  // Deduplicated, single words first (multi-word phrases help ASR least),
+  // capped because the boost list is a hint, not a dictionary.
+  const asrKeywords = (() => {
+    if (!selectedTopic) {
+      return [];
+    }
+
+    const seen = new Set();
+    const words = [];
+
+    for (const term of [
+      selectedTopic.name,
+      ...(selectedTopic.checks ?? []).flatMap((c) => c.keywords ?? []),
+    ]) {
+      const clean = String(term ?? "").trim();
+      const key = clean.toLowerCase();
+
+      if (clean && !seen.has(key)) {
+        seen.add(key);
+        words.push(clean);
+      }
+    }
+
+    return words.slice(0, 25);
+  })();
   // The UI speaks whatever the lesson is being taught in — a German
   // conversation captioned in English reads as half-finished.
   const uiLang = FEATURES.multilingual ? language : "en";
@@ -884,6 +910,14 @@ function App() {
                 // payload, not a fallback.
                 ...(activeCharacter.voiceId
                   ? { tts: { voiceId: activeCharacter.voiceId } }
+                  : {}),
+                // The lesson already knows the technical words that are
+                // about to be spoken, and those are exactly the words
+                // speech recognition mishears. Feeding them in improves the
+                // transcript, which improves both the coverage bar and the
+                // grade built on it.
+                ...(FEATURES.asrKeywords && asrKeywords.length > 0
+                  ? { asr: { keywords: asrKeywords } }
                   : {}),
               },
             }
@@ -1851,23 +1885,30 @@ function App() {
     const unclearPoints = gradedUnclear ?? recap.missingPoints;
     const gotEverythingAcross = unclearPoints.length === 0;
 
+    // Before the AI grade lands there is no score to band, so fall back to
+    // what the keyword pass can see. Once it arrives the headline moves with
+    // the number under it.
+    const headlineBand =
+      lessonXp?.score != null
+        ? headlineBandForScore(lessonXp.score)
+        : gotEverythingAcross
+          ? "aced"
+          : "lost";
+
+    // The character's own words about THIS lesson when the model supplied
+    // them, the static line for that band otherwise. The band is chosen from
+    // the computed score either way — the model writes all four blind and
+    // never picks which one shows.
+    const recapHeadline =
+      (FEATURES.aiHeadline && aiGrade?.headlines?.[headlineBand]) ||
+      activeCharacter.headlines[headlineBand];
+
     return (
       <main className="app">
         <section className="recap-page">
           <div className="eyebrow">{whoUpper}'S NOTES</div>
 
-          <h1>
-            {activeCharacter.headlines[
-              // Before the AI grade lands there is no score to band, so fall
-              // back to what the keyword pass can see. Once it arrives the
-              // headline moves with the number under it.
-              lessonXp?.score != null
-                ? headlineBandForScore(lessonXp.score)
-                : gotEverythingAcross
-                  ? "aced"
-                  : "lost"
-            ]}
-          </h1>
+          <h1>{recapHeadline}</h1>
 
           <p className="recap-subtitle">
             Here's what {who} understood from your lesson on{" "}

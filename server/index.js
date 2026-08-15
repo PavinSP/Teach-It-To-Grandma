@@ -416,6 +416,15 @@ Set "depth.reached" to the highest rung genuinely earned. Set "depth.evidence" t
 In "blindSpots", name up to 3 things that genuinely matter for understanding this topic which the student never touched at all — not points they explained badly, but ground they never went near. Phrase each as the thing itself ("where the training data comes from"), not as criticism. Empty list if they covered the ground.
 
 In "stumbles", list up to 3 moments where the listener had to stop and ask what something meant or how it worked: copy the listener's question VERBATIM into "grandmaQuote", and put the single word or short phrase they were stuck on into "aboutTerm". Only real stops count — ordinary curiosity is not a stumble. Empty list if there were none.
+
+In "headlines", write the line ${listenerName} would open their notes with — four versions of it, one for each level the lesson might have landed at. Each is spoken by ${listenerName} in the first person, is under 8 words, and sounds like ${audience} talking: their vocabulary, their concerns, the way they would actually put it.
+
+Each line must point at something specific from THIS lesson — an analogy the student reached for, a word they leaned on, a step they skipped. Never a general statement about the topic that would fit any lesson about anything: "I finally understand neural networks!" is exactly the wrong shape.
+- "aced": ${listenerName} genuinely followed all of it.
+- "followed": ${listenerName} followed most of it, some parts still unclear.
+- "partial": some of it landed and some did not.
+- "lost": ${listenerName} could not follow the explanation.
+Write all four regardless of how this lesson actually went — a later step measures the score and picks the one that matches. Never let a line claim more understanding than its own level allows: the "lost" line must sound genuinely unfollowing even if the student did something well along the way, and the "aced" line must not hedge.
 ${
   ambushedMisconception
     ? `\nMid-lesson, the listener deliberately claimed the following false belief to the student, as a test: "${ambushedMisconception}". In "misconceptionHandling", report whether the student noticed the claim was wrong ("noticed"), whether they explained why and gave the right version ("corrected"), and copy their exact correcting words into "quote" (empty if they never did). Agreeing with the claim, or ignoring it, counts as neither.\n`
@@ -436,6 +445,7 @@ Respond with JSON only, in exactly this shape:
   "strongestMoment": { "quote": "<the student's exact sentence, or empty>", "why": "<one line, or empty>" },
   "practiceThis": "<one concrete action>",
   "stumbles": [ { "grandmaQuote": "<the listener's exact question>", "aboutTerm": "<the word they were stuck on>" } ],
+  "headlines": { "aced": "<under 8 words, ${listenerName}'s voice>", "followed": "<under 8 words>", "partial": "<under 8 words>", "lost": "<under 8 words>" },
   "depth": { "reached": "named|defined|mechanism|applied|boundaries", "evidence": "<their exact words, or empty>", "next": "<one sentence>" },
   "blindSpots": [ "<something they never went near>" ]${
     ambushedMisconception
@@ -533,6 +543,17 @@ Respond with JSON only, in exactly this shape:
                 additionalProperties: false,
               },
               blindSpots: { type: "array", items: { type: "string" } },
+              headlines: {
+                type: "object",
+                properties: {
+                  aced: { type: "string" },
+                  followed: { type: "string" },
+                  partial: { type: "string" },
+                  lost: { type: "string" },
+                },
+                required: ["aced", "followed", "partial", "lost"],
+                additionalProperties: false,
+              },
               stumbles: {
                 type: "array",
                 items: {
@@ -569,6 +590,7 @@ Respond with JSON only, in exactly this shape:
               "stumbles",
               "depth",
               "blindSpots",
+              "headlines",
               ...(ambushedMisconception ? ["misconceptionHandling"] : []),
             ],
             additionalProperties: false,
@@ -639,6 +661,28 @@ Respond with JSON only, in exactly this shape:
             heard.includes(st.grandmaQuote.toLowerCase())
         )
         .slice(0, 3);
+
+      // The headline is the largest text on the recap, set in display type
+      // that a long line would wreck. All four bands have to be present and
+      // short or the whole set is dropped — the client's static table is the
+      // floor, so half a set is worse than none. Truncating instead would
+      // hang a cut-off sentence at 88px.
+      const HEADLINE_BANDS = ["aced", "followed", "partial", "lost"];
+      const written = graded.headlines;
+
+      graded.headlines =
+        written &&
+        typeof written === "object" &&
+        HEADLINE_BANDS.every(
+          (band) =>
+            typeof written[band] === "string" &&
+            written[band].trim() &&
+            written[band].trim().length <= 80
+        )
+          ? Object.fromEntries(
+              HEADLINE_BANDS.map((band) => [band, written[band].trim()])
+            )
+          : null;
     }
 
     if (graded.misconceptionHandling) {

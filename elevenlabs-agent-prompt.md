@@ -118,3 +118,28 @@ explicit "sprich ausschliesslich Deutsch" line. Those alone will usually
 get her speaking German even with the toggle off, because they change what
 the model writes — but the toggle is what switches speech recognition to
 German, so without it she may mishear German input.
+
+
+---
+
+## OVERRIDE TOGGLES — the complete list
+
+What the app actually sends, and therefore what must be enabled:
+
+| Toggle | Needed for | Required? |
+|---|---|---|
+| **System prompt** | the six characters' personas | yes |
+| **First message** | their greetings (and the override canary) | yes |
+| **Voice** | a different voice per character | yes |
+| **Agent language** | German (#19) | yes, for German |
+| **ASR keywords** | boosting recognition of the lesson's own technical terms | recommended |
+
+Everything else stays OFF. Each toggle is permission for a connecting
+client to rewrite that part of the agent, and this agent is publicly
+reachable — LLM, Workflow start node, Tools and Knowledge base especially
+should stay closed, since we never send them.
+
+**Allowlist**: the panel warns that any host can connect. For a localhost
+demo that is tolerable; adding `localhost:5173` and `localhost:5174` is
+the tidy fix, though note ElevenLabs' own "Talk to" preview page then
+stops working, being a different host.
