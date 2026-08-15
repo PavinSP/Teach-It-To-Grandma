@@ -3357,6 +3357,7 @@ details.misconceptions-panel .misconceptions-list {
   .session-header p {
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     margin-bottom: 0;
@@ -3390,24 +3391,21 @@ details.misconceptions-panel .misconceptions-list {
     gap: 12px;
   }
 
-  /* The transcript is the thing being watched, so it gets the room. */
+  /* Bounded, so the transcript scrolls inside its own box and the page
+     stays roughly one screen. An earlier version of this block set
+     max-height:none, which let the transcript grow with every message: the
+     document became the scrolling element, the page lurched upward on each
+     new line, and the controls ended up floating somewhere below a layout
+     five screens tall. dvh rather than vh because mobile browsers change
+     the viewport height as their address bar hides. */
   .transcript {
-    max-height: none;
-    min-height: 48vh;
-    flex: 1;
+    max-height: 52dvh;
+    min-height: 30dvh;
+    flex: none;
   }
 
-  /* Mute, pause and end-call follow you down the page. Losing the ability
-     to stop a live microphone because it scrolled away is the failure this
-     prevents. */
   .mic-area {
-    position: sticky;
-    bottom: 0;
-    z-index: 5;
-    padding: 10px 0 4px;
-    margin-top: 4px;
-    background: #fffdf8;
-    border-top: 1px solid #ebe5dc;
+    padding-top: 12px;
   }
 
   /* Order by what the panel is FOR: glance at coverage, leave the lesson,
@@ -3458,6 +3456,47 @@ details.misconceptions-panel .misconceptions-list {
 
   .transcript-message {
     max-width: 100%;
+  }
+
+  /* The walking portrait is 38px on a track that has to fit four numbered
+     stones across roughly 320px. Shrinking both keeps the row readable
+     instead of a pile of overlapping circles. */
+  .journey {
+    height: 48px;
+    margin: 4px 0 12px;
+  }
+
+  .journey-line {
+    top: 32px;
+  }
+
+  .journey-stone {
+    top: 24px;
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
+
+  .journey-hop img,
+  .journey-glyph {
+    width: 28px;
+    height: 28px;
+    font-size: 15px;
+  }
+
+  /* Portrait, name and status read as one line rather than three things
+     that happen to be near each other. */
+  .character-rail {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .rail-name,
+  .rail-activity,
+  .rail-mood {
+    margin: 0;
+    align-self: center;
   }
 
   /* Thumb-sized, and on one row rather than three stacked full-width

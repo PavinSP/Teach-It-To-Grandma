@@ -450,7 +450,15 @@ function App() {
   uiLangRef.current = uiLang;
 
   useEffect(() => {
-    transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // scrollIntoView walks up the tree and scrolls every scrollable ancestor
+    // it needs to, including the page itself. On a phone, where the whole
+    // document scrolls, that jerked the entire layout upward on every single
+    // message — the header, the character and the controls all moved while
+    // someone was mid-sentence. Scrolling the transcript's own box moves the
+    // transcript and nothing else.
+    const box = transcriptEndRef.current?.parentElement;
+
+    box?.scrollTo({ top: box.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
   // Refresh restores this exact page: every meaningful piece of state is
@@ -3597,9 +3605,19 @@ function App() {
               <div
                 className="journey-walker"
                 style={{
-                  left: `${
-                    ((progress.lastIndexOf(true) + 1) / (totalCount + 1)) * 100
-                  }%`,
+                  // Clamped the way the forensics track is. The walker is
+                  // centred on its own position, so an unclamped 0% hangs
+                  // half the portrait off the left edge — which is where it
+                  // sits for the whole opening of every lesson, and is very
+                  // obvious on a narrow screen.
+                  left: `${Math.min(
+                    Math.max(
+                      ((progress.lastIndexOf(true) + 1) / (totalCount + 1)) *
+                        100,
+                      7
+                    ),
+                    93
+                  )}%`,
                 }}
               >
                 <span
