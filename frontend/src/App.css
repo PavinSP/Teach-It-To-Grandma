@@ -2067,14 +2067,14 @@ details.misconceptions-panel .misconceptions-list {
   border-color: #26221d;
 }
 
-.you-face-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
-  margin-bottom: 14px;
+.you-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
 }
 
-.you-face-option {
+.you-preset {
   padding: 0;
   border: 2px solid transparent;
   border-radius: 50%;
@@ -2084,17 +2084,102 @@ details.misconceptions-panel .misconceptions-list {
   transition: transform 0.12s ease;
 }
 
-.you-face-option:hover {
-  transform: scale(1.07);
+.you-preset:hover {
+  transform: scale(1.1);
 }
 
-.you-face-option.selected {
+.you-preset img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.you-builder {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.you-preview {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.you-dials {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.you-dial {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.you-dial-title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+.you-dial-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.you-dial-value {
+  min-width: 118px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.you-step {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #d8d0c4;
+  border-radius: 50%;
+  background: #fffdf8;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.you-step:hover {
   border-color: #26221d;
 }
 
-.you-face-option img {
-  width: 100%;
+.you-swatches {
+  display: flex;
+  gap: 7px;
+}
+
+.you-swatch {
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.you-swatch.selected {
+  border-color: #26221d;
+}
+
+@media (max-width: 600px) {
+  .you-builder {
+    flex-direction: column;
+    align-items: center;
+  }
 }
 
 .you-save {
@@ -2113,8 +2198,4 @@ details.misconceptions-panel .misconceptions-list {
   cursor: default;
 }
 
-@media (max-width: 600px) {
-  .you-face-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
+

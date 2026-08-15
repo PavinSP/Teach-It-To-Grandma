@@ -12,7 +12,14 @@ import {
   evaluateAchievements,
 } from "./progression";
 import { CHARACTERS, buildPersonaPrompt, DIRECTOR } from "./characters";
-import { YOU_FACES, loadYou, saveYou } from "./you";
+import {
+  YOU_OPTIONS,
+  YOU_PRESETS,
+  DEFAULT_PARAMS,
+  buildYouUrl,
+  loadYou,
+  saveYou,
+} from "./you";
 import "./App.css";
 
 const AGENT_ID = "agent_8901kzzhzexhe2qt3903amp09nnq";
@@ -173,7 +180,8 @@ function App() {
   );
   const [showYouEditor, setShowYouEditor] = useState(false);
   const [youDraftName, setYouDraftName] = useState("");
-  const [youDraftFace, setYouDraftFace] = useState(YOU_FACES[0]);
+  const [youDraftParams, setYouDraftParams] = useState(DEFAULT_PARAMS);
+  const [isSavingYou, setIsSavingYou] = useState(false);
   // #11 — the misconception the character was directed to state, if any.
   const [ambush, setAmbush] = useState(null);
   // #10 — the retelling game: claims, which the student flagged, whether
@@ -866,8 +874,17 @@ function App() {
     }
   };
 
-  const saveYouProfile = () => {
-    const saved = saveYou(youDraftName, youDraftFace);
+  const saveYouProfile = async () => {
+    if (isSavingYou) {
+      return;
+    }
+
+    setIsSavingYou(true);
+
+    // Caches the composed face as a data URL so it renders offline.
+    const saved = await saveYou(youDraftName, youDraftParams);
+
+    setIsSavingYou(false);
 
     if (saved) {
       setYou(saved);
@@ -878,6 +895,20 @@ function App() {
         setTeachoffName(saved.name);
       }
     }
+  };
+
+  // ‹ › through an attribute's options, wrapping at the ends.
+  const stepYouParam = (key, direction) => {
+    setYouDraftParams((previous) => {
+      const options = YOU_OPTIONS[key];
+      const index = options.findIndex(
+        (o) => o.value === (previous[key] ?? "")
+      );
+      const next =
+        (index + direction + options.length) % options.length;
+
+      return { ...previous, [key]: options[next].value };
+    });
   };
 
   const toggleMirrorFlag = (id) => {
@@ -1074,12 +1105,12 @@ function App() {
                   className="you-chip"
                   onClick={() => {
                     setYouDraftName(you.name);
-                    setYouDraftFace(you.face);
+                    setYouDraftParams(you.params);
                     setShowYouEditor((v) => !v);
                   }}
                   title="Change your character"
                 >
-                  <img className="you-face" src={you.face} alt="" />
+                  <img className="you-face" src={you.src} alt="" />
                   <span>{you.name}</span>
                   <span className="you-edit-hint">✎</span>
                 </button>
@@ -1088,7 +1119,7 @@ function App() {
                   className="you-chip you-chip-empty"
                   onClick={() => {
                     setYouDraftName("");
-                    setYouDraftFace(YOU_FACES[0]);
+                    setYouDraftParams(DEFAULT_PARAMS);
                     setShowYouEditor((v) => !v);
                   }}
                 >
@@ -1107,26 +1138,120 @@ function App() {
                     autoFocus
                   />
 
-                  <div className="you-face-grid">
-                    {YOU_FACES.map((face) => (
+                  <div className="you-presets">
+                    {YOU_PRESETS.map((preset, index) => (
                       <button
-                        key={face}
-                        className={`you-face-option ${
-                          youDraftFace === face ? "selected" : ""
-                        }`}
-                        onClick={() => setYouDraftFace(face)}
+                        key={index}
+                        className="you-preset"
+                        title="Start from this one, then tweak"
+                        onClick={() => setYouDraftParams(preset)}
                       >
-                        <img src={face} alt="" />
+                        <img src={`/you-${index + 1}.png`} alt="" />
                       </button>
                     ))}
+                  </div>
+
+                  <div className="you-builder">
+                    <img
+                      className="you-preview"
+                      src={buildYouUrl(youDraftParams, 192)}
+                      alt="Your character"
+                    />
+
+                    <div className="you-dials">
+                      {[
+                        ["head", "Hair"],
+                        ["facialHair", "Facial hair"],
+                        ["accessories", "Glasses"],
+                        ["face", "Expression"],
+                      ].map(([key, title]) => {
+                        const current = YOU_OPTIONS[key].find(
+                          (o) => o.value === (youDraftParams[key] ?? "")
+                        );
+
+                        return (
+                          <div className="you-dial" key={key}>
+                            <span className="you-dial-title">{title}</span>
+
+                            <span className="you-dial-control">
+                              <button
+                                className="you-step"
+                                onClick={() => stepYouParam(key, -1)}
+                              >
+                                ‹
+                              </button>
+
+                              <span className="you-dial-value">
+                                {current?.label ?? "—"}
+                              </span>
+
+                              <button
+                                className="you-step"
+                                onClick={() => stepYouParam(key, 1)}
+                              >
+                                ›
+                              </button>
+                            </span>
+                          </div>
+                        );
+                      })}
+
+                      <div className="you-dial">
+                        <span className="you-dial-title">Skin</span>
+
+                        <span className="you-swatches">
+                          {YOU_OPTIONS.skin.map((o) => (
+                            <button
+                              key={o.value}
+                              className={`you-swatch ${
+                                youDraftParams.skin === o.value
+                                  ? "selected"
+                                  : ""
+                              }`}
+                              style={{ background: `#${o.value}` }}
+                              title={o.label}
+                              onClick={() =>
+                                setYouDraftParams((prev) => ({
+                                  ...prev,
+                                  skin: o.value,
+                                }))
+                              }
+                            />
+                          ))}
+                        </span>
+                      </div>
+
+                      <div className="you-dial">
+                        <span className="you-dial-title">Backdrop</span>
+
+                        <span className="you-swatches">
+                          {YOU_OPTIONS.bg.map((o) => (
+                            <button
+                              key={o.value}
+                              className={`you-swatch ${
+                                youDraftParams.bg === o.value ? "selected" : ""
+                              }`}
+                              style={{ background: `#${o.value}` }}
+                              title={o.label}
+                              onClick={() =>
+                                setYouDraftParams((prev) => ({
+                                  ...prev,
+                                  bg: o.value,
+                                }))
+                              }
+                            />
+                          ))}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
                   <button
                     className="you-save"
                     onClick={saveYouProfile}
-                    disabled={!youDraftName.trim()}
+                    disabled={!youDraftName.trim() || isSavingYou}
                   >
-                    That's me →
+                    {isSavingYou ? "Saving…" : "That's me →"}
                   </button>
                 </div>
               )}
