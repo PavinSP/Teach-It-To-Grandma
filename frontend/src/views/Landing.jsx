@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FEATURES } from "../features";
 import { CHARACTERS } from "../characters";
 import { resetNow } from "../reset";
@@ -74,6 +74,70 @@ export function Landing({
   youDraftParams,
 }) {
   const photoInputRef = useRef(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState("");
+
+  // Cutting the tracks is what turns the webcam light off. Leaving a camera
+  // live behind a closed panel is alarming in a room full of people.
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setCameraOpen(false);
+  };
+
+  const openCamera = async () => {
+    setCameraError("");
+
+    try {
+      streamRef.current = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+      });
+      setCameraOpen(true);
+    } catch (err) {
+      // Named, like the microphone errors — "it didn't work" leaves someone
+      // clicking the same button again.
+      setCameraError(
+        err?.name === "NotAllowedError"
+          ? tt("cameraBlocked")
+          : tt("cameraMissing")
+      );
+    }
+  };
+
+  // The <video> only exists once the panel is open, so the stream is attached
+  // after that render rather than at the moment it was granted.
+  useEffect(() => {
+    if (cameraOpen && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [cameraOpen]);
+
+  // Leaving the landing view mid-capture must not leave the camera running.
+  useEffect(() => () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+  }, []);
+
+  const capturePhoto = () => {
+    const video = videoRef.current;
+
+    if (!video?.videoWidth) {
+      return;
+    }
+
+    // Same 512px ceiling the file path uses, so both routes send a
+    // comparably sized image.
+    const scale = Math.min(1, 512 / Math.max(video.videoWidth, video.videoHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(video.videoWidth * scale);
+    canvas.height = Math.round(video.videoHeight * scale);
+    canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+    stopCamera();
+    applyPhotoToAvatar(dataUrl);
+  };
 
   return (
       <main className="app">
@@ -149,27 +213,75 @@ export function Landing({
                         }}
                       />
 
+                      {/* capture="user" opens the camera on a phone and is
+                          ignored on a laptop, so the demo machine needs a
+                          real getUserMedia path beside the file picker. */}
+                      {typeof navigator !== "undefined" &&
+                        navigator.mediaDevices?.getUserMedia && (
+                          <button
+                            className="you-photo-button"
+                            onClick={openCamera}
+                            disabled={
+                              youPhotoState === "reading" || cameraOpen
+                            }
+                          >
+                            {youPhotoState === "reading"
+                              ? tt("photoReading")
+                              : tt("takePhoto")}
+                          </button>
+                        )}
+
                       <button
-                        className="you-photo-button"
+                        className="you-photo-button subtle"
                         onClick={() => photoInputRef.current?.click()}
                         disabled={youPhotoState === "reading"}
                       >
-                        {youPhotoState === "reading"
-                          ? tt("photoReading")
-                          : tt("usePhoto")}
+                        {tt("usePhoto")}
                       </button>
 
                       <span
                         className={`you-photo-note ${
-                          youPhotoState === "failed" ? "failed" : ""
+                          youPhotoState === "failed" || cameraError
+                            ? "failed"
+                            : ""
                         }`}
                       >
-                        {youPhotoState === "failed"
-                          ? tt("photoFailed")
-                          : youPhotoState === "matched"
-                            ? tt("photoMatched")
-                            : tt("photoPrivacy")}
+                        {cameraError
+                          ? cameraError
+                          : youPhotoState === "failed"
+                            ? tt("photoFailed")
+                            : youPhotoState === "matched"
+                              ? tt("photoMatched")
+                              : tt("photoPrivacy")}
                       </span>
+                    </div>
+                  )}
+
+                  {cameraOpen && (
+                    <div className="you-camera">
+                      <video
+                        ref={videoRef}
+                        className="you-camera-view"
+                        autoPlay
+                        playsInline
+                        muted
+                      />
+
+                      <div className="you-camera-actions">
+                        <button
+                          className="you-photo-button"
+                          onClick={capturePhoto}
+                        >
+                          {tt("photoCapture")}
+                        </button>
+
+                        <button
+                          className="you-photo-button subtle"
+                          onClick={stopCamera}
+                        >
+                          {tt("photoCancel")}
+                        </button>
+                      </div>
                     </div>
                   )}
 

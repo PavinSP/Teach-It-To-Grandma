@@ -3801,3 +3801,143 @@ details.misconceptions-panel .misconceptions-list {
   flex: 1;
   min-height: 0;
 }
+
+.you-photo-button.subtle {
+  font-weight: 500;
+  color: #746c62;
+}
+
+/* Mirrored, because an un-mirrored preview of your own face reads as wrong
+   to everyone who has ever used a camera app. The captured frame is drawn
+   from the video element directly, so the saved photo is not flipped. */
+.you-camera {
+  margin-bottom: 18px;
+}
+
+.you-camera-view {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 18px;
+  border: 1px solid #d8d0c4;
+  background: #26221d;
+  transform: scaleX(-1);
+  display: block;
+}
+
+.you-camera-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+/* =========================================================================
+   Words you're using
+   =========================================================================
+   The live form of the argument: you said a word, and the person you were
+   teaching had to stop you and ask what it meant. Ordered by what is
+   costing you right now, so the top of the list is always the thing to
+   say another way.
+   ========================================================================= */
+
+.jargon {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #ebe5dc;
+}
+
+.jargon-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.jargon-count {
+  font-size: 13px;
+  color: #8a8176;
+  letter-spacing: 0.04em;
+}
+
+.jargon-count em {
+  margin: 0 5px;
+  font-style: normal;
+  opacity: 0.5;
+}
+
+.jargon-count strong.hot {
+  color: #9c3327;
+}
+
+.jargon-empty,
+.jargon-note {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #8a8176;
+}
+
+.jargon-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.jargon-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid #e6ded2;
+  border-radius: 8px;
+  background: #fffdf8;
+  transition:
+    border-color 0.2s var(--e-out-quad, ease),
+    background 0.2s var(--e-out-quad, ease);
+}
+
+.jargon-term {
+  font-size: 14px;
+  font-weight: 600;
+  color: #26221d;
+}
+
+.jargon-state {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8a8176;
+  white-space: nowrap;
+}
+
+/* She stopped you on this one. It is the only thing on the panel that
+   should pull your eye mid-sentence. */
+.jargon-row.queried {
+  border-color: #9c3327;
+  background: rgba(156, 51, 39, 0.06);
+}
+
+.jargon-row.queried .jargon-term,
+.jargon-row.queried .jargon-state {
+  color: #9c3327;
+}
+
+.jargon-row.cleared {
+  border-color: rgba(47, 122, 79, 0.35);
+  background: rgba(47, 122, 79, 0.06);
+}
+
+.jargon-row.cleared .jargon-term,
+.jargon-row.cleared .jargon-state {
+  color: #2f7a4f;
+}
+
+.jargon-row.cleared .jargon-term {
+  font-weight: 500;
+}

@@ -1351,15 +1351,18 @@ function App() {
   // A photo picks the dials; it never becomes the avatar. The composed
   // Open Peeps face is still what gets saved, and every dial stays editable
   // afterwards — the photo is a starting point, not a result.
-  const applyPhotoToAvatar = async (file) => {
-    if (!file) {
+  const applyPhotoToAvatar = async (source) => {
+    if (!source) {
       return;
     }
 
     setYouPhotoState("reading");
 
     try {
-      const image = await photoToDataUrl(file);
+      // A camera capture arrives already sized and encoded; a picked file
+      // still needs shrinking before it can go anywhere near the wire.
+      const image =
+        typeof source === "string" ? source : await photoToDataUrl(source);
 
       const response = await fetch(`${GRADING_API}/api/face`, {
         method: "POST",

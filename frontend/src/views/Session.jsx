@@ -1,7 +1,6 @@
 import { FEATURES } from "../features";
 import { MOOD_LABEL } from "../mood";
-import { UnderstandingGraph } from "../components/UnderstandingGraph";
-import { Waveform } from "../components/Waveform";
+import { JargonDebt } from "../components/JargonDebt";
 
 // The live lesson. Everything here is driven by App: the ElevenLabs
 // conversation object, the transcript, the coverage the keyword pass
@@ -259,28 +258,60 @@ export function Session({
                   )}
                 </div>
               ) : (
-              /* Graph and waveform are one instrument in one box. The box
-                 matters beyond layout: a crystallizing particle leaves the
-                 waveform and arrives at a node, and both need to be
-                 measured against the same origin for that to land. */
-              <div className="instrument">
-              <UnderstandingGraph
-                points={selectedTopic.points}
-                checks={selectedTopic.checks}
-                progress={progress}
-                grade={null}
-                topic={selectedTopic.name}
-                waitingLabel={tt("waitingForSignal")}
-              />
+              <div className="transcript">
+                {messages.length === 0 && (
+                  <div className="transcript-message grandma-message">
+                    <div className="speaker">{whoUpper}</div>
 
-              <Waveform
-                conversation={conversation}
-                isConnected={isConnected}
-                muted={conversation.isMuted}
-                paused={paused}
-              />
+                    <p>
+                      {tt("ready", { topic: selectedTopic.name })}
+                    </p>
+                  </div>
+                )}
+
+                {messages.map((message, index) => {
+                  if (message.source === "system") {
+                    return (
+                      <div
+                        className="system-message"
+                        key={`${index}-${message.message}`}
+                      >
+                        {message.message}
+                      </div>
+                    );
+                  }
+
+                  const role =
+                    message.source === "user"
+                      ? (you?.name ?? tt("you")).toUpperCase()
+                      : whoUpper;
+
+                  const isStudent = message.source === "user";
+
+                  return (
+                    <div
+                      className={`transcript-message ${isStudent
+                        ? "user-message"
+                        : "grandma-message"
+                        }`}
+                      key={`${index}-${message.message}`}
+                    >
+                      <div className="speaker">
+                        {isStudent && you && (
+                          <img
+                            className="speaker-face"
+                            src={you.src}
+                            alt=""
+                          />
+                        )}
+                        {role}
+                      </div>
+                      <p>{message.message}</p>
+                    </div>
+                  );
+                })}
+                <div ref={transcriptEndRef} />
               </div>
-
               )}
               {error && (
                 <div className="error-message">
@@ -405,62 +436,7 @@ export function Session({
 
           {!voiceOnlyActive && (
           <aside className="progress">
-            {/* The words that produced the graph, beside it rather than
-                beneath it — the centre column belongs to the instrument. */}
-              <div className="transcript">
-                {messages.length === 0 && (
-                  <div className="transcript-message grandma-message">
-                    <div className="speaker">{whoUpper}</div>
-
-                    <p>
-                      {tt("ready", { topic: selectedTopic.name })}
-                    </p>
-                  </div>
-                )}
-
-                {messages.map((message, index) => {
-                  if (message.source === "system") {
-                    return (
-                      <div
-                        className="system-message"
-                        key={`${index}-${message.message}`}
-                      >
-                        {message.message}
-                      </div>
-                    );
-                  }
-
-                  const role =
-                    message.source === "user"
-                      ? (you?.name ?? tt("you")).toUpperCase()
-                      : whoUpper;
-
-                  const isStudent = message.source === "user";
-
-                  return (
-                    <div
-                      className={`transcript-message ${isStudent
-                        ? "user-message"
-                        : "grandma-message"
-                        }`}
-                      key={`${index}-${message.message}`}
-                    >
-                      <div className="speaker">
-                        {isStudent && you && (
-                          <img
-                            className="speaker-face"
-                            src={you.src}
-                            alt=""
-                          />
-                        )}
-                        {role}
-                      </div>
-                      <p>{message.message}</p>
-                    </div>
-                  );
-                })}
-                <div ref={transcriptEndRef} />
-              </div>
+            <JargonDebt topic={selectedTopic} messages={messages} tt={tt} />
 
             <div className="progress-title">
               {tt("pointsMentioned")}
