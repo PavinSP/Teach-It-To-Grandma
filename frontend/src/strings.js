@@ -70,6 +70,8 @@ const STRINGS = {
     orTry: "Or try",
     clearLesson: "Clear saved lesson",
     resetAll: "Reset everything",
+    dropped: "{name} hung up. Press the microphone to carry on — nothing you said is lost.",
+    you: "YOU",
 
     // Character builder
     yourCharacter: "Your character",
@@ -145,6 +147,8 @@ const STRINGS = {
     orTry: "Oder probiere",
     clearLesson: "Gespeicherte Lektion löschen",
     resetAll: "Alles zurücksetzen",
+    dropped: "{name} hat aufgelegt. Drücke das Mikrofon, um weiterzumachen — nichts geht verloren.",
+    you: "DU",
 
     yourCharacter: "Dein Charakter",
     hair: "Haare",

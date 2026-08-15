@@ -143,3 +143,25 @@ should stay closed, since we never send them.
 demo that is tolerable; adding `localhost:5173` and `localhost:5174` is
 the tidy fix, though note ElevenLabs' own "Talk to" preview page then
 stops working, being a different host.
+
+
+---
+
+## IF THE CALL ENDS BY ITSELF
+
+Observed once on a German lesson: two exchanges in, the session ended with
+nobody hanging up. Too short for a duration cap, so the likely cause is an
+inactivity/silence timeout — plausible in a second language, where the
+student pauses longer to compose a sentence.
+
+Worth checking in the agent settings:
+
+- **Max conversation duration** — raise it if it is near the default
+- Any **silence / inactivity timeout** — raise or disable
+- **Turn timeout** — how long she waits before speaking into silence
+
+The app now handles the drop rather than dying: the transcript is kept,
+pressing the microphone resumes, and the reconnected session is handed a
+summary of what was already said so she does not ask the student to start
+over. But raising the timeout is the actual fix, and the 🤔 pause button
+exists precisely so thinking time does not look like an abandoned call.

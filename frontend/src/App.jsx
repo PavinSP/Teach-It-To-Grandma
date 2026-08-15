@@ -336,6 +336,10 @@ function App() {
   // heuristic stays quiet — a configured agent is never second-guessed.
   const lastToolMoodAt = useRef(0);
   const transcriptEndRef = useRef(null);
+  // onDisconnect fires from a closure created at mount; these keep it
+  // reading the current character and language rather than the first ones.
+  const whoRef = useRef("Grandma");
+  const uiLangRef = useRef("en");
   // Her next reply after we ask is the recall itself — catch it as it lands.
   const pendingRecallRef = useRef(false);
   // One lesson attempt = one XP award. The id is minted once per attempt
@@ -393,6 +397,9 @@ function App() {
       ? activeCharacter.roleDe ?? activeCharacter.shortName
       : activeCharacter.shortName;
   const tt = (key, extra) => t(uiLang, key, { ...sv, ...extra });
+
+  whoRef.current = who;
+  uiLangRef.current = uiLang;
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -495,8 +502,10 @@ function App() {
     onDisconnect: (details) => {
       console.log("Disconnected:", details?.reason, details);
 
-      if (details?.reason === "error") {
-        setError(`The call to ${who} dropped unexpectedly.`);
+      // "user" is the student hanging up deliberately — silent. Anything
+      // else ended without them asking, and saying so beats a dead screen.
+      if (details?.reason && details.reason !== "user") {
+        setError(t(uiLangRef.current, "dropped", { name: whoRef.current }));
       }
     },
 
@@ -904,9 +913,17 @@ function App() {
   }, [lessonXp]);
 
   const startConversation = async () => {
+    // Anything already said means this is a resume, not a fresh start.
+    const resuming = messages.some(
+      (m) => m.source === "user" && m.meta !== "prompt"
+    );
+
     try {
       setError("");
-      setMessages([]);
+
+      if (!resuming) {
+        setMessages([]);
+      }
 
       await navigator.mediaDevices.getUserMedia({
         audio: true,
@@ -965,6 +982,23 @@ function App() {
             }
           : {}),
       });
+
+      // A reconnect is a brand new session to ElevenLabs — she remembers
+      // nothing. Our transcript survived, so hand back the gist rather
+      // than letting her ask the student to start over.
+      if (resuming) {
+        const alreadySaid = messages
+          .filter((m) => m.source === "user" && m.meta !== "prompt")
+          .map((m) => m.message)
+          .slice(-4)
+          .join(" ");
+
+        if (alreadySaid) {
+          conversation.sendContextualUpdate(
+            `[note] From now on: the call dropped and has just reconnected. The student already told you this, so do not make them repeat it — carry on from here: "${alreadySaid}"`
+          );
+        }
+      }
     } catch (err) {
       console.error("Could not start conversation:", err);
 
@@ -3228,7 +3262,7 @@ function App() {
 
                   const role =
                     message.source === "user"
-                      ? (you?.name ?? "YOU").toUpperCase()
+                      ? (you?.name ?? tt("you")).toUpperCase()
                       : whoUpper;
 
                   const isStudent = message.source === "user";
