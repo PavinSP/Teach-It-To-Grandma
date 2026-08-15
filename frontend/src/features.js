@@ -132,6 +132,13 @@ const DEFAULTS = {
   // Same machine, sequential — the only multiplayer that honestly works
   // without deployment.
   teachOff: true,
+
+  // The two-player quiz. A side mode by construction, and flagged like one:
+  // it measures whether you can pick the right answer against a clock, which
+  // is precisely the thing this product argues is not understanding. Off
+  // removes the entry point from the landing page and the view with it,
+  // leaving the teaching flow exactly as it was.
+  quizGame: true,
 };
 
 function resolve(defaults) {

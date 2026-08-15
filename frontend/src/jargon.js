@@ -109,7 +109,20 @@ export function buildDebt(topic, messages) {
           return;
         }
 
-        if (isQuestionAbout(message, term) && queriedAt < 0) {
+        // She cannot stop you on a word you have not said yet, and the
+        // `usedAt` test is what enforces that.
+        //
+        // Her greeting is built from the topic and ends in a question mark —
+        // "So you're going to teach me about Neural Networks?" — which has a
+        // question mark and the term in it, and so lit up every term derived
+        // from the topic name as SHE STOPPED YOU before the microphone had
+        // been touched. A panel headed WORDS YOU'RE USING listing three
+        // words nobody had used, against a transcript one line long, all of
+        // them accusing.
+        //
+        // The rule this restores is the one at the top of this file: you
+        // used a word, and she had to stop you. Both halves, in that order.
+        if (usedAt >= 0 && queriedAt < 0 && isQuestionAbout(message, term)) {
           queriedAt = i;
         }
       });

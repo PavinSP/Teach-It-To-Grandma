@@ -51,6 +51,7 @@ export function Landing({
   language,
   lessonError,
   applyPhotoToAvatar,
+  openQuiz,
   youPhotoState,
   saveYouProfile,
   setCharacter,
@@ -542,6 +543,26 @@ export function Landing({
               </button>
 
               {joinError && <span className="join-error">{joinError}</span>}
+            </div>
+          )}
+
+          {/* Below the teaching flow and styled as its sibling, never as a
+              headline. The product's argument is that recall is not
+              understanding; a quiz measures recall, so it gets a row down
+              here and a sentence saying which of the two it is. */}
+          {FEATURES.quizGame && (
+            <div className="teachoff-join">
+              <span className="topic-suggestions-label">
+                {tt("quizEntryLabel")}
+              </span>
+
+              <button className="join-button" onClick={openQuiz}>
+                {tt("quizEntryButton")}
+              </button>
+
+              <span className="topic-suggestions-label">
+                {tt("quizEntryNote")}
+              </span>
             </div>
           )}
 

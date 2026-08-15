@@ -1,4 +1,5 @@
-// Teach-off storage (#34): the challenges and every run against them.
+// Teach-off storage (#34): the challenges and every run against them, and
+// the quiz side-mode's live games (bottom half of this file).
 //
 // Two backends behind one interface, chosen by whether Upstash credentials
 // are present:
@@ -79,14 +80,14 @@ if (!redis) {
   }
 }
 
-function makeCode() {
+function makeCode(prefix = "TEACH") {
   let code = "";
 
   for (let i = 0; i < 4; i++) {
     code += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
   }
 
-  return `TEACH-${code}`;
+  return `${prefix}-${code}`;
 }
 
 // Highest score first; equal scores rank the earlier run higher, so a
@@ -236,4 +237,204 @@ export async function addRun(code, run) {
   persist();
 
   return rankedRuns(entry);
+}
+
+// ---------------------------------------------------------------------------
+// The quiz game's live state.
+//
+// Same two-backend split as above and for the same reason, but a different
+// shape, because a quiz is written to by two people at once and a teach-off
+// is not.
+//
+// A game is two keys:
+//
+//   quiz:<code>        the questions. Written once, never again — so the
+//                      correct answers live somewhere the client cannot
+//                      reach until the game is over.
+//   quiz:<code>:live   EVERYTHING that changes, as one hash.
+//
+// One hash rather than a key per concern is what makes this affordable and
+// correct at the same time. Affordable, because both devices poll this while
+// the game runs and HGETALL fetches the lot in a single command — five keys
+// would be five commands per poll per player, several thousand across one
+// game, against an Upstash free tier that counts them.
+//
+// Correct, because every write is HSET on its own field. Two players tapping
+// an easy question inside the same 50ms is not a rare event in a race game,
+// and read-modify-write on one JSON blob would silently drop one of those
+// answers — a wrong final score with nothing in any log to explain it.
+//
+// Fields, all flat:
+//   created            when the game was made
+//   run                epoch ms the host pressed start; absent means lobby
+//   p:<playerId>       { id, name, joinedAt }
+//   a:<index>:<pid>    { choice, at }
+//   e:<index>          epoch ms the round ended early, both having answered
+//   d:<index>          the question audio's duration in ms
+
+const QUIZ_TTL_SECONDS = 60 * 60 * 6;
+
+const MAX_QUIZZES = 50;
+
+const quizMetaKey = (code) => `quiz:${code}`;
+const quizLiveKey = (code) => `quiz:${code}:live`;
+const quizAudioKey = (code, index) => `quiz:${code}:audio:${index}`;
+
+// code -> { meta, live, audio: Map }
+const quizzes = new Map();
+
+const QUIZ_FILE = join(DATA_DIR, "quizzes.json");
+
+if (!redis) {
+  try {
+    const raw = JSON.parse(fs.readFileSync(QUIZ_FILE, "utf8"));
+
+    for (const entry of raw) {
+      quizzes.set(entry.meta.code, { ...entry, audio: new Map() });
+    }
+  } catch {
+    // First boot, or unreadable file — start empty either way.
+  }
+}
+
+// Audio is deliberately absent from what gets written: `node --watch`
+// restarts on every save during development, and a megabyte of base64 mp3
+// re-serialised on each of those is a real pause. Losing it costs nothing,
+// because a missing clip is regenerated on the first request for it.
+function persistQuizzes() {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(
+      QUIZ_FILE,
+      JSON.stringify(
+        [...quizzes.values()].map(({ meta, live }) => ({ meta, live }))
+      )
+    );
+  } catch (err) {
+    console.error("Could not persist quiz games:", err);
+  }
+}
+
+export async function createQuizGame(meta) {
+  let code = makeCode("QUIZ");
+
+  if (redis) {
+    while (await redis.exists(quizMetaKey(code))) {
+      code = makeCode("QUIZ");
+    }
+
+    const entry = { ...meta, code, createdAt: Date.now() };
+
+    await redis.set(quizMetaKey(code), entry, { ex: QUIZ_TTL_SECONDS });
+    // The hash has to exist before it can carry a TTL, so the timestamp that
+    // would otherwise be redundant with the meta earns its place here.
+    await redis.hset(quizLiveKey(code), { created: entry.createdAt });
+    await redis.expire(quizLiveKey(code), QUIZ_TTL_SECONDS);
+
+    return entry;
+  }
+
+  while (quizzes.has(code)) {
+    code = makeCode("QUIZ");
+  }
+
+  if (quizzes.size >= MAX_QUIZZES) {
+    const oldest = [...quizzes.values()].sort(
+      (a, b) => a.meta.createdAt - b.meta.createdAt
+    )[0];
+
+    quizzes.delete(oldest.meta.code);
+  }
+
+  const entry = { ...meta, code, createdAt: Date.now() };
+
+  quizzes.set(code, {
+    meta: entry,
+    live: { created: entry.createdAt },
+    audio: new Map(),
+  });
+  persistQuizzes();
+
+  return entry;
+}
+
+export async function getQuizMeta(code) {
+  if (redis) {
+    return (await redis.get(quizMetaKey(code))) ?? null;
+  }
+
+  return quizzes.get(code)?.meta ?? null;
+}
+
+// The whole mutable half of a game in one round trip. Returns null only when
+// the game does not exist, so a caller can tell "expired" from "not started".
+export async function getQuizLive(code) {
+  if (redis) {
+    const live = await redis.hgetall(quizLiveKey(code));
+
+    return live && Object.keys(live).length ? live : null;
+  }
+
+  return quizzes.get(code)?.live ?? null;
+}
+
+export async function setQuizField(code, field, value) {
+  if (redis) {
+    await redis.hset(quizLiveKey(code), { [field]: value });
+
+    return true;
+  }
+
+  const entry = quizzes.get(code);
+
+  if (!entry) {
+    return false;
+  }
+
+  entry.live[field] = value;
+  persistQuizzes();
+
+  return true;
+}
+
+// First writer wins, and the loser is told so. Both players' answers can
+// arrive close enough together that each handler sees only its own and both
+// conclude the round just ended; HSETNX is what stops the second one moving
+// the finish line a few milliseconds after the first already set it.
+export async function setQuizFieldOnce(code, field, value) {
+  if (redis) {
+    return Boolean(await redis.hsetnx(quizLiveKey(code), field, value));
+  }
+
+  const entry = quizzes.get(code);
+
+  if (!entry || field in entry.live) {
+    return false;
+  }
+
+  entry.live[field] = value;
+  persistQuizzes();
+
+  return true;
+}
+
+export async function getQuizAudio(code, index) {
+  if (redis) {
+    return (await redis.get(quizAudioKey(code, index))) ?? null;
+  }
+
+  return quizzes.get(code)?.audio.get(index) ?? null;
+}
+
+export async function putQuizAudio(code, index, audio) {
+  if (redis) {
+    await redis.set(quizAudioKey(code, index), audio, { ex: QUIZ_TTL_SECONDS });
+  } else if (quizzes.has(code)) {
+    quizzes.get(code).audio.set(index, audio);
+  }
+
+  // Duration goes in the live hash, not beside the mp3, because the pacing
+  // logic reads it on every poll and must not pay for a second fetch — let
+  // alone a fetch of the audio itself — to find out how long a clip runs.
+  await setQuizField(code, `d:${index}`, audio.ms);
 }

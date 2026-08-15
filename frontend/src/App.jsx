@@ -14,6 +14,7 @@ import {
 } from "./progression";
 import { CHARACTERS, buildPersonaPrompt, DIRECTOR } from "./characters";
 import { loadSnapshot, saveSnapshot } from "./snapshot";
+import { activeGame } from "./quiz";
 
 import { t, speakerVars } from "./strings";
 import {
@@ -25,6 +26,7 @@ import {
   photoToDataUrl,
 } from "./you";
 import { Landing } from "./views/Landing";
+import { Quiz } from "./views/Quiz";
 import { Recap } from "./views/Recap";
 import { Session } from "./views/Session";
 import "./App.css";
@@ -323,6 +325,20 @@ function App() {
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
   const [isJoining, setIsJoining] = useState(false);
+  // The quiz side mode. ?quiz=QUIZ-ABCD opens it with the code already in
+  // the box, so the second device can be handed a link instead of four
+  // letters read across a room. It owns all of its own state — nothing
+  // below this line knows the game exists.
+  const [quizInvite] = useState(() =>
+    typeof window === "undefined"
+      ? ""
+      : new URLSearchParams(window.location.search).get("quiz") ?? ""
+  );
+  // Also opens when this tab is already in a game, so reloading a phone
+  // mid-question comes back to the question rather than to this page.
+  const [quizOpen, setQuizOpen] = useState(
+    () => Boolean(quizInvite) || Boolean(activeGame()?.code)
+  );
   // Two stage directions in one context window produce garbage — every
   // director-channel sender records the student-turn it fired at, and no
   // sender may fire within 2 turns of the last.
@@ -1601,6 +1617,19 @@ function App() {
     }
   };
 
+  // Before the landing check, because the side mode is a whole screen rather
+  // than a panel on one — and after every hook above it, because it is a
+  // return and hooks do not survive being skipped.
+  if (FEATURES.quizGame && quizOpen) {
+    return (
+      <Quiz
+        initialCode={quizInvite}
+        language={uiLang}
+        onExit={() => setQuizOpen(false)}
+      />
+    );
+  }
+
   if (!selectedTopic) {
     return (
       <Landing
@@ -1614,6 +1643,7 @@ function App() {
         language={language}
         lessonError={lessonError}
         applyPhotoToAvatar={applyPhotoToAvatar}
+        openQuiz={() => setQuizOpen(true)}
         youPhotoState={youPhotoState}
         saveYouProfile={saveYouProfile}
         setCharacter={setCharacter}

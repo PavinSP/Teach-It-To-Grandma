@@ -10,7 +10,15 @@ import {
   addRun,
   rankedRuns,
   backend,
+  createQuizGame,
+  getQuizMeta,
+  getQuizLive,
+  setQuizField,
+  setQuizFieldOnce,
+  getQuizAudio,
+  putQuizAudio,
 } from "./store.js";
+import { speak, voiceConfigured } from "./tts.js";
 
 // The key lives in the project root .env, one level up from server/.
 dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), "..", ".env") });
@@ -66,6 +74,36 @@ function inLanguage(code) {
   }
 
   return `\n\nWrite EVERY string you return in ${name} — names, descriptions, point labels, reasons, summaries, questions and notes. The "keywords" must be in ${name} too, because that is the language the student will be speaking.`;
+}
+
+// Canned answers for the "they said nothing" paths. These return without
+// ever calling the model, so inLanguage() — which only appends to a prompt —
+// cannot reach them. Left untranslated they were the one thing that flipped
+// a German recap back to English, and an empty lesson is not exotic: it is
+// what a dead microphone or an early "Finish" produces.
+const EMPTY_COPY = {
+  en: {
+    nothingSaid: "The student did not say anything about this.",
+    noExplanation: (who) => `${who} didn't hear an explanation yet.`,
+    toldNothing: (who) =>
+      who === "Grandma"
+        ? "You haven't told me anything yet, darling."
+        : "You haven't told me anything yet.",
+    neverMentioned: "Never mentioned.",
+  },
+  de: {
+    nothingSaid: "Dazu hast du nichts gesagt.",
+    noExplanation: (who) => `${who} hat noch keine Erklärung gehört.`,
+    toldNothing: (who) =>
+      who === "Grandma"
+        ? "Du hast mir noch nichts erzählt, mein Schatz."
+        : "Du hast mir noch nichts erzählt.",
+    neverMentioned: "Gar nicht erwähnt.",
+  },
+};
+
+function emptyCopy(code) {
+  return EMPTY_COPY[code] ?? EMPTY_COPY.en;
 }
 
 const app = express();
@@ -409,13 +447,15 @@ app.post("/api/grade", rateLimit, async (req, res) => {
     .join("\n");
 
   if (!studentText.trim()) {
+    const copy = emptyCopy(language);
+
     return res.json({
       results: points.map((point) => ({
         point,
         understood: false,
-        reason: "The student did not say anything about this.",
+        reason: copy.nothingSaid,
       })),
-      summary: `${listenerName} didn't hear an explanation yet.`,
+      summary: copy.noExplanation(listenerName),
       strongestMoment: { quote: "", why: "" },
       practiceThis: "",
       stumbles: [],
@@ -820,16 +860,15 @@ app.post("/api/explainback", rateLimit, async (req, res) => {
     .join("\n");
 
   if (!studentText.trim()) {
+    const copy = emptyCopy(language);
+
     return res.json({
-      recap:
-        listener === "Grandma"
-          ? "You haven't told me anything yet, darling."
-          : "You haven't told me anything yet.",
+      recap: copy.toldNothing(listener),
       points: points.map((point) => ({
         point,
         recalled: "missing",
         grandmaSaid: "",
-        gap: "Never mentioned.",
+        gap: copy.neverMentioned,
       })),
       unexplainedTerms: [],
     });
@@ -1542,22 +1581,12 @@ app.get("/api/teachoff/:code/runs", async (req, res) => {
 
 const QUIZ_COUNT = 15;
 
-app.post("/api/quiz", rateLimit, async (req, res) => {
-  const topic = (req.body?.topic ?? "").trim();
-  const language = req.body?.language ?? "en";
-
-  if (!languageName(language)) {
-    return res.status(400).json({ error: "Unsupported language." });
-  }
-
-  if (!topic) {
-    return res.status(400).json({ error: "Expected { topic }." });
-  }
-
-  if (topic.length > 120) {
-    return res.status(400).json({ error: "That topic is too long." });
-  }
-
+// Generation lives in a function rather than inside the route because the
+// game creates its questions the same way a bare /api/quiz call does, and
+// two copies of this prompt would drift apart the first time either was
+// tuned. Throws with .status set, so both callers can pass the distinction
+// between "that topic is not quizzable" and "something broke" straight on.
+async function generateQuiz(topic, language) {
   const prompt = `Write ${QUIZ_COUNT} multiple-choice questions about "${topic}" for a fast two-player game. Both players hear each question read aloud and then race to tap an answer, so every question must work when HEARD rather than read.
 
 Keep each question under 18 words and answerable in a few seconds. Four options, each under 8 words.
@@ -1586,119 +1615,802 @@ For each question write "why" — one sentence, under 25 words, saying what make
 
 If the topic is too vague or is not a real subject, set "ok" to false and say why in "problem".${inLanguage(language)}`;
 
-  try {
-    const completion = await client.chat.completions.create({
-      model: MODEL,
-      max_completion_tokens: 3000,
-      messages: [{ role: "user", content: prompt }],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "quiz",
-          schema: {
-            type: "object",
-            properties: {
-              ok: { type: "boolean" },
-              problem: { type: "string" },
-              name: { type: "string", description: "The topic, tidied for display" },
-              questions: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    question: { type: "string" },
-                    options: {
-                      type: "array",
-                      items: { type: "string" },
-                      minItems: 4,
-                      maxItems: 4,
-                    },
-                    correct: {
-                      type: "integer",
-                      description: "Index 0-3 of the correct option",
-                    },
-                    tricky: { type: "boolean" },
-                    why: { type: "string" },
+  const completion = await client.chat.completions.create({
+    model: MODEL,
+    max_completion_tokens: 3000,
+    messages: [{ role: "user", content: prompt }],
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "quiz",
+        schema: {
+          type: "object",
+          properties: {
+            ok: { type: "boolean" },
+            problem: { type: "string" },
+            name: { type: "string", description: "The topic, tidied for display" },
+            questions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  question: { type: "string" },
+                  options: {
+                    type: "array",
+                    items: { type: "string" },
+                    minItems: 4,
+                    maxItems: 4,
                   },
-                  required: ["question", "options", "correct", "tricky", "why"],
-                  additionalProperties: false,
+                  correct: {
+                    type: "integer",
+                    description: "Index 0-3 of the correct option",
+                  },
+                  tricky: { type: "boolean" },
+                  why: { type: "string" },
                 },
+                required: ["question", "options", "correct", "tricky", "why"],
+                additionalProperties: false,
               },
             },
-            required: ["ok", "problem", "name", "questions"],
-            additionalProperties: false,
           },
+          required: ["ok", "problem", "name", "questions"],
+          additionalProperties: false,
         },
       },
+    },
+  });
+
+  const raw = completion.choices?.[0]?.message?.content;
+
+  if (!raw) {
+    throw new Error("Model returned no content");
+  }
+
+  const quiz = JSON.parse(raw);
+
+  if (!quiz.ok) {
+    const err = new Error(
+      quiz.problem || "That topic can't be turned into a quiz."
+    );
+
+    err.status = 422;
+
+    throw err;
+  }
+
+  // Never trust and serve. A question whose "correct" index points outside
+  // its own options is unanswerable, and one with duplicate options has no
+  // single right answer — both would only surface mid-game, on stage, with
+  // two people staring at a timer.
+  const questions = (quiz.questions ?? [])
+    .filter(
+      (q) =>
+        typeof q.question === "string" &&
+        Array.isArray(q.options) &&
+        q.options.length === 4 &&
+        q.options.every((o) => typeof o === "string" && o.trim()) &&
+        new Set(q.options.map((o) => o.trim().toLowerCase())).size === 4 &&
+        Number.isInteger(q.correct) &&
+        q.correct >= 0 &&
+        q.correct <= 3
+    )
+    .map((q, i) => {
+      // Shuffle, because the model has a positional bias and asking it
+      // nicely not to does not fix that. A generated set put the answer
+      // at position 1, 2 or 3 five times each and never at 4 — in a game
+      // where two people are racing a clock, "never the last one" is a
+      // pattern somebody learns by question six and then exploits.
+      // Shuffling makes the distribution a property of the code rather
+      // than a hope about the model.
+      const shuffled = q.options.map((o, index) => ({ o: o.trim(), index }));
+
+      for (let k = shuffled.length - 1; k > 0; k--) {
+        const j = Math.floor(Math.random() * (k + 1));
+
+        [shuffled[k], shuffled[j]] = [shuffled[j], shuffled[k]];
+      }
+
+      return {
+        id: `q${i + 1}`,
+        question: q.question.trim(),
+        options: shuffled.map((entry) => entry.o),
+        correct: shuffled.findIndex((entry) => entry.index === q.correct),
+        tricky: Boolean(q.tricky),
+        why: typeof q.why === "string" ? q.why.trim() : "",
+      };
     });
 
-    const raw = completion.choices?.[0]?.message?.content;
+  if (questions.length < 5) {
+    throw new Error(
+      `Only ${questions.length} of ${quiz.questions?.length ?? 0} questions survived validation`
+    );
+  }
 
-    if (!raw) {
-      throw new Error("Model returned no content");
-    }
+  return { name: quiz.name || topic, questions };
+}
 
-    const quiz = JSON.parse(raw);
+// Shared by both callers: the endpoint below and game creation.
+function readTopic(req) {
+  const topic = (req.body?.topic ?? "").trim();
+  const language = req.body?.language ?? "en";
 
-    if (!quiz.ok) {
-      return res.status(422).json({
-        error: quiz.problem || "That topic can't be turned into a quiz.",
-      });
-    }
+  if (!languageName(language)) {
+    return { error: "Unsupported language." };
+  }
 
-    // Never trust and serve. A question whose "correct" index points outside
-    // its own options is unanswerable, and one with duplicate options has no
-    // single right answer — both would only surface mid-game, on stage, with
-    // two people staring at a timer.
-    const questions = (quiz.questions ?? [])
-      .filter(
-        (q) =>
-          typeof q.question === "string" &&
-          Array.isArray(q.options) &&
-          q.options.length === 4 &&
-          q.options.every((o) => typeof o === "string" && o.trim()) &&
-          new Set(q.options.map((o) => o.trim().toLowerCase())).size === 4 &&
-          Number.isInteger(q.correct) &&
-          q.correct >= 0 &&
-          q.correct <= 3
-      )
-      .map((q, i) => {
-        // Shuffle, because the model has a positional bias and asking it
-        // nicely not to does not fix that. A generated set put the answer
-        // at position 1, 2 or 3 five times each and never at 4 — in a game
-        // where two people are racing a clock, "never the last one" is a
-        // pattern somebody learns by question six and then exploits.
-        // Shuffling makes the distribution a property of the code rather
-        // than a hope about the model.
-        const shuffled = q.options.map((o, index) => ({ o: o.trim(), index }));
+  if (!topic) {
+    return { error: "Expected { topic }." };
+  }
 
-        for (let k = shuffled.length - 1; k > 0; k--) {
-          const j = Math.floor(Math.random() * (k + 1));
+  if (topic.length > 120) {
+    return { error: "That topic is too long." };
+  }
 
-          [shuffled[k], shuffled[j]] = [shuffled[j], shuffled[k]];
-        }
+  return { topic, language };
+}
 
-        return {
-          id: `q${i + 1}`,
-          question: q.question.trim(),
-          options: shuffled.map((entry) => entry.o),
-          correct: shuffled.findIndex((entry) => entry.index === q.correct),
-          tricky: Boolean(q.tricky),
-          why: typeof q.why === "string" ? q.why.trim() : "",
-        };
-      });
+app.post("/api/quiz", rateLimit, async (req, res) => {
+  const { topic, language, error } = readTopic(req);
 
-    if (questions.length < 5) {
-      throw new Error(
-        `Only ${questions.length} of ${quiz.questions?.length ?? 0} questions survived validation`
-      );
-    }
+  if (error) {
+    return res.status(400).json({ error });
+  }
 
-    res.json({ name: quiz.name || topic, questions });
+  try {
+    res.json(await generateQuiz(topic, language));
   } catch (err) {
     console.error("Could not build quiz:", err);
-    res.status(500).json({ error: "Could not build a quiz for that topic." });
+
+    res
+      .status(err.status ?? 500)
+      .json({ error: err.status ? err.message : "Could not build a quiz for that topic." });
   }
+});
+
+// ---------------------------------------------------------------------------
+// The game around those questions: two devices, one code, one clock.
+//
+// Where the time comes from
+// -------------------------
+// Nothing here runs a timer. There is no process to run one on — a serverless
+// function exists for the length of a request and then stops, so a setTimeout
+// that advances a game would fire into a dead instance, or fire twice on two
+// live ones.
+//
+// So the game's position is not stored and advanced, it is DERIVED. The only
+// timestamps written are the moment the host pressed start and, when both
+// players answer early, the moment a round ended. Everything else — which
+// question is live, when it closes, whether the game is over — is a pure
+// function of those and the clock, computed identically on every request.
+//
+// That is also what makes the two devices agree. They are not being kept in
+// step by messages arriving on time; they are each reading the same arithmetic
+// off the same timestamps. A device that misses ten seconds of updates and
+// reconnects lands exactly where the other one already is.
+
+const LEAD_IN_MS = 3000;
+
+// How long the answering window stays open after the question stops being
+// read aloud. The clip's own length is added to this, so a long question
+// does not eat the thinking time a short one gets.
+const THINK_MS = 9000;
+
+// Used only for a question whose audio never arrived. Roughly what the
+// generator's own limit — under 18 words — takes to say.
+const SILENT_QUESTION_MS = 4500;
+
+const ROUND_GAP_MS = 1800;
+
+// An answer sent before the deadline can still land after it. Refusing it
+// would mean a slow connection, not a slow player, decided the round — and
+// the fix is one number, because points here do not depend on speed.
+const ANSWER_GRACE_MS = 1200;
+
+const QUIZ_PLAYERS = 2;
+
+// Each request voices at most this many questions. The ceiling exists
+// because a Vercel function is killed at its maxDuration and the zero-config
+// deploy this project documents has no vercel.json to raise it — fifteen
+// clips in one request would be a coin toss against that limit. The client
+// calls this until it reports done, which also gives the lobby something
+// truthful to show while it waits.
+const VOICE_BATCH = 5;
+
+// ElevenLabs caps concurrent requests per plan, and a batch is exactly the
+// shape that trips it. Three at a time keeps a batch near two seconds
+// without leaning on the retry path.
+const VOICE_CONCURRENCY = 3;
+
+// Long enough to be worth holding open, short enough to close cleanly before
+// any platform decides to close it for us. See the stream route.
+const SSE_WINDOW_MS = 8000;
+
+// The two backends disagree about JSON, and this is where that stops.
+//
+// Upstash deserialises any value that parses, so an array written as a
+// string comes back an array; the JSON file hands back the string exactly as
+// written. JSON.parse() on the array throws, which would have been a 500 on
+// every request — on the deployed build only, since local development runs
+// the file backend and would never have shown it.
+function readFrozen(value) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+// Flat hash to something a projection can use. Everything is normalised here
+// so no caller has to care that Upstash and the JSON file disagree about
+// whether a number came back a number.
+function readLive(live) {
+  const players = [];
+  const answers = new Map();
+  const ends = new Map();
+  const durations = new Map();
+
+  for (const [field, raw] of Object.entries(live ?? {})) {
+    const value = typeof raw === "string" && raw.startsWith("{") ? JSON.parse(raw) : raw;
+
+    if (field.startsWith("p:")) {
+      players.push(value);
+    } else if (field.startsWith("a:")) {
+      answers.set(field.slice(2), Number(value));
+    } else if (field.startsWith("e:")) {
+      ends.set(Number(field.slice(2)), Number(value));
+    } else if (field.startsWith("d:")) {
+      durations.set(Number(field.slice(2)), Number(value));
+    }
+  }
+
+  players.sort((a, b) => a.joinedAt - b.joinedAt);
+
+  return {
+    players,
+    answers,
+    ends,
+    durations,
+    startedAt: live?.run ? Number(live.run) : null,
+    // Frozen at the moment the host started, deliberately. A clip generated
+    // late — because a voicing batch failed and the fallback filled in —
+    // would otherwise change how long a question had been open for, moving
+    // a deadline that had already passed.
+    frozen: readFrozen(live?.dur),
+  };
+}
+
+function project(meta, live, now) {
+  const state = readLive(live);
+  const count = meta.questions.length;
+
+  if (!state.startedAt) {
+    return { ...state, phase: "lobby", index: 0 };
+  }
+
+  let opensAt = state.startedAt + LEAD_IN_MS;
+
+  if (now < opensAt) {
+    return { ...state, phase: "countdown", index: 0, opensAt };
+  }
+
+  for (let i = 0; i < count; i++) {
+    const spoken = state.frozen?.[i] ?? state.durations.get(i) ?? SILENT_QUESTION_MS;
+    const full = opensAt + spoken + THINK_MS;
+
+    // A round can only ever be cut short, never extended, and never to
+    // before it began — an end written by a clock that disagreed with this
+    // one cannot rewind the game.
+    const closesAt = Math.max(opensAt, Math.min(full, state.ends.get(i) ?? Infinity));
+
+    if (now < closesAt) {
+      return { ...state, phase: "question", index: i, opensAt, closesAt, spoken };
+    }
+
+    if (now < closesAt + ROUND_GAP_MS) {
+      return {
+        ...state,
+        phase: "gap",
+        index: i,
+        opensAt,
+        closesAt,
+        spoken,
+        resumesAt: closesAt + ROUND_GAP_MS,
+      };
+    }
+
+    opensAt = closesAt + ROUND_GAP_MS;
+  }
+
+  return { ...state, phase: "over", index: count - 1 };
+}
+
+// +100 right, -50 wrong, nothing for a question that timed out. Computed
+// here rather than trusted from a device, and only ever sent once the game
+// is over.
+function scoreGame(meta, state) {
+  const players = state.players.map((player) => {
+    let score = 0;
+    let right = 0;
+    let wrong = 0;
+
+    meta.questions.forEach((question, i) => {
+      const choice = state.answers.get(`${i}:${player.id}`);
+
+      if (choice == null || Number.isNaN(choice)) {
+        return;
+      }
+
+      if (choice === question.correct) {
+        score += 100;
+        right++;
+      } else {
+        score -= 50;
+        wrong++;
+      }
+    });
+
+    return {
+      ...player,
+      score,
+      right,
+      wrong,
+      missed: meta.questions.length - right - wrong,
+    };
+  });
+
+  return {
+    players,
+    questions: meta.questions.map((question, i) => ({
+      ...question,
+      picks: Object.fromEntries(
+        state.players.map((player) => [
+          player.id,
+          state.answers.get(`${i}:${player.id}`) ?? null,
+        ])
+      ),
+    })),
+  };
+}
+
+// What both devices are told, and the only thing they are told. Note what is
+// missing while the game runs: no correct indices, no scores, not even which
+// option the other player picked — only THAT they picked one. The product's
+// own argument is that being told the answer immediately teaches nothing, so
+// the summary at the end is where all of it arrives, and a network tab is
+// not a way around that.
+function publicState(meta, live, now) {
+  const state = project(meta, live, now);
+  const answered = state.players
+    .filter((player) => state.answers.has(`${state.index}:${player.id}`))
+    .map((player) => player.id);
+
+  return {
+    code: meta.code,
+    name: meta.name,
+    language: meta.language,
+    hostId: meta.hostId,
+    count: meta.questions.length,
+    voiced: state.durations.size,
+    phase: state.phase,
+    index: state.index,
+    opensAt: state.opensAt ?? null,
+    closesAt: state.closesAt ?? null,
+    resumesAt: state.resumesAt ?? null,
+    players: state.players.map(({ id, name }) => ({ id, name })),
+    answered,
+    results: state.phase === "over" ? scoreGame(meta, state) : null,
+  };
+}
+
+// Both halves of a game in one place, since every route needs both.
+async function loadGame(code) {
+  const meta = await getQuizMeta(code);
+
+  if (!meta) {
+    return null;
+  }
+
+  return { meta, live: (await getQuizLive(code)) ?? {} };
+}
+
+app.post("/api/quiz/game", rateLimit, async (req, res) => {
+  const { topic, language, error } = readTopic(req);
+
+  if (error) {
+    return res.status(400).json({ error });
+  }
+
+  const id = String(req.body?.player?.id ?? "").trim().slice(0, 64);
+  const name = String(req.body?.player?.name ?? "").trim().slice(0, 24);
+
+  if (!id || !name) {
+    return res.status(400).json({ error: "Expected { player: { id, name } }." });
+  }
+
+  try {
+    const quiz = await generateQuiz(topic, language);
+
+    const meta = await createQuizGame({
+      topic,
+      language,
+      name: quiz.name,
+      questions: quiz.questions,
+      hostId: id,
+    });
+
+    await setQuizField(meta.code, `p:${id}`, {
+      id,
+      name,
+      joinedAt: Date.now(),
+    });
+
+    res.json({ code: meta.code, name: meta.name, count: meta.questions.length });
+  } catch (err) {
+    console.error("Could not start a quiz game:", err);
+
+    res
+      .status(err.status ?? 500)
+      .json({ error: err.status ? err.message : "Could not build a quiz for that topic." });
+  }
+});
+
+// Makes the audio that does not exist yet, a few questions at a time, and
+// says how far along it is. No rate limiter on purpose: it can only ever
+// voice questions belonging to a game that already exists, and creating one
+// of those IS rate limited, so the spend is already bounded upstream.
+// Throttling it here would instead strand a half-voiced game.
+app.post("/api/quiz/:code/voice", async (req, res) => {
+  const code = req.params.code.toUpperCase();
+  const game = await loadGame(code);
+
+  if (!game) {
+    return res.status(404).json({ error: "No quiz with that code." });
+  }
+
+  const { durations } = readLive(game.live);
+  const total = game.meta.questions.length;
+
+  if (!voiceConfigured()) {
+    // Not an error. The questions are on screen either way, and a silent
+    // game is a worse game rather than no game at all.
+    return res.json({ voiced: durations.size, total, done: true, silent: true });
+  }
+
+  const missing = game.meta.questions
+    .map((question, index) => ({ question, index }))
+    .filter(({ index }) => !durations.has(index))
+    .slice(0, VOICE_BATCH);
+
+  let failed = 0;
+
+  for (let i = 0; i < missing.length; i += VOICE_CONCURRENCY) {
+    await Promise.all(
+      missing.slice(i, i + VOICE_CONCURRENCY).map(async ({ question, index }) => {
+        try {
+          await putQuizAudio(code, index, await speak(question.question));
+        } catch (err) {
+          console.error(`Could not voice question ${index + 1}:`, err.message);
+          failed++;
+        }
+      })
+    );
+  }
+
+  const voiced = readLive((await getQuizLive(code)) ?? {}).durations.size;
+
+  res.json({
+    voiced,
+    total,
+    // A batch that produced nothing new is not going to start producing on
+    // the next identical request — say done and let the game begin, with
+    // the missing clips falling back to text.
+    done: voiced >= total || missing.length === 0 || failed === missing.length,
+  });
+});
+
+app.get("/api/quiz/:code", async (req, res) => {
+  const game = await loadGame(req.params.code.toUpperCase());
+
+  if (!game) {
+    return res.status(404).json({ error: "No quiz with that code." });
+  }
+
+  // Questions without their answers. Every device gets all fifteen up front
+  // so a question can never fail to arrive at the moment it is asked, which
+  // is the one moment it must not.
+  res.json({
+    code: game.meta.code,
+    name: game.meta.name,
+    language: game.meta.language,
+    hostId: game.meta.hostId,
+    questions: game.meta.questions.map(({ id, question, options }) => ({
+      id,
+      question,
+      options,
+    })),
+  });
+});
+
+app.post("/api/quiz/:code/join", async (req, res) => {
+  const code = req.params.code.toUpperCase();
+  const game = await loadGame(code);
+
+  if (!game) {
+    return res.status(404).json({ error: "No quiz with that code." });
+  }
+
+  const id = String(req.body?.id ?? "").trim().slice(0, 64);
+  const name = String(req.body?.name ?? "").trim().slice(0, 24);
+
+  if (!id || !name) {
+    return res.status(400).json({ error: "Expected { id, name }." });
+  }
+
+  const { players } = readLive(game.live);
+  const known = players.some((player) => player.id === id);
+
+  // A returning player is not a third player. Without this, a refresh mid
+  // game locks you out of your own game.
+  if (!known && players.length >= QUIZ_PLAYERS) {
+    return res.status(409).json({ error: "That game already has two players." });
+  }
+
+  await setQuizField(code, `p:${id}`, {
+    id,
+    name,
+    joinedAt: players.find((player) => player.id === id)?.joinedAt ?? Date.now(),
+  });
+
+  res.json(publicState(game.meta, (await getQuizLive(code)) ?? {}, Date.now()));
+});
+
+app.post("/api/quiz/:code/start", async (req, res) => {
+  const code = req.params.code.toUpperCase();
+  const game = await loadGame(code);
+
+  if (!game) {
+    return res.status(404).json({ error: "No quiz with that code." });
+  }
+
+  const id = String(req.body?.id ?? "").trim();
+  const { players, durations } = readLive(game.live);
+
+  if (id !== game.meta.hostId) {
+    return res.status(403).json({ error: "Only the player who made the game can start it." });
+  }
+
+  if (players.length < QUIZ_PLAYERS) {
+    return res.status(409).json({ error: "Waiting for the second player." });
+  }
+
+  // Freeze the clip lengths into the run, so the timeline cannot be moved
+  // afterwards by a clip that arrived late.
+  await setQuizField(
+    code,
+    "dur",
+    JSON.stringify(
+      game.meta.questions.map((_, i) => durations.get(i) ?? SILENT_QUESTION_MS)
+    )
+  );
+
+  // Once. A second tap on Start would otherwise rewind a running game.
+  await setQuizFieldOnce(code, "run", Date.now());
+
+  res.json(publicState(game.meta, (await getQuizLive(code)) ?? {}, Date.now()));
+});
+
+app.post("/api/quiz/:code/answer", async (req, res) => {
+  const code = req.params.code.toUpperCase();
+  const game = await loadGame(code);
+
+  if (!game) {
+    return res.status(404).json({ error: "No quiz with that code." });
+  }
+
+  const id = String(req.body?.id ?? "").trim();
+  const index = Number(req.body?.index);
+  const choice = Number(req.body?.choice);
+
+  if (!Number.isInteger(index) || !Number.isInteger(choice) || choice < 0 || choice > 3) {
+    return res.status(400).json({ error: "Expected { id, index, choice }." });
+  }
+
+  const now = Date.now();
+  const state = project(game.meta, game.live, now);
+
+  if (!state.players.some((player) => player.id === id)) {
+    return res.status(403).json({ error: "You are not in that game." });
+  }
+
+  // The server decides what "in time" means, and it decides it once, from
+  // its own clock. A device whose clock is wrong, or whose request spent a
+  // second in the air, is judged the same as one that is not.
+  const inTime =
+    state.index === index &&
+    (state.phase === "question" || state.phase === "gap") &&
+    now <= state.closesAt + ANSWER_GRACE_MS;
+
+  if (!inTime) {
+    return res.status(409).json({ error: "That question has closed." });
+  }
+
+  // First answer stands. Nothing is revealed between questions, so there is
+  // no information to change your mind on — only a race to overwrite, which
+  // would make the last packet to arrive the one that scored.
+  const accepted = await setQuizFieldOnce(code, `a:${index}:${id}`, choice);
+
+  const live = (await getQuizLive(code)) ?? {};
+  const after = readLive(live);
+
+  // Both in: close the round now rather than making two people who have
+  // already answered watch the rest of a countdown.
+  const everyone = after.players.every((player) =>
+    after.answers.has(`${index}:${player.id}`)
+  );
+
+  if (everyone && after.players.length >= QUIZ_PLAYERS) {
+    await setQuizFieldOnce(code, `e:${index}`, Date.now());
+  }
+
+  res.json({
+    accepted,
+    ...publicState(game.meta, (await getQuizLive(code)) ?? {}, Date.now()),
+  });
+});
+
+app.get("/api/quiz/:code/state", async (req, res) => {
+  const game = await loadGame(req.params.code.toUpperCase());
+
+  if (!game) {
+    return res.status(404).json({ error: "No quiz with that code." });
+  }
+
+  res.json({
+    ...publicState(game.meta, game.live, Date.now()),
+    serverNow: Date.now(),
+  });
+});
+
+// The mp3 for one question. Both devices fetch this same URL and get the
+// same bytes, which is the point — two separately generated readings of the
+// same sentence would be two different lengths, and the pacing is built on
+// that length.
+//
+// Generated here too if a voicing batch missed it, so a game is never stuck
+// waiting for audio that failed once.
+app.get("/api/quiz/:code/audio/:index", async (req, res) => {
+  const code = req.params.code.toUpperCase();
+  const index = Number(req.params.index);
+  const game = await loadGame(code);
+
+  if (!game || !Number.isInteger(index) || !game.meta.questions[index]) {
+    return res.status(404).json({ error: "No such question." });
+  }
+
+  let audio = await getQuizAudio(code, index);
+
+  if (!audio && voiceConfigured()) {
+    try {
+      audio = await speak(game.meta.questions[index].question);
+      await putQuizAudio(code, index, audio);
+    } catch (err) {
+      console.error(`Could not voice question ${index + 1}:`, err.message);
+    }
+  }
+
+  if (!audio) {
+    return res.status(404).json({ error: "That question has no audio." });
+  }
+
+  const bytes = Buffer.from(audio.b64, "base64");
+
+  res.set({
+    "Content-Type": "audio/mpeg",
+    "Content-Length": bytes.length,
+    // A given code and index is one recording forever, so the second device
+    // to ask, and the same device asking again after a reload, can both be
+    // answered from the browser's own cache.
+    "Cache-Control": "public, max-age=21600, immutable",
+  });
+
+  res.send(bytes);
+});
+
+// How long to wait before looking at the game again.
+//
+// Every poll is a Redis command against a free tier that counts them, and a
+// game held open for three minutes by two devices adds up fast. But the one
+// event that cannot be predicted from the clock — both players answering
+// early — can only happen once somebody has answered. So the loop only pays
+// for a fast tick during the window where it might learn something.
+function nextPollDelay(state) {
+  if (state.phase === "over") {
+    return 3000;
+  }
+
+  return state.answered.length > 0 || state.phase === "lobby" ? 500 : 1500;
+}
+
+// Sync, such as it is.
+//
+// The stream carries no game logic — every device could work this out from
+// the timestamps alone, and does exactly that between messages. This is only
+// how a device finds out that something happened which the clock could not
+// have told it: a player joined, the host started, the other one answered.
+//
+// It ends itself after eight seconds and the browser reconnects, because a
+// serverless function does not get to hold a connection open indefinitely
+// and the failure mode of finding that out on stage is a stream that dies
+// silently. A stream that always ends the same way, on purpose, is one whose
+// reconnect path is exercised every eight seconds in front of us instead.
+// Nothing is lost across the gap: answers travel by POST, and state is
+// re-derived rather than accumulated.
+app.get("/api/quiz/:code/stream", async (req, res) => {
+  const code = req.params.code.toUpperCase();
+  const meta = await getQuizMeta(code);
+
+  res.set({
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    // Proxies that buffer would hold a message until the response ended,
+    // which for a stream means holding it forever.
+    "X-Accel-Buffering": "no",
+  });
+  res.flushHeaders?.();
+
+  if (!meta) {
+    res.write(`event: gone\ndata: {"error":"No quiz with that code."}\n\n`);
+    return res.end();
+  }
+
+  // Reconnect fast — the default is three seconds, which is a third of a
+  // question.
+  res.write("retry: 500\n\n");
+
+  let live = true;
+  let last = "";
+
+  req.on("close", () => {
+    live = false;
+  });
+
+  const startedAt = Date.now();
+
+  while (live && Date.now() - startedAt < SSE_WINDOW_MS) {
+    const state = publicState(meta, (await getQuizLive(code)) ?? {}, Date.now());
+    const signature = JSON.stringify(state);
+
+    // serverNow rides along on every message, changed or not, because it is
+    // how the other end learns what this clock says. It is deliberately not
+    // part of the signature — it changes every tick and would make every
+    // tick look like news.
+    if (signature !== last) {
+      last = signature;
+      res.write(`data: ${JSON.stringify({ ...state, serverNow: Date.now() })}\n\n`);
+    } else {
+      // A named event rather than a `:` comment, because a comment is
+      // invisible to EventSource and this one has a job: it is how the
+      // other end knows the stream is alive and delivering promptly. That
+      // matters because a platform is free to buffer a streamed response
+      // until the function returns, which looks identical to a working
+      // stream from here and like a frozen game from there. Silence is the
+      // signal the client falls back on, so silence has to mean something.
+      res.write(`event: tick\ndata: ${JSON.stringify({ serverNow: Date.now() })}\n\n`);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, nextPollDelay(state)));
+  }
+
+  res.end();
 });
 
 // On Vercel the app is imported by api/index.js and the platform owns the
