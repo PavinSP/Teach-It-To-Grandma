@@ -18,6 +18,7 @@ import {
 } from "./progression";
 import { CHARACTERS, buildPersonaPrompt, DIRECTOR } from "./characters";
 import { loadSnapshot, saveSnapshot } from "./snapshot";
+import { analyseDelivery, deliveryReadings } from "./speech";
 import { resetNow } from "./reset";
 import { t, speakerVars } from "./strings";
 import {
@@ -50,6 +51,17 @@ const DEPTH_RUNGS = [
 const LANGUAGES = [
   { code: "en", label: "English", flag: "🇬🇧" },
   { code: "de", label: "Deutsch", flag: "🇩🇪" },
+];
+
+const SUGGESTED_TOPICS_DE = [
+  "Neuronale Netze",
+  "Backpropagation",
+  "Gradientenverfahren",
+  "Überanpassung",
+  "Transformer und Attention",
+  "Faltungsnetze",
+  "Embeddings",
+  "Bestärkendes Lernen",
 ];
 
 const SUGGESTED_TOPICS = [
@@ -313,6 +325,9 @@ function App() {
   const committedRef = useRef(snap?.committedId ?? null);
   // When the mic first opened for this attempt — Speed Teacher's clock.
   const sessionStartedAtRef = useRef(snap?.sessionStartedAt ?? null);
+  const [lessonDurationMs, setLessonDurationMs] = useState(
+    snap?.lessonDurationMs ?? null
+  );
 
   // With the picker off, every derived name resolves to Grandma and the app
   // reads exactly as it did before characters existed.
@@ -388,6 +403,7 @@ function App() {
       lessonId: lessonIdRef.current,
       committedId: committedRef.current,
       sessionStartedAt: sessionStartedAtRef.current,
+      lessonDurationMs,
       directorTurn: directorTurnRef.current,
     });
   }, [
@@ -412,6 +428,7 @@ function App() {
     character,
     confidence,
     jury,
+    lessonDurationMs,
   ]);
 
   // If the tab died while grading was in flight, the recap comes back with
@@ -961,6 +978,12 @@ function App() {
         lessonIdRef.current = crypto.randomUUID();
       }
 
+      setLessonDurationMs(
+        sessionStartedAtRef.current
+          ? Date.now() - sessionStartedAtRef.current
+          : null
+      );
+
       setShowRecap(true);
       gradeWithAI();
       explainBackWithAI();
@@ -1481,14 +1504,13 @@ function App() {
           <h1>
             If you can't explain it
             <br />
-            <span>to Grandma,</span>
+            <span>{tt("heroLine2", { name: sv.name })}</span>
             <br />
             do you really understand it?
           </h1>
 
           <p className="subtitle">
-            Name anything you know. Then try to teach it to someone
-            who knows absolutely nothing about it.
+            {tt("heroSub")}
           </p>
 
           {FEATURES.youCharacter && (
@@ -1516,7 +1538,7 @@ function App() {
                     setShowYouEditor((v) => !v);
                   }}
                 >
-                  🙂 Create your character
+                  🙂 {tt("createCharacter")}
                 </button>
               )}
 
@@ -1653,7 +1675,7 @@ function App() {
 
           {FEATURES.characterPicker && CHARACTERS.length > 1 && (
             <>
-              <h2>Who are you teaching?</h2>
+              <h2>{tt("whoTeaching")}</h2>
 
               <div className="character-grid">
                 {CHARACTERS.map((c) => (
@@ -1680,20 +1702,26 @@ function App() {
                       </span>
                     )}
 
-                    <span className="character-card-name">{c.role}</span>
-                    <span className="character-card-level">{c.difficulty}</span>
-                    <span className="character-card-hook">{c.hook}</span>
+                    <span className="character-card-name">
+                      {uiLang === "de" ? c.roleDe ?? c.role : c.role}
+                    </span>
+                    <span className="character-card-level">
+                      {tt(c.difficulty)}
+                    </span>
+                    <span className="character-card-hook">
+                      {uiLang === "de" ? c.hookDe ?? c.hook : c.hook}
+                    </span>
                   </button>
                 ))}
               </div>
             </>
           )}
 
-          <h2>What do you want to teach?</h2>
+          <h2>{tt("whatTeach")}</h2>
 
           {FEATURES.multilingual && (
             <div className="language-row">
-              <span className="language-label">Teach in</span>
+              <span className="language-label">{tt("teachIn")}</span>
 
               {LANGUAGES.map((l) => (
                 <button
@@ -1721,7 +1749,7 @@ function App() {
               className="topic-input"
               value={topicInput}
               onChange={(event) => setTopicInput(event.target.value)}
-              placeholder="Backpropagation, embeddings, why transformers replaced RNNs…"
+              placeholder={tt("topicPlaceholder")}
               disabled={isBuildingLesson}
               autoFocus
             />
@@ -1731,13 +1759,13 @@ function App() {
               type="submit"
               disabled={isBuildingLesson || !topicInput.trim()}
             >
-              {isBuildingLesson ? "Preparing…" : "Teach it →"}
+              {isBuildingLesson ? tt("preparing") : tt("teachIt")}
             </button>
           </form>
 
           {isBuildingLesson && (
             <p className="topic-status">
-              Working out what {who} would need to hear…
+              {tt("workingOut")}
             </p>
           )}
 
@@ -1748,7 +1776,7 @@ function App() {
           {FEATURES.teachOff && (
             <div className="teachoff-join">
               <span className="topic-suggestions-label">
-                Got a Teach-Off code?
+                {tt("gotCode")}
               </span>
 
               <input
@@ -1763,7 +1791,7 @@ function App() {
                 className="join-input"
                 value={teachoffName}
                 onChange={(event) => setTeachoffName(event.target.value)}
-                placeholder="Your name"
+                placeholder={tt("yourName")}
                 maxLength={24}
               />
 
@@ -1772,7 +1800,7 @@ function App() {
                 onClick={joinTeachoff}
                 disabled={isJoining || !joinCode.trim() || !teachoffName.trim()}
               >
-                {isJoining ? "Joining…" : "Join →"}
+                {isJoining ? tt("preparing") : tt("join")}
               </button>
 
               {joinError && <span className="join-error">{joinError}</span>}
@@ -1780,9 +1808,9 @@ function App() {
           )}
 
           <div className="topic-suggestions">
-            <span className="topic-suggestions-label">Or try</span>
+            <span className="topic-suggestions-label">{tt("orTry")}</span>
 
-            {SUGGESTED_TOPICS.map((topic) => (
+            {(uiLang === "de" ? SUGGESTED_TOPICS_DE : SUGGESTED_TOPICS).map((topic) => (
               <button
                 key={topic}
                 className="topic-chip"
@@ -1803,7 +1831,7 @@ function App() {
               onClick={() => resetNow("session")}
               title="Clears any half-finished lesson still saved in this tab. Keeps your name, XP and badges."
             >
-              Clear saved lesson
+              {tt("clearLesson")}
             </button>
 
             <span className="reset-sep">·</span>
@@ -1821,7 +1849,7 @@ function App() {
               }}
               title="Deletes your name, face, XP and badges as well"
             >
-              Reset everything
+              {tt("resetAll")}
             </button>
           </div>
         </section>

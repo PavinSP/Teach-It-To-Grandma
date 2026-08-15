@@ -24,6 +24,7 @@ export const CHARACTERS = [
     obj: "her",
     voiceId: null, // keeps the agent's own voice
     hook: "Knows nothing. Loves you anyway.",
+    hookDe: "Weiß nichts. Liebt dich trotzdem.",
     audience: "a grandmother who knows nothing about the subject",
     persona: {
       knowledge:
@@ -62,6 +63,7 @@ export const CHARACTERS = [
     obj: "her",
     voiceId: "r1KmysJdVYZjJCm4mL3b",
     hook: "Asks why. Then asks why again.",
+    hookDe: "Fragt warum. Und dann nochmal warum.",
     audience: "a curious seven-year-old",
     persona: {
       knowledge:
@@ -100,6 +102,7 @@ export const CHARACTERS = [
     obj: "him",
     voiceId: "Ph60oYke4Ty8rl2Wgtsn",
     hook: "Knows the words, not the how.",
+    hookDe: "Kennt die Wörter, nicht das Wie.",
     audience: "a first-year student who knows the basic terms but not how anything works",
     persona: {
       knowledge:
@@ -137,6 +140,7 @@ export const CHARACTERS = [
     obj: "him",
     voiceId: "4W8xz6cmN5JMnmmVA3is",
     hook: "Wants the bottom line.",
+    hookDe: "Will das Wesentliche.",
     audience: "a business manager with no technical background who cares about consequences",
     persona: {
       knowledge:
@@ -174,6 +178,7 @@ export const CHARACTERS = [
     obj: "him",
     voiceId: "8g3yRGGwQdZMjSh79Uz4",
     hook: "Knows the field next door.",
+    hookDe: "Kennt das Nachbarfach.",
     audience: "a domain expert from an adjacent field who challenges assumptions",
     persona: {
       knowledge:
@@ -211,6 +216,7 @@ export const CHARACTERS = [
     obj: "him",
     voiceId: "7IcEoybCSRDZ0tsNBX6Y",
     hook: "Remembers everything you said.",
+    hookDe: "Merkt sich alles, was du gesagt hast.",
     audience: "a strict professor who hunts for contradictions in the explanation",
     persona: {
       knowledge:

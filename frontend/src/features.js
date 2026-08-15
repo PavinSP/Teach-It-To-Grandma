@@ -102,6 +102,20 @@ const DEFAULTS = {
   // contradict the number under it. Off falls back to the static lines.
   aiHeadline: true,
 
+  // complex ideas #19 — the moments that decided the lesson, laid out in the
+  // order they happened. Every quote is verified against the transcript, so
+  // a marker can only sit where the student actually said something.
+  forensics: true,
+
+  // complex ideas #22 — how it was delivered: pace, filler, hedging, sentence
+  // length. Counted from the transcript, never asked from a model, and framed
+  // as communication feedback rather than anything about the speaker.
+  deliveryAnalysis: true,
+
+  // complex ideas #20 — the whole run as one card worth screenshotting.
+  // Composed from numbers already on the page; adds no request.
+  lessonReplay: true,
+
   // It predicts which points trip teachers up before a word is spoken,
   // then the recap says where it was right and where you beat it.
   difficultyPrediction: true,

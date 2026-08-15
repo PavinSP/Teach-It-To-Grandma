@@ -417,6 +417,13 @@ In "blindSpots", name up to 3 things that genuinely matter for understanding thi
 
 In "stumbles", list up to 3 moments where the listener had to stop and ask what something meant or how it worked: copy the listener's question VERBATIM into "grandmaQuote", and put the single word or short phrase they were stuck on into "aboutTerm". Only real stops count — ordinary curiosity is not a stumble. Empty list if there were none.
 
+In "turningPoints", pick up to 4 moments that decided how this lesson went, in the order they actually happened. For each, copy the student's exact sentence into "quote", and set "kind" to one of:
+- "landed": the moment an idea genuinely clicked for ${listenerName}
+- "lost": the moment ${listenerName} stopped being able to follow
+- "recovered": the moment the student pulled it back after losing ${listenerName}
+- "jargon": the moment an unexplained technical term entered the lesson
+Write one short line in "note" saying what happened there, addressed to the student. Only genuine turning points count — a moment that changed nothing is not one. Empty list if the lesson had none.
+
 In "headlines", write the line ${listenerName} would open their notes with — four versions of it, one for each level the lesson might have landed at. Each is spoken by ${listenerName} in the first person, is under 8 words, and sounds like ${audience} talking: their vocabulary, their concerns, the way they would actually put it.
 
 Each line must point at something specific from THIS lesson — an analogy the student reached for, a word they leaned on, a step they skipped. Never a general statement about the topic that would fit any lesson about anything: "I finally understand neural networks!" is exactly the wrong shape.
@@ -445,6 +452,7 @@ Respond with JSON only, in exactly this shape:
   "strongestMoment": { "quote": "<the student's exact sentence, or empty>", "why": "<one line, or empty>" },
   "practiceThis": "<one concrete action>",
   "stumbles": [ { "grandmaQuote": "<the listener's exact question>", "aboutTerm": "<the word they were stuck on>" } ],
+  "turningPoints": [ { "quote": "<the student's exact sentence>", "kind": "landed|lost|recovered|jargon", "note": "<one short line>" } ],
   "headlines": { "aced": "<under 8 words, ${listenerName}'s voice>", "followed": "<under 8 words>", "partial": "<under 8 words>", "lost": "<under 8 words>" },
   "depth": { "reached": "named|defined|mechanism|applied|boundaries", "evidence": "<their exact words, or empty>", "next": "<one sentence>" },
   "blindSpots": [ "<something they never went near>" ]${
@@ -543,6 +551,22 @@ Respond with JSON only, in exactly this shape:
                 additionalProperties: false,
               },
               blindSpots: { type: "array", items: { type: "string" } },
+              turningPoints: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    quote: { type: "string" },
+                    kind: {
+                      type: "string",
+                      enum: ["landed", "lost", "recovered", "jargon"],
+                    },
+                    note: { type: "string" },
+                  },
+                  required: ["quote", "kind", "note"],
+                  additionalProperties: false,
+                },
+              },
               headlines: {
                 type: "object",
                 properties: {
@@ -590,6 +614,7 @@ Respond with JSON only, in exactly this shape:
               "stumbles",
               "depth",
               "blindSpots",
+              "turningPoints",
               "headlines",
               ...(ambushedMisconception ? ["misconceptionHandling"] : []),
             ],
@@ -661,6 +686,21 @@ Respond with JSON only, in exactly this shape:
             heard.includes(st.grandmaQuote.toLowerCase())
         )
         .slice(0, 3);
+
+      // A turning point is placed on a timeline by finding its quote in the
+      // transcript, so an invented quote has nowhere to sit. Unverified ones
+      // are dropped rather than blanked — a marker with no words under it
+      // would point at a moment that never happened.
+      graded.turningPoints = (graded.turningPoints ?? [])
+        .filter(
+          (tp) =>
+            tp &&
+            typeof tp.quote === "string" &&
+            tp.quote.trim() &&
+            said.includes(tp.quote.toLowerCase()) &&
+            ["landed", "lost", "recovered", "jargon"].includes(tp.kind)
+        )
+        .slice(0, 4);
 
       // The headline is the largest text on the recap, set in display type
       // that a long line would wreck. All four bands have to be present and
