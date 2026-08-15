@@ -602,6 +602,13 @@ export function Recap({
                     })}
                   </div>
 
+                  {/* The same character can hold both a Feynman Score and
+                      a jury verdict, and they will not agree: one is
+                      computed from booleans, the other is a judgement. Two
+                      different numbers under one name needs saying out
+                      loud, or it reads as a bug. */}
+                  <p className="jury-scale-note">{tt("juryOwnScale")}</p>
+
                   {openVerdict ? (
                     // Keyed on the juror so switching seats remounts the panel
                     // and replays its entrance, rather than swapping the text
