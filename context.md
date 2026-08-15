@@ -453,3 +453,27 @@ intent that a re-run is another attempt on it), and backing out of a
 session left the teach-off set (harmless only because startLesson happens
 to reset it on every new-lesson path). Both fixed: re-runs keep the board,
 the back-button clears it.
+
+## Session 22 — Security pass (#45's remaining items)
+
+Three fixes, deliberately unflagged like the error handlers (a kill switch
+on a security control is a hole):
+
+- **CORS closed**: only the app's own dev origins (localhost/127.0.0.1 on
+  5173/5174, overridable via ALLOWED_ORIGIN). Verified: an evil origin gets
+  no allow header, ours does.
+- **Rate limiting**: every TitanomGPT-backed endpoint (lesson, grade,
+  explainback, challenge, mirror) shares a per-IP budget of 30 requests per
+  5 minutes — verified tripping at 31. In-memory, swept periodically. Note:
+  running the limit test spends localhost's own budget; a server restart
+  clears it.
+- **Dead credential removed**: ANTHROPIC_API_KEY deleted from .env (unused
+  since the TitanomGPT migration in session 8 — an unused key in a shared
+  .env is a leak waiting for a screen-share; the key itself remains valid
+  in the Anthropic console if ever needed). @anthropic-ai/sdk uninstalled.
+- Bundle re-checked: zero secrets in dist.
+
+Deliberately NOT done: the ELEVENLABS voice-token proxy (#45 gap 1). It
+requires an ElevenLabs API key we don't have server-side, changes how the
+demo's one critical connection authenticates, and the plan itself says to
+flip it after the demo, not before.

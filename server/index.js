@@ -28,8 +28,57 @@ if (!apiKey) {
 const client = new OpenAI({ apiKey, baseURL: TITANOM_BASE_URL });
 
 const app = express();
-app.use(cors());
+
+// Only the app's own dev origins — an open CORS policy plus an
+// unauthenticated endpoint that spends API credits is an invitation.
+app.use(
+  cors({
+    origin: process.env.ALLOWED_ORIGIN?.split(",") ?? [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:5174",
+    ],
+  })
+);
+
 app.use(express.json({ limit: "1mb" }));
+
+// Every TitanomGPT-backed endpoint spends money on arbitrary input, so
+// each IP gets a budget: 30 requests per 5 minutes, then 429.
+const rateWindows = new Map();
+
+function rateLimit(req, res, next) {
+  const now = Date.now();
+  const key = req.ip;
+  const window = rateWindows.get(key);
+
+  if (!window || now - window.startedAt > 5 * 60 * 1000) {
+    rateWindows.set(key, { startedAt: now, count: 1 });
+    return next();
+  }
+
+  window.count++;
+
+  if (window.count > 30) {
+    return res
+      .status(429)
+      .json({ error: "Too many requests — take a breath and try again." });
+  }
+
+  next();
+}
+
+// Sweep stale windows occasionally so the map can't grow unbounded.
+setInterval(() => {
+  const cutoff = Date.now() - 10 * 60 * 1000;
+
+  for (const [key, window] of rateWindows) {
+    if (window.startedAt < cutoff) {
+      rateWindows.delete(key);
+    }
+  }
+}, 60 * 1000).unref();
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
@@ -37,7 +86,7 @@ app.get("/health", (_req, res) => {
 
 // Turns any topic the student types into a lesson: what they should cover,
 // how hard it is, and what people usually get wrong about it.
-app.post("/api/lesson", async (req, res) => {
+app.post("/api/lesson", rateLimit, async (req, res) => {
   const topic = (req.body?.topic ?? "").trim();
 
   if (!topic) {
@@ -224,7 +273,7 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
 
 // Judges whether the student genuinely explained each learning point,
 // as opposed to merely saying the right keywords.
-app.post("/api/grade", async (req, res) => {
+app.post("/api/grade", rateLimit, async (req, res) => {
   // `character` is strictly optional — a client that doesn't send it gets
   // the original Grandma behaviour, unchanged.
   const { topicName, points, transcript, character, ambushedMisconception } =
@@ -518,7 +567,7 @@ Respond with JSON only, in exactly this shape:
 // Grandma says back what she thinks she understood — using nothing but the
 // student's own words. She is not allowed to repair a broken explanation,
 // because the broken version is exactly what the student needs to see.
-app.post("/api/explainback", async (req, res) => {
+app.post("/api/explainback", rateLimit, async (req, res) => {
   const { topicName, points, transcript, grandmaRecall, characterName } =
     req.body ?? {};
   // Whoever is listening, the recall stays a closed world: they may only
@@ -669,7 +718,7 @@ Finally, in "unexplainedTerms", list every word the student used but never expla
 // Diagnoses the one weakness that actually shows up in this lesson, and for
 // jargon specifically, builds a banned-word list the student can be held to
 // on a re-run — enforced live, client-side, against words they used.
-app.post("/api/challenge", async (req, res) => {
+app.post("/api/challenge", rateLimit, async (req, res) => {
   const {
     topicName,
     points,
@@ -798,7 +847,7 @@ Respond with JSON only, in exactly this shape:
 // own misconceptions, never from material the student skipped. The client
 // scores the flagging itself (it knows which claims were planted), so
 // this endpoint runs once per game, before it starts.
-app.post("/api/mirror", async (req, res) => {
+app.post("/api/mirror", rateLimit, async (req, res) => {
   const {
     topicName,
     points,
