@@ -558,3 +558,14 @@ silent. The paused+unmuted combination is unreachable by design.
 Note on the Speed Teacher badge: paused time counts as wall time, so a
 long think costs the badge. That is the honest reading of "under three
 minutes" and needs no special handling.
+
+**Follow-up — the stage direction alone did not work.** Live test: the
+pause UI was correct and she still asked "are you still there, dear?"
+twice. The cause is that the line does not come from the model choosing
+to speak; it comes from the agent's **turn timeout**, which forces a turn
+after a few seconds of silence. A forced turn never consults the system
+prompt, so no instruction could have stopped it. The fix is
+`conversation.sendUserActivity()` on a 3s heartbeat for as long as the
+pause lasts — the event exists precisely to reset that timer. The stage
+direction stays as belt-and-braces for the model's own judgement; the
+heartbeat is what actually holds the silence.

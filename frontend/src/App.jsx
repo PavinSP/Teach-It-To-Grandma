@@ -618,6 +618,27 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ambush, isConnected, selectedTopic, messages]);
 
+  useEffect(() => {
+    if (!paused || !isConnected) {
+      return;
+    }
+
+    // Comfortably under any plausible turn timeout, so the timer never
+    // reaches zero while the student is thinking.
+    const beat = setInterval(() => {
+      try {
+        conversation.sendUserActivity();
+      } catch (err) {
+        console.error("Could not hold the pause:", err);
+      }
+    }, 3000);
+
+    conversation.sendUserActivity();
+
+    return () => clearInterval(beat);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paused, isConnected]);
+
   // The score counts up over ~800ms — unless the viewer asked for reduced
   // motion, in which case it lands immediately.
   useEffect(() => {
