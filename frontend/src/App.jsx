@@ -1632,7 +1632,6 @@ function App() {
         topicInput={topicInput}
         tt={tt}
         uiLang={uiLang}
-        uiLang={uiLang}
         you={you}
         youDraftName={youDraftName}
         youDraftParams={youDraftParams}
@@ -1699,6 +1698,7 @@ function App() {
         isGrading={isGrading}
         jury={jury}
         juryError={juryError}
+        language={language}
         lessonDurationMs={lessonDurationMs}
         lessonXp={lessonXp}
         mirror={mirror}

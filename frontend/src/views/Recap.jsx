@@ -57,6 +57,7 @@ export function Recap({
   isExplaining,
   isGrading,
   jury,
+  language,
   juryError,
   lessonDurationMs,
   lessonXp,
