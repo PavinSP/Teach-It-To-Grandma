@@ -13,6 +13,7 @@ export const CHARACTERS = [
   {
     id: "grandma",
     role: "Grandma",
+    roleDe: "Oma",
     shortName: "Grandma",
     glyph: "👵",
     image: "/peep-grandma.png",
@@ -50,6 +51,7 @@ export const CHARACTERS = [
   {
     id: "child",
     role: "Curious Child",
+    roleDe: "Neugieriges Kind",
     shortName: "Mia",
     glyph: "👧",
     image: "/peep-child.png",
@@ -87,6 +89,7 @@ export const CHARACTERS = [
   {
     id: "student",
     role: "Student",
+    roleDe: "Student",
     shortName: "Sam",
     glyph: "🧑‍🎓",
     image: "/peep-student.png",
@@ -123,6 +126,7 @@ export const CHARACTERS = [
   {
     id: "manager",
     role: "Manager",
+    roleDe: "Manager",
     shortName: "Marcus",
     glyph: "👨‍💼",
     image: "/peep-manager.png",
@@ -159,6 +163,7 @@ export const CHARACTERS = [
   {
     id: "expert",
     role: "Expert",
+    roleDe: "Experte",
     shortName: "Victor",
     glyph: "🧑‍🔬",
     image: "/peep-expert.png",
@@ -195,6 +200,7 @@ export const CHARACTERS = [
   {
     id: "professor",
     role: "Professor",
+    roleDe: "Professor",
     shortName: "Professor Ellis",
     glyph: "👨‍🏫",
     image: "/peep-professor.png",

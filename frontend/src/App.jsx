@@ -2787,15 +2787,18 @@ function App() {
         <div className="session-header">
           <div>
             <div className="eyebrow">
-              YOUR LESSON
+              {tt("yourLesson")}
               {selectedTopic.difficulty && (
                 <span className="difficulty-tag">
-                  {selectedTopic.difficulty}
+                  {tt(selectedTopic.difficulty)}
                 </span>
               )}
               {FEATURES.characterPicker && (
                 <span className="difficulty-tag">
-                  {activeCharacter.role} · {activeCharacter.difficulty}
+                  {uiLang === "de"
+                    ? activeCharacter.roleDe ?? activeCharacter.role
+                    : activeCharacter.role}{" "}
+                  · {tt(activeCharacter.difficulty)}
                 </span>
               )}
             </div>
@@ -2807,7 +2810,7 @@ function App() {
             {FEATURES.topicAnalysis && selectedTopic.analysis && (
               <div className="topic-analysis">
                 <div className="analysis-meter">
-                  <span className="analysis-label">Concept density</span>
+                  <span className="analysis-label">{tt("conceptDensity")}</span>
                   <span className="meter-dots">
                     {["Low", "Medium", "High"].map((level, i) => (
                       <span
@@ -2825,7 +2828,7 @@ function App() {
                 </div>
 
                 <div className="analysis-meter">
-                  <span className="analysis-label">Prerequisites</span>
+                  <span className="analysis-label">{tt("prerequisites")}</span>
                   <span className="meter-dots">
                     {["Low", "Medium", "High"].map((level, i) => (
                       <span
@@ -3029,15 +3032,14 @@ function App() {
                 messages.length === 0 && (
                   <div className="confidence-ask">
                     <div className="confidence-question">
-                      Before you start — how well do you think you know{" "}
-                      {selectedTopic.name}?
+                      {tt("confidenceQ", { topic: selectedTopic.name })}
                     </div>
 
                     <div className="confidence-options">
                       {[
-                        [30, "😕", "Shaky"],
-                        [60, "🙂", "Pretty well"],
-                        [90, "😎", "I could teach it"],
+                        [30, "😕", tt("confShaky")],
+                        [60, "🙂", tt("confOk")],
+                        [90, "😎", tt("confStrong")],
                       ].map(([value, icon, label]) => (
                         <button
                           key={value}
@@ -3286,8 +3288,7 @@ function App() {
               selectedTopic.misconceptions.length > 0 && (
                 <details className="misconceptions-panel">
                   <summary className="misconceptions-title">
-                    WHAT BEGINNERS USUALLY GET WRONG (
-                    {selectedTopic.misconceptions.length})
+                    {tt("commonWrong")} ({selectedTopic.misconceptions.length})
                   </summary>
 
                   <ul className="misconceptions-list">
