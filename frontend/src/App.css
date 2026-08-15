@@ -2199,3 +2199,44 @@ details.misconceptions-panel .misconceptions-list {
 }
 
 
+
+/* The teacher's presence in the scene (#46) */
+
+.rail-you {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #e6ded2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.rail-you-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.45;
+}
+
+.rail-you-face {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.rail-you-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.speaker-face {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  vertical-align: -4px;
+  margin-right: 6px;
+}

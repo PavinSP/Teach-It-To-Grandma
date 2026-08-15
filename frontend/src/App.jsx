@@ -2227,6 +2227,14 @@ function App() {
               <span className="listening-dot" />
               {who} is listening
             </div>
+
+            {FEATURES.youCharacter && you && (
+              <div className="rail-you">
+                <span className="rail-you-label">taught by</span>
+                <img className="rail-you-face" src={you.src} alt="" />
+                <span className="rail-you-name">{you.name}</span>
+              </div>
+            )}
           </aside>
 
           <section className="conversation">
@@ -2283,15 +2291,26 @@ function App() {
                       ? (you?.name ?? "YOU").toUpperCase()
                       : whoUpper;
 
+                  const isStudent = message.source === "user";
+
                   return (
                     <div
-                      className={`transcript-message ${role === "YOU"
+                      className={`transcript-message ${isStudent
                         ? "user-message"
                         : "grandma-message"
                         }`}
                       key={`${index}-${message.message}`}
                     >
-                      <div className="speaker">{role}</div>
+                      <div className="speaker">
+                        {isStudent && you && (
+                          <img
+                            className="speaker-face"
+                            src={you.src}
+                            alt=""
+                          />
+                        )}
+                        {role}
+                      </div>
                       <p>{message.message}</p>
                     </div>
                   );
