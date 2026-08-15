@@ -60,6 +60,24 @@ export function headlineBandForScore(score) {
 // from the AI grade, never from the keyword bar — coverage earns its own,
 // visibly smaller award. Mistakes never subtract; events that didn't happen
 // are omitted rather than shown at zero.
+// The three teaching moments, cheapest first — this is also the order they
+// are listed on the recap. The xp values are the tie-break when the grader
+// hangs two of them on the same sentence.
+const MOMENT_AWARDS = [
+  { key: "simplifiedJargon", label: "Dropped the jargon when asked", xp: 30 },
+  { key: "selfCorrected", label: "Caught your own mistake", xp: 40 },
+  { key: "usedGoodAnalogy", label: "Found a good analogy", xp: 50 },
+];
+
+// Two quotes are the same evidence if they read the same aloud: case,
+// surrounding space and internal run-on space are all noise here.
+function normaliseQuote(quote) {
+  return String(quote ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
 export function xpForLesson({ results, moments, coveredCount, totalPoints, saidAnything }) {
   if (!saidAnything) {
     return null;
@@ -87,28 +105,46 @@ export function xpForLesson({ results, moments, coveredCount, totalPoints, saidA
       events.push({ label: "Grandma understood all of it", xp: 100 });
     }
 
-    if (moments?.simplifiedJargon?.happened) {
-      events.push({
-        label: "Dropped the jargon when asked",
-        xp: 30,
-        quote: moments.simplifiedJargon.quote,
-      });
+    // One sentence can honestly be two moments at once — "actually, let me
+    // say that better: each connection has a dial" is a self-correction AND
+    // a dropped technical term. Paying for both puts the identical quote on
+    // two rows of the recap, which reads as a glitch rather than as credit.
+    // So a quote is paid once, at its highest value.
+    //
+    // Blank quotes never collide: the server clears any quote it could not
+    // find verbatim in the transcript, and two unevidenced moments are still
+    // two different things that happened.
+    const paidQuotes = new Set();
+    const earnedKeys = new Set();
+
+    for (const award of [...MOMENT_AWARDS].sort((a, b) => b.xp - a.xp)) {
+      if (!moments?.[award.key]?.happened) {
+        continue;
+      }
+
+      const quote = normaliseQuote(moments[award.key].quote);
+
+      if (quote) {
+        if (paidQuotes.has(quote)) {
+          continue;
+        }
+
+        paidQuotes.add(quote);
+      }
+
+      earnedKeys.add(award.key);
     }
 
-    if (moments?.selfCorrected?.happened) {
-      events.push({
-        label: "Caught your own mistake",
-        xp: 40,
-        quote: moments.selfCorrected.quote,
-      });
-    }
-
-    if (moments?.usedGoodAnalogy?.happened) {
-      events.push({
-        label: "Found a good analogy",
-        xp: 50,
-        quote: moments.usedGoodAnalogy.quote,
-      });
+    // Emitted in the declared order, not the order they were judged in, so
+    // the recap always lists these three the same way round.
+    for (const award of MOMENT_AWARDS) {
+      if (earnedKeys.has(award.key)) {
+        events.push({
+          label: award.label,
+          xp: award.xp,
+          quote: moments[award.key].quote,
+        });
+      }
     }
   }
 
