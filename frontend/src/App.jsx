@@ -854,7 +854,11 @@ function App() {
               overrides: {
                 agent: {
                   prompt: {
-                    prompt: buildPersonaPrompt(activeCharacter, selectedTopic),
+                    prompt: buildPersonaPrompt(
+                      activeCharacter,
+                      selectedTopic,
+                      FEATURES.multilingual ? language : "en"
+                    ),
                   },
                   ...(FEATURES.multilingual && language !== "en"
                     ? { language }
@@ -862,10 +866,11 @@ function App() {
                   // Each character's distinct greeting doubles as the
                   // override canary: hear the wrong one, and you know the
                   // dashboard toggles aren't live.
-                  firstMessage: activeCharacter.firstMessage.replace(
-                    "{topic}",
-                    selectedTopic.name
-                  ),
+                  firstMessage: (FEATURES.multilingual && language === "de"
+                    ? activeCharacter.firstMessageDe ??
+                      activeCharacter.firstMessage
+                    : activeCharacter.firstMessage
+                  ).replace("{topic}", selectedTopic.name),
                 },
                 // Sent only when set — an explicit null is a rejected
                 // payload, not a fallback.

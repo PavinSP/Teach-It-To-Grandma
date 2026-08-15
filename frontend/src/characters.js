@@ -38,6 +38,8 @@ export const CHARACTERS = [
       "Judge as a complete beginner. If a sentence needs prior knowledge to parse, it was not explained.",
     headlineWin: "Well done, darling.",
     headlineRetry: "Let's go over that again, darling.",
+    firstMessageDe:
+      "Oh, hallo mein Schatz! Du willst mir also {topic} erklären? Na los, Oma hört zu.",
     firstMessage:
       "Oh hello, darling! So you're going to teach me about {topic}? Go on then, Grandma's listening.",
   },
@@ -69,6 +71,8 @@ export const CHARACTERS = [
       "Judge as a seven-year-old. If it needs school beyond age seven, it was not explained. Analogies and stories count for a lot.",
     headlineWin: "You're the best teacher ever!",
     headlineRetry: "Wait... I'm still confused.",
+    firstMessageDe:
+      "Hallo hallo hallo! Erklärst du mir wirklich {topic}? Okay okay okay — los!",
     firstMessage:
       "Hi hi hi! Are you really going to teach me about {topic}? Okay okay okay — go!",
   },
@@ -99,6 +103,8 @@ export const CHARACTERS = [
       "Expect mechanism. Naming a concept without explaining how it works does not count as explained.",
     headlineWin: "Okay, that actually made sense.",
     headlineRetry: "I'd still fail the exam on this.",
+    firstMessageDe:
+      "Hey! Ich schreibe bald eine Prüfung über {topic}, also erklär's mir so, dass ich sie bestehe.",
     firstMessage:
       "Hey! I've got an exam on {topic} coming up, so teach it like I actually need to pass.",
   },
@@ -129,6 +135,8 @@ export const CHARACTERS = [
       "Judge on consequences and relevance. If the explanation never says why it matters or what would go wrong without it, it was not explained.",
     headlineWin: "Good. That's a yes from me.",
     headlineRetry: "I still don't see the bottom line.",
+    firstMessageDe:
+      "Also — {topic}. Ich habe fünf Minuten bis zum nächsten Meeting. Machen Sie was draus.",
     firstMessage:
       "Right — {topic}. I've got five minutes before my next meeting. Make it count.",
   },
@@ -159,6 +167,8 @@ export const CHARACTERS = [
       "Demand precision. A restatement without the underlying reason does not count as explained. Reward correct handling of edge cases.",
     headlineWin: "Precise. I'm satisfied.",
     headlineRetry: "Your assumptions need work.",
+    firstMessageDe:
+      "Also — {topic}. Ich kenne das Nachbargebiet gut. Überzeugen Sie mich, dass Sie dieses hier beherrschen.",
     firstMessage:
       "So — {topic}. I know the neighbouring territory well. Convince me you know this one.",
   },
@@ -189,6 +199,8 @@ export const CHARACTERS = [
       "Be strict. Contradictions, gaps, or borrowed phrasing without understanding all fail the point. Only a complete, coherent explanation counts.",
     headlineWin: "A rigorous account. Well done.",
     headlineRetry: "See me after class.",
+    firstMessageDe:
+      "Guten Tag. {topic} also. Ich höre aufmerksam zu — beginnen Sie, wenn Sie bereit sind.",
     firstMessage:
       "Good day. {topic}, then. I shall be listening carefully — begin when you are ready.",
   },
@@ -241,7 +253,7 @@ export const DIRECTOR = {
     `[note] Next reply only: say you think you have got it now, then state this back as if you genuinely believe it — "${m}" — and ask if that's right. Sound pleased with yourself. Give no hint that it is wrong. One or two sentences.`,
 };
 
-export function buildPersonaPrompt(character, lesson) {
+export function buildPersonaPrompt(character, lesson, language = "en") {
   const p = character.persona;
 
   return `${p.knowledge}
@@ -252,5 +264,9 @@ WHEN THE EXPLANATION IS WEAK: ${p.challenge}
 
 THE STUDENT IS TEACHING YOU: ${lesson.name}
 (${lesson.description})
-${NEVER_CHANGES}`;
+${
+  language === "de"
+    ? "\nSPRACHE: Sprich ausschliesslich Deutsch. Der Student spricht Deutsch mit dir. Antworte niemals auf Englisch, auch nicht teilweise.\n"
+    : ""
+}${NEVER_CHANGES}`;
 }

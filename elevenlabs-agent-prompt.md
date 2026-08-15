@@ -94,3 +94,27 @@ it the model's own judgement instead of a guess:
 The instruction to call it already ships inside every generated persona in
 `frontend/src/characters.js`, so no prompt edit is needed for the character
 path. An unregistered tool simply never fires; the heuristic covers it.
+
+
+---
+
+## AGENT LANGUAGE OVERRIDE (required for German — #19)
+
+The app sends `overrides.agent.language` when German is selected, but
+ElevenLabs ignores it unless the matching toggle is enabled:
+
+- Settings → Security → **Overrides** → turn ON **Agent language**
+- Confirm German is in Agent → **Language** → additional languages
+  (it already is, as of 2026-08-15)
+- **Publish**
+
+Without the toggle, the lesson and the notes come back in German while she
+keeps speaking English — which is exactly what happened on the first
+German run.
+
+The code side is now language-aware regardless: each character carries a
+German greeting (`firstMessageDe`), and the generated persona gets an
+explicit "sprich ausschliesslich Deutsch" line. Those alone will usually
+get her speaking German even with the toggle off, because they change what
+the model writes — but the toggle is what switches speech recognition to
+German, so without it she may mishear German input.
