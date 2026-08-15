@@ -4,7 +4,13 @@ import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import OpenAI from "openai";
-import { createTeachoff, getTeachoff, addRun, rankedRuns } from "./store.js";
+import {
+  createTeachoff,
+  getTeachoff,
+  addRun,
+  rankedRuns,
+  backend,
+} from "./store.js";
 
 // The key lives in the project root .env, one level up from server/.
 dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), "..", ".env") });
@@ -115,8 +121,11 @@ setInterval(() => {
   }
 }, 60 * 1000).unref();
 
+// Reports which teach-off store is live, because "codes don't work across
+// devices" and "the deploy is reading the local file" are the same bug, and
+// this is the fastest way to tell them apart from a phone.
 app.get("/health", (_req, res) => {
-  res.json({ ok: true });
+  res.json({ ok: true, store: backend });
 });
 
 // Turns any topic the student types into a lesson: what they should cover,
@@ -1265,20 +1274,20 @@ Respond with JSON only:
 // fetch player one's exact lesson — regenerating it would make the two
 // scores incomparable.
 
-app.post("/api/teachoff", (req, res) => {
+app.post("/api/teachoff", async (req, res) => {
   const lesson = req.body?.lesson;
 
   if (!lesson || !Array.isArray(lesson.points) || !lesson.name) {
     return res.status(400).json({ error: "Expected { lesson }." });
   }
 
-  const entry = createTeachoff(lesson);
+  const entry = await createTeachoff(lesson);
 
   res.json({ code: entry.code, lesson: entry.lesson });
 });
 
-app.get("/api/teachoff/:code", (req, res) => {
-  const entry = getTeachoff(req.params.code.toUpperCase());
+app.get("/api/teachoff/:code", async (req, res) => {
+  const entry = await getTeachoff(req.params.code.toUpperCase());
 
   if (!entry) {
     return res.status(404).json({ error: "No teach-off with that code." });
@@ -1291,7 +1300,7 @@ app.get("/api/teachoff/:code", (req, res) => {
   });
 });
 
-app.post("/api/teachoff/:code/runs", (req, res) => {
+app.post("/api/teachoff/:code/runs", async (req, res) => {
   const { player, score, understoodCount, totalPoints, summary } =
     req.body ?? {};
 
@@ -1299,7 +1308,7 @@ app.post("/api/teachoff/:code/runs", (req, res) => {
     return res.status(400).json({ error: "Expected { player, score }." });
   }
 
-  const runs = addRun(req.params.code.toUpperCase(), {
+  const runs = await addRun(req.params.code.toUpperCase(), {
     // Rendered as text by React, but cap and trim it anyway.
     player: player.trim().slice(0, 24),
     score: Math.max(0, Math.min(100, Math.round(score))),
@@ -1315,8 +1324,8 @@ app.post("/api/teachoff/:code/runs", (req, res) => {
   res.json({ ok: true, runs });
 });
 
-app.get("/api/teachoff/:code/runs", (req, res) => {
-  const entry = getTeachoff(req.params.code.toUpperCase());
+app.get("/api/teachoff/:code/runs", async (req, res) => {
+  const entry = await getTeachoff(req.params.code.toUpperCase());
 
   if (!entry) {
     return res.status(404).json({ error: "No teach-off with that code." });
@@ -1325,6 +1334,15 @@ app.get("/api/teachoff/:code/runs", (req, res) => {
   res.json({ code: entry.code, runs: rankedRuns(entry) });
 });
 
-app.listen(PORT, () => {
-  console.log(`Grading server listening on http://localhost:${PORT}`);
-});
+// On Vercel the app is imported by api/index.js and the platform owns the
+// socket — binding a port there would throw. Locally, nothing imports this
+// file, so it starts its own listener exactly as it always did.
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(
+      `Grading server listening on http://localhost:${PORT} — teach-off store: ${backend}`
+    );
+  });
+}
+
+export default app;
