@@ -2202,36 +2202,6 @@ details.misconceptions-panel .misconceptions-list {
 
 /* The teacher's presence in the scene (#46) */
 
-.rail-you {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid #e6ded2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.rail-you-label {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  opacity: 0.45;
-}
-
-.rail-you-face {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.rail-you-name {
-  font-size: 14px;
-  font-weight: 700;
-}
-
 .speaker-face {
   width: 18px;
   height: 18px;
@@ -2239,4 +2209,82 @@ details.misconceptions-panel .misconceptions-list {
   object-fit: cover;
   vertical-align: -4px;
   margin-right: 6px;
+}
+
+
+/* -----------------------------
+   The journey (progress as a path)
+----------------------------- */
+
+.journey {
+  position: relative;
+  height: 64px;
+  margin: 6px 0 18px;
+}
+
+.journey-line {
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 42px;
+  border-top: 2px dashed #d8d0c4;
+}
+
+.journey-stone {
+  position: absolute;
+  top: 32px;
+  width: 22px;
+  height: 22px;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #efe9df;
+  border: 1px solid #d8d0c4;
+  font-size: 11px;
+  font-weight: 700;
+  color: #8d857a;
+  transition: all 0.4s ease;
+}
+
+.journey-stone.reached {
+  background: #2f7a4f;
+  border-color: #2f7a4f;
+  color: #fff;
+}
+
+.journey-walker {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  transition: left 0.7s cubic-bezier(0.34, 1.4, 0.64, 1);
+  z-index: 1;
+}
+
+.journey-hop {
+  display: block;
+  animation: journey-hop 0.6s ease;
+}
+
+.journey-hop img,
+.journey-glyph {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  box-shadow: 0 2px 6px rgba(38, 34, 29, 0.18);
+}
+
+@keyframes journey-hop {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(-14px) rotate(-4deg); }
+  70% { transform: translateY(2px); }
+  100% { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journey-walker { transition: none; }
+  .journey-hop { animation: none; }
 }

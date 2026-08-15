@@ -2228,13 +2228,6 @@ function App() {
               {who} is listening
             </div>
 
-            {FEATURES.youCharacter && you && (
-              <div className="rail-you">
-                <span className="rail-you-label">taught by</span>
-                <img className="rail-you-face" src={you.src} alt="" />
-                <span className="rail-you-name">{you.name}</span>
-              </div>
-            )}
           </aside>
 
           <section className="conversation">
@@ -2410,13 +2403,43 @@ function App() {
             <div className="progress-count">
               {completedCount} / {totalCount}
             </div>
-            <div className="progress-bar">
+            <div className="journey">
+              <div className="journey-line" />
+
+              {selectedTopic.points.map((point, index) => (
+                <div
+                  key={point}
+                  className={`journey-stone ${
+                    progress[index] ? "reached" : ""
+                  }`}
+                  style={{
+                    left: `${((index + 1) / (totalCount + 1)) * 100}%`,
+                  }}
+                  title={point}
+                >
+                  {index + 1}
+                </div>
+              ))}
+
               <div
-                className="progress-bar-fill"
+                className="journey-walker"
                 style={{
-                  width: `${(completedCount / totalCount) * 100}%`,
+                  left: `${(completedCount / (totalCount + 1)) * 100}%`,
                 }}
-              />
+              >
+                <span className="journey-hop" key={completedCount}>
+                  {activeCharacter.image ? (
+                    <img src={activeCharacter.image} alt={who} />
+                  ) : (
+                    <span
+                      className="journey-glyph"
+                      style={{ background: activeCharacter.color }}
+                    >
+                      {activeCharacter.glyph}
+                    </span>
+                  )}
+                </span>
+              </div>
             </div>
             {selectedTopic.points.map((point, index) => {
               const completed = progress[index];
