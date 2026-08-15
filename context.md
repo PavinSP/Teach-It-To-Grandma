@@ -809,3 +809,25 @@ audience notices: "herausfordern" takes the accusative while "erklären"
 takes the dative, so one pronoun could not serve both ("FORDERE IHR
 HERAUS" was wrong); and the genitive of a name ending in s ("Professor
 Elliss Notizen") is avoided entirely with "Notizen von {name}".
+
+## Session 39 — Silence was worth 15 points
+
+Caught by the user: say your name, end the lesson, score 15.
+
+The score was `70·understood + 15·covered + 15·(1 − friction)`. That third
+term paid for the listener never having interrupted — but she never
+interrupted because there was nothing to interrupt. Saying nothing scored
+as flawless delivery.
+
+Friction is now a multiplier on what was earned rather than a term of its
+own: `(85·understood + 15·covered) × (1 − 0.15·friction)`. Nothing
+explained scores nothing. A heavily interrupted explanation still keeps
+85% of its credit, because being asked to clarify is not the same as
+being wrong.
+
+Participation XP got the same treatment — "completed the lesson" needed
+no lesson, so it now requires at least one point actually covered.
+
+Effect on real explanations is small: the vague 4/4-coverage case moves
+15 → 15, a half-understood lesson 58 → 53, a perfect one stays 100. The
+free floor is what disappeared.

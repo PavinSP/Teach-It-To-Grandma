@@ -22,9 +22,17 @@ export function feynmanScore({
 
   const understood = understoodCount / totalPoints;
   const covered = coveredCount / totalPoints;
+  const earned = 85 * understood + 15 * covered;
+
+  // Friction multiplies what was earned rather than adding to it. As a
+  // separate term it paid 15 points for silence — say your name, leave,
+  // and score 15 for never having been interrupted. Nothing explained
+  // now scores nothing. Being asked to clarify still costs little: a
+  // heavily interrupted explanation keeps 85% of its credit, because
+  // needing clarification is not the same as being wrong.
   const friction = Math.min(clarificationCount ?? 0, 4) / 4;
 
-  return Math.round(70 * understood + 15 * covered + 15 * (1 - friction));
+  return Math.round(earned * (1 - 0.15 * friction));
 }
 
 // The celebration copy derives from the score — a failing lesson gets told
@@ -129,7 +137,11 @@ export function xpForLesson({ results, moments, coveredCount, totalPoints, saidA
   // stored in an older snapshot is an English sentence, and t() returns any
   // key it does not recognise unchanged — so a restored recap still reads
   // correctly instead of showing a bare key.
-  events.push({ label: "xpCompleted", xp: 100 });
+  // Participation credit still has to be participation: turning up, saying
+  // a name and leaving used to bank 100 XP.
+  if (coveredCount > 0) {
+    events.push({ label: "xpCompleted", xp: 100 });
+  }
 
   if (coveredCount === totalPoints) {
     events.push({ label: "xpEveryConcept", xp: 100 });
