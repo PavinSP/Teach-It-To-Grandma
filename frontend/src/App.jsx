@@ -197,6 +197,8 @@ function App() {
   // snapshotted — the voice session dies on refresh, so a restored pause
   // would be a lie.
   const [paused, setPaused] = useState(false);
+  // 0 = mouth closed, 1 = open. Driven by her real output volume.
+  const [mouthOpen, setMouthOpen] = useState(0);
   // #46 (student half) — who is doing the teaching.
   const [you, setYou] = useState(() =>
     FEATURES.youCharacter ? loadYou() : null
@@ -639,6 +641,38 @@ function App() {
     return () => clearInterval(beat);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paused, isConnected]);
+
+  useEffect(() => {
+    if (!FEATURES.characterMouth || !conversation.isSpeaking || paused) {
+      setMouthOpen(0);
+      return;
+    }
+
+    let frame;
+    let smoothed = 0;
+
+    const tick = () => {
+      let level = 0;
+
+      try {
+        level = conversation.getOutputVolume() ?? 0;
+      } catch {
+        level = 0;
+      }
+
+      // Ease toward the target so the mouth doesn't strobe on every
+      // frame, but stays quick enough to look like speech.
+      smoothed += (Math.min(level * 3.2, 1) - smoothed) * 0.45;
+      setMouthOpen(smoothed < 0.06 ? 0 : smoothed);
+
+      frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation.isSpeaking, paused]);
 
   // The score counts up over ~800ms — unless the viewer asked for reduced
   // motion, in which case it lands immediately.
@@ -2416,7 +2450,18 @@ function App() {
             >
               <span className="mood-shell" key={mood}>
                 {activeCharacter.image ? (
-                  <img src={activeCharacter.image} alt={who} />
+                  <span className="mouth-stack">
+                    <img src={activeCharacter.image} alt={who} />
+                    {FEATURES.characterMouth && activeCharacter.talkImage && (
+                      <img
+                        className="mouth-open"
+                        src={activeCharacter.talkImage}
+                        alt=""
+                        aria-hidden="true"
+                        style={{ opacity: mouthOpen }}
+                      />
+                    )}
+                  </span>
                 ) : (
                   <span
                     className="glyph-face"

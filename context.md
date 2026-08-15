@@ -598,3 +598,36 @@ destructive one confirms — deleting earned XP and badges is real loss,
 while clearing a stuck lesson costs nothing. Labelled by what they clear
 rather than "start fresh", which read as "start a lesson" next to the
 topic box.
+
+## Session 28 — Mouths that move (workaround for real lip-sync)
+
+The characters' mouths now move in time with their actual speech. Not
+true lip-sync — there are no visemes to work from — but two frames
+cross-faded by live output volume, which is the classic 2D cartoon
+approach and reads as talking.
+
+**Note the history**: the original build already tried a mouth overlay
+and abandoned it for whole-image movement (session 2). This attempt only
+worked because it was verified empirically rather than eyeballed.
+
+**What the measurements ruled out.** Swapping whole face variants was the
+obvious approach and it is dead: of 22 open-peeps faces tested against
+`smile`, **not one changes only the mouth** — every variant also moves the
+eyes, all starting at y≈109. Swapping them would make the eyes flicker.
+`smileLOL` in particular closes the eyes (it is a laugh), which is why an
+early band that reached up to y=120 was contaminated.
+
+**What worked**: compositing only the mouth band. Eye changes occupy
+y=109-144 and mouth changes y=145-188 with no quiet gap between them, but
+they sit in different columns, so a horizontal cut at y=145 is clean.
+Pasting `smileBig`'s y=145-195 onto `smile` gives, for all six
+characters, 1100-1800px of mouth change and **exactly 0px of eye
+change**, with boundary discontinuity identical to the original image
+(i.e. no seam).
+
+**Rendering**: both frames sit in the DOM and only opacity changes. A src
+swap would hit the network on first paint and flicker. The rAF loop runs
+only while `isSpeaking` and never while paused. Volume is eased toward
+its target (factor 0.45), which measures as ~33ms to half-open and ~84ms
+to close — fast enough to track syllables, smooth enough not to strobe
+(max per-frame jump 0.35).

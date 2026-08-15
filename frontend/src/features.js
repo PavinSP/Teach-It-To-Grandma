@@ -75,6 +75,10 @@ const DEFAULTS = {
   // gets sharper once a set_mood client tool is registered on the agent.
   characterMood: true,
 
+  // Mouth movement driven by her real output volume. Two frames stacked
+  // and cross-faded — never a src swap, which would flicker.
+  characterMouth: true,
+
   // #34 — several people teach the SAME stored lesson in turn, one board.
   // Same machine, sequential — the only multiplayer that honestly works
   // without deployment.

@@ -2492,3 +2492,26 @@ details.misconceptions-panel .misconceptions-list {
   color: #cec5b8;
   font-size: 13px;
 }
+
+/* Mouth movement: two frames stacked, the open one faded in by volume. */
+
+.mouth-stack {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.mouth-stack img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.mouth-stack .mouth-open {
+  position: absolute;
+  inset: 0;
+  will-change: opacity;
+}
