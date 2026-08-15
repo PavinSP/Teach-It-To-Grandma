@@ -744,3 +744,19 @@ grading, but cannot stop TTS speaking them. It is deliberately surgical:
 an earlier version removed the rest of the line and deleted her real
 reply with it. A multi-sentence leak may still leave a fragment, and
 that is the right trade — cutting into real speech is the worse error.
+
+## Session 34 — Expressive Mode tags on screen
+
+After Expressive Mode was enabled, the transcript filled with `[slow]`,
+`[curious]`, `[sad]`, `[squinting]`. These are delivery tags the model
+emits for the voice to interpret — the TTS consumes them, so they were
+never spoken, only displayed. A rendering problem, not a behaviour one,
+and a sign Expressive Mode is working as intended.
+
+`scrub()` now removes short lowercase bracketed tags in addition to the
+older leaks. Deliberately narrow — short, lowercase, no sentence
+punctuation — so a genuine bracketed aside in speech survives.
+
+Worth noting what these transcripts also showed: **no `[DIRECTOR]` leaks
+and no `set_mood(...)` anywhere**, so session 33's fixes plus the model
+revert held.

@@ -74,7 +74,11 @@ function toLesson(generated) {
 // leave a fragment — there is no reliable way to tell where an instruction
 // stops and her own words start, and cutting too much is the worse error.
 const LEAKS = [
-  /\[(?:note|director)\]\s*/gi,
+  // Expressive Mode delivery tags — [slow], [curious], [squinting]. These
+  // are instructions to the voice, not words she says, and the TTS strips
+  // them from the audio. They only need removing from the screen.
+  // Short and lowercase by design, so a real bracketed aside survives.
+  /\[[a-z][a-z' -]{0,22}\]\s*/g,
   /\bset_mood\s*\([^)]*\)\s*/gi,
   /\b(?:Next reply only|From now on)\s*:[^.?!]*[.?!]\s*/gi,
 ];
