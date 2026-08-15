@@ -743,14 +743,28 @@ h2 {
   padding: 28px;
 }
 
+/* Icon and heading sit on one line. The emoji keeps its own line-height so a
+   tall glyph never drags the heading's baseline around. */
+.recap-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
 .recap-icon {
   font-size: 28px;
-  margin-bottom: 14px;
+  line-height: 1;
+  flex: 0 0 auto;
 }
 
 .recap-card h2 {
   margin-top: 0;
   margin-bottom: 18px;
+}
+
+.recap-head h2 {
+  margin: 0;
 }
 
 .recap-card ul {
@@ -2830,4 +2844,69 @@ details.misconceptions-panel .misconceptions-list {
   margin: 0;
   font-size: 14px;
   opacity: 0.8;
+}
+
+/* Difficulty prediction */
+
+.predict-flag {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(176, 82, 46, 0.12);
+  color: #9c5127;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: help;
+}
+
+.predict-intro {
+  margin: 0 0 14px;
+  font-size: 14px;
+  opacity: 0.6;
+}
+
+.predict-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.predict-list li {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.predict-verdict {
+  flex-shrink: 0;
+  min-width: 108px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.as-expected .predict-verdict {
+  opacity: 0.4;
+}
+
+.surprise .predict-verdict {
+  color: #2f7a4f;
+}
+
+.predict-point {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+
+.predict-point em {
+  font-size: 13px;
+  font-style: normal;
+  opacity: 0.55;
 }

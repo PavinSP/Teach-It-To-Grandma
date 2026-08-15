@@ -73,6 +73,10 @@ function toLesson(generated) {
       keywords: point.keywords,
       required: point.required,
     })),
+    predictions: generated.points.map((point) => ({
+      hardFor: point.hardFor ?? null,
+      hardWhy: point.hardWhy ?? "",
+    })),
     misconceptions: generated.misconceptions ?? [],
     analysis: generated.analysis ?? null,
     challenges: generated.challenges ?? [],
@@ -1987,9 +1991,10 @@ function App() {
 
           {aiGrade?.results && (
             <section className="recap-card ai-grade-card">
-              <div className="recap-icon">🧠</div>
-
-              <h2>Did {who} really understand?</h2>
+              <div className="recap-head">
+                <div className="recap-icon">🧠</div>
+                <h2>Did {who} really understand?</h2>
+              </div>
 
               <ul className="ai-grade-list">
                 {aiGrade.results.map((result) => (
@@ -2013,9 +2018,10 @@ function App() {
 
           {ambush && aiGrade?.misconceptionHandling && (
             <section className="recap-card myth-card">
-              <div className="recap-icon">🧨</div>
-
-              <h2>The trap {who} set</h2>
+              <div className="recap-head">
+                <div className="recap-icon">🧨</div>
+                <h2>The trap {who} set</h2>
+              </div>
 
               <p className="myth-claim">
                 Mid-lesson, {who} claimed: “{ambush.text}”
@@ -2037,11 +2043,69 @@ function App() {
             </section>
           )}
 
+          {FEATURES.difficultyPrediction &&
+            aiGrade?.results &&
+            selectedTopic.predictions && (
+              <section className="recap-card predict-card">
+                <div className="recap-icon">🔮</div>
+
+                <h2>What it expected you to struggle with</h2>
+
+                <p className="predict-intro">
+                  Predicted before you said a word, from the topic alone.
+                </p>
+
+                <ul className="predict-list">
+                  {selectedTopic.points.map((point, i) => {
+                    const predicted =
+                      selectedTopic.predictions[i]?.hardFor ?? null;
+                    const understood = aiGrade.results.find(
+                      (r) => r.point === point
+                    )?.understood;
+
+                    if (predicted === null || understood === undefined) {
+                      return null;
+                    }
+
+                    const expectedTrouble = predicted !== "easy";
+                    const hadTrouble = !understood;
+                    const surprise = expectedTrouble !== hadTrouble;
+
+                    return (
+                      <li
+                        key={point}
+                        className={surprise ? "surprise" : "as-expected"}
+                      >
+                        <span className="predict-verdict">
+                          {surprise
+                            ? hadTrouble
+                              ? "caught you out"
+                              : "you beat it"
+                            : hadTrouble
+                              ? "as predicted"
+                              : "as predicted"}
+                        </span>
+
+                        <span className="predict-point">
+                          <strong>{point}</strong>
+                          <em>
+                            expected {predicted} · you{" "}
+                            {understood ? "got it across" : "did not"}
+                          </em>
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
+
           {FEATURES.depthLadder && aiGrade?.depth && (
             <section className="recap-card depth-card">
-              <div className="recap-icon">🪜</div>
-
-              <h2>How deep you went</h2>
+              <div className="recap-head">
+                <div className="recap-icon">🪜</div>
+                <h2>How deep you went</h2>
+              </div>
 
               <ol className="depth-ladder">
                 {DEPTH_RUNGS.map((rung, i) => {
@@ -2084,9 +2148,10 @@ function App() {
 
           {FEATURES.blindSpots && aiGrade?.blindSpots?.length > 0 && (
             <section className="recap-card">
-              <div className="recap-icon">🕳️</div>
-
-              <h2>What you never went near</h2>
+              <div className="recap-head">
+                <div className="recap-icon">🕳️</div>
+                <h2>What you never went near</h2>
+              </div>
 
               <p className="recap-sub">
                 Not explained badly — never mentioned at all.
@@ -2102,9 +2167,10 @@ function App() {
 
           {FEATURES.aiJury && (
             <section className="recap-card jury-card">
-              <div className="recap-icon">🧑‍⚖️</div>
-
-              <h2>The jury</h2>
+              <div className="recap-head">
+                <div className="recap-icon">🧑‍⚖️</div>
+                <h2>The jury</h2>
+              </div>
 
               {!jury ? (
                 <>
@@ -2158,8 +2224,10 @@ function App() {
 
           {FEATURES.explainBack && isExplaining && !explainBack && (
             <section className="recap-card">
-              <div className="recap-icon">🔄</div>
-              <h2>Let me see if I understood you</h2>
+              <div className="recap-head">
+                <div className="recap-icon">🔄</div>
+                <h2>Let me see if I understood you</h2>
+              </div>
               <p className="recap-pending">
                 {who} is working out what {subj} actually took away…
               </p>
@@ -2168,9 +2236,10 @@ function App() {
 
           {FEATURES.explainBack && explainBack && (
             <section className="recap-card explainback-card">
-              <div className="recap-icon">🔄</div>
-
-              <h2>Let me see if I understood you</h2>
+              <div className="recap-head">
+                <div className="recap-icon">🔄</div>
+                <h2>Let me see if I understood you</h2>
+              </div>
 
               {/* Counts, with their denominators visible. Coverage is what
                   you said; the other two are what actually landed. */}
@@ -2259,9 +2328,10 @@ function App() {
 
           {FEATURES.richNotes && aiGrade?.strongestMoment?.quote && (
             <section className="recap-card strongest-card">
-              <div className="recap-icon">💬</div>
-
-              <h2>Your strongest moment</h2>
+              <div className="recap-head">
+                <div className="recap-icon">💬</div>
+                <h2>Your strongest moment</h2>
+              </div>
 
               <blockquote className="strongest-quote">
                 “{aiGrade.strongestMoment.quote}”
@@ -2275,9 +2345,10 @@ function App() {
 
           <div className="recap-grid">
             <section className="recap-card">
-              <div className="recap-icon">✓</div>
-
-              <h2>What {who} followed</h2>
+              <div className="recap-head">
+                <div className="recap-icon">✓</div>
+                <h2>What {who} followed</h2>
+              </div>
 
               {clearPoints.length > 0 ? (
                 <ul>
@@ -2291,9 +2362,10 @@ function App() {
             </section>
 
             <section className="recap-card">
-              <div className="recap-icon">💡</div>
-
-              <h2>What to improve</h2>
+              <div className="recap-head">
+                <div className="recap-icon">💡</div>
+                <h2>What to improve</h2>
+              </div>
 
               {FEATURES.richNotes && aiGrade?.practiceThis && (
                 <p className="practice-this">
@@ -2316,9 +2388,10 @@ function App() {
           </div>
 
           <div className="recap-card conversation-summary">
-            <div className="recap-icon">{activeCharacter.glyph}</div>
-
-            <h2>Where {who} needed help</h2>
+            <div className="recap-head">
+              <div className="recap-icon">{activeCharacter.glyph}</div>
+              <h2>Where {who} needed help</h2>
+            </div>
 
             {FEATURES.richNotes && aiGrade?.stumbles?.length > 0 ? (
               <ul className="stumble-list">
@@ -2357,9 +2430,10 @@ function App() {
             )}
           </div>
           <div className="recap-card">
-            <div className="recap-icon">💬</div>
-
-            <h2>Your explanation</h2>
+            <div className="recap-head">
+              <div className="recap-icon">💬</div>
+              <h2>Your explanation</h2>
+            </div>
 
             {recap.userMessages.length > 0 ? (
               <p>
@@ -2375,9 +2449,10 @@ function App() {
 
           {FEATURES.mirrorMode && recap.userMessages.length > 0 && (
             <section className="recap-card mirror-card">
-              <div className="recap-icon">🪞</div>
-
-              <h2>Now check {activeCharacter.obj === "her" ? "her" : "his"} work</h2>
+              <div className="recap-head">
+                <div className="recap-icon">🪞</div>
+                <h2>Now check {activeCharacter.obj === "her" ? "her" : "his"} work</h2>
+              </div>
 
               {!mirror ? (
                 <>
@@ -2505,9 +2580,10 @@ function App() {
 
           {FEATURES.teachOff && !teachoff && lessonXp?.score != null && (
             <section className="recap-card teachoff-card">
-              <div className="recap-icon">⚔️</div>
-
-              <h2>Think someone can beat that?</h2>
+              <div className="recap-head">
+                <div className="recap-icon">⚔️</div>
+                <h2>Think someone can beat that?</h2>
+              </div>
 
               <p className="teachoff-blurb">
                 They teach the exact same lesson, {who} grades them the same
@@ -2536,9 +2612,10 @@ function App() {
 
           {FEATURES.teachOff && teachoff && (
             <section className="recap-card teachoff-card">
-              <div className="recap-icon">⚔️</div>
-
-              <h2>This Teach-Off</h2>
+              <div className="recap-head">
+                <div className="recap-icon">⚔️</div>
+                <h2>This Teach-Off</h2>
+              </div>
 
               <p className="teachoff-code-line">
                 Next teacher joins with code{" "}
@@ -3076,6 +3153,16 @@ function App() {
                   </span>
 
                   <span>{point}</span>
+
+                  {FEATURES.difficultyPrediction &&
+                    selectedTopic.predictions?.[index]?.hardFor === "hard" && (
+                      <span
+                        className="predict-flag"
+                        title={selectedTopic.predictions[index].hardWhy}
+                      >
+                        tricky
+                      </span>
+                    )}
                 </div>
               );
             })}

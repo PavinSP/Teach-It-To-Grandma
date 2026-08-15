@@ -147,6 +147,8 @@ For each of those, list the words or short phrases a student would almost certai
 
 Also name the misconceptions beginners most often hold about this topic.
 
+For each point, also predict how likely a student is to explain it BADLY — "hardFor" is one of "easy", "tricky" or "hard". Judge on what makes people stumble when teaching it aloud: points that are easy to name but hard to mechanise are "hard"; points people usually parrot correctly are "easy". Give one short reason in "hardWhy" naming the specific trap.
+
 Also assess the topic itself. "conceptDensity" is how many distinct ideas a beginner has to hold in their head at once — Low, Medium, or High. "prerequisites" is how much they need to already know before any of this can land — Low, Medium, or High. List 2-3 concrete things they'd need to already know in "prerequisiteNotes" (an empty list if there really are none).
 
 Also write three challenges that would test whether a student really understands this topic rather than just reciting it. Each one must name a specific concept from the points above, not a generic instruction — "explain the learning rate without saying 'step'" is good, "explain it more simply" is not. Give each an id ("c1", "c2", "c3"), a kind (one of: analogy, five_year_old, no_jargon, real_world, opposite), a short label under 5 words for a button, and an instruction naming what Grandma should ask for.
@@ -188,8 +190,13 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
                     label: { type: "string" },
                     keywords: { type: "array", items: { type: "string" } },
                     required: { type: "number" },
+                    hardFor: {
+                      type: "string",
+                      enum: ["easy", "tricky", "hard"],
+                    },
+                    hardWhy: { type: "string" },
                   },
-                  required: ["label", "keywords", "required"],
+                  required: ["label", "keywords", "required", "hardFor", "hardWhy"],
                   additionalProperties: false,
                 },
               },
@@ -287,6 +294,10 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
         label: point.label,
         keywords,
         required: Math.min(Math.max(1, point.required ?? 1), keywords.length),
+        hardFor: ["easy", "tricky", "hard"].includes(point.hardFor)
+          ? point.hardFor
+          : null,
+        hardWhy: typeof point.hardWhy === "string" ? point.hardWhy : "",
       };
     });
 

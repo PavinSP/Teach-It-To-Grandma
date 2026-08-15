@@ -97,6 +97,10 @@ const DEFAULTS = {
   // cannot say which of those you reached.
   depthLadder: true,
 
+  // It predicts which points trip teachers up before a word is spoken,
+  // then the recap says where it was right and where you beat it.
+  difficultyPrediction: true,
+
   // #34 — several people teach the SAME stored lesson in turn, one board.
   // Same machine, sequential — the only multiplayer that honestly works
   // without deployment.

@@ -760,3 +760,31 @@ punctuation — so a genuine bracketed aside in speech survives.
 Worth noting what these transcripts also showed: **no `[DIRECTOR]` leaks
 and no `set_mood(...)` anywhere**, so session 33's fixes plus the model
 revert held.
+
+## Session 35 — Three from the idea files
+
+**Multilingual (#19).** A language chip beside the topic box switches the
+whole loop: lesson generated in German, her voice and hearing in German
+(`overrides.agent.language`), notes graded and written in German. The
+keyword clause in the prompt is the load-bearing part — German labels
+with English keywords would pin the coverage bar at zero all lesson and
+read as a broken feature rather than a language one. Verified end to end:
+German labels, German keywords, and a German verdict ("Du hast mir zwar
+Begriffe genannt, aber ich habe leider kein Bild im Kopf").
+
+**Depth ladder (complex ideas #10).** One number cannot separate naming a
+thing from knowing where it breaks. The grade now places the explanation
+on five rungs — named, defined, mechanism, applied, boundaries — each
+requiring the one below, with verbatim evidence and one sentence naming
+what the next rung needs. Tested on the distinction that matters: a
+fluent textbook definition of overfitting stops at "defined"; the same
+topic with a worked exam-memorising analogy and its failure cases reaches
+"applied".
+
+**Difficulty prediction (complex ideas #7).** Each generated point now
+carries how likely a teacher is to fumble it and the specific trap
+("the chain rule is conceptually abstract"). Predicted-hard points are
+flagged in the checklist before you speak, and the recap scores the
+prediction against what happened — "caught you out", "you beat it", or
+"as predicted". Backpropagation produced all three levels with distinct
+reasons, so it discriminates rather than labelling everything hard.
