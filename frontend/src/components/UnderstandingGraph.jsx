@@ -135,13 +135,33 @@ const FONT = {
 // exists, on a canvas that is never displayed.
 let measurer = null;
 
+function shortLabel(label, kind) {
+  if (kind !== "point") {
+    return label.length > 18 ? `${label.slice(0, 17)}…` : label;
+  }
+
+  const words = label.split(/\s+/);
+  let out = words[0] ?? "";
+
+  for (const word of words.slice(1)) {
+    if (`${out} ${word}`.length > 18) break;
+
+    out += ` ${word}`;
+  }
+
+  return out;
+}
+
 function measureChip(label, kind) {
   if (!measurer) measurer = document.createElement("canvas").getContext("2d");
 
   measurer.font = FONT[kind];
 
-  const text =
-    label.length > 22 ? `${label.slice(0, 21)}…` : label;
+  // A chip names an idea; it does not restate it. The sidebar already
+  // lists every point in full a few centimetres away, so truncating a
+  // sentence to "Neurons process weigh…" cost readability and bought
+  // nothing. Points keep their first few words, keywords are short already.
+  const text = shortLabel(label, kind);
   const padX = kind === "keyword" ? 8 : 12;
 
   return {

@@ -1301,6 +1301,126 @@ Respond with JSON only:
   }
 });
 
+// Turns a photo into avatar-builder SETTINGS — never into an image. The
+// model only chooses which of the existing dials best match, so the result is
+// always the same Open Peeps art the manual builder already produces and can
+// never come back off-style.
+//
+// The photo is used for exactly one request and then dropped: never written
+// to disk, never logged, never attached to a lesson or a teach-off.
+app.post("/api/face", rateLimit, async (req, res) => {
+  const { image, options } = req.body ?? {};
+
+  if (
+    typeof image !== "string" ||
+    !/^data:image\/(png|jpeg|webp);base64,/.test(image)
+  ) {
+    return res
+      .status(400)
+      .json({ error: "Expected { image } as a PNG, JPEG or WebP data URL." });
+  }
+
+  // express.json caps the body at 1mb. Catching it here leaves room for the
+  // option lists and says something the client can act on, rather than
+  // failing inside the body parser with nothing useful attached.
+  if (image.length > 700000) {
+    return res
+      .status(413)
+      .json({ error: "That photo is too large — resize it and try again." });
+  }
+
+  // The enums are built from the client's own option lists rather than a copy
+  // kept here, so this schema cannot drift away from the builder. A value the
+  // builder doesn't know is therefore unrepresentable, not merely unlikely.
+  const DIALS = ["skin", "head", "facialHair", "accessories", "face"];
+  const lists = {};
+
+  for (const dial of DIALS) {
+    const values = options?.[dial];
+
+    if (
+      !Array.isArray(values) ||
+      values.length === 0 ||
+      values.length > 40 ||
+      !values.every((v) => typeof v === "string" && v.length <= 40)
+    ) {
+      return res
+        .status(400)
+        .json({ error: `Expected options.${dial} as a list of option values.` });
+    }
+
+    lists[dial] = values;
+  }
+
+  const prompt = `Someone is building a cartoon avatar of themselves in an illustrated style, and has supplied a photo to start from.
+
+For each setting below, choose the value from its own list that best matches the photo, so the finished cartoon resembles them. This is a styling choice for that person's own avatar — pick the closest available option rather than describing or identifying anyone.
+
+skin — skin tone swatch: ${lists.skin.join(", ")}
+head — hair style, or a head covering: ${lists.head.join(", ")}
+facialHair — an empty string means none: ${lists.facialHair.join(", ")}
+accessories — glasses; an empty string means none: ${lists.accessories.join(", ")}
+face — expression: ${lists.face.join(", ")}
+
+Where something is not visible, or you are unsure, choose the most neutral option in that list rather than guessing. Never return a value that is not in its list.`;
+
+  try {
+    const completion = await client.chat.completions.create({
+      model: MODEL,
+      max_completion_tokens: 200,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: image } },
+          ],
+        },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "avatar",
+          schema: {
+            type: "object",
+            properties: Object.fromEntries(
+              DIALS.map((dial) => [dial, { type: "string", enum: lists[dial] }])
+            ),
+            required: DIALS,
+            additionalProperties: false,
+          },
+        },
+      },
+    });
+
+    const raw = completion.choices?.[0]?.message?.content;
+
+    if (!raw) {
+      throw new Error("Model returned no content");
+    }
+
+    const parsed = JSON.parse(raw);
+
+    // The schema should already guarantee this, but the avatar is written to
+    // the student's saved profile — an unrecognised value there would render
+    // a broken face until they cleared their storage.
+    for (const dial of DIALS) {
+      if (!lists[dial].includes(parsed[dial])) {
+        throw new Error(`Model returned an unknown value for ${dial}`);
+      }
+    }
+
+    res.json({
+      params: Object.fromEntries(DIALS.map((dial) => [dial, parsed[dial]])),
+    });
+  } catch (err) {
+    // Deliberately does not log the error object — on a vision call it can
+    // carry the request body, and that body is someone's photograph.
+    console.error("Face matching failed:", err.message);
+    res.status(502).json({ error: "Could not read that photo." });
+  }
+});
+
 // ---------------------------------------------------------------------
 // Teach-off (#34): several people teach the SAME stored lesson in turn.
 // The lesson generator is non-deterministic, so the second player must

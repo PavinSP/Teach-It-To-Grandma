@@ -258,10 +258,6 @@ export function Session({
                   )}
                 </div>
               ) : (
-              <>
-              {/* The machine's own view of the lesson, above the words that
-                  produced it. Everything it draws is derived from the
-                  checklist and the coverage pass App already computes. */}
               <UnderstandingGraph
                 points={selectedTopic.points}
                 checks={selectedTopic.checks}
@@ -271,61 +267,6 @@ export function Session({
                 waitingLabel={tt("waitingForSignal")}
               />
 
-              <div className="transcript">
-                {messages.length === 0 && (
-                  <div className="transcript-message grandma-message">
-                    <div className="speaker">{whoUpper}</div>
-
-                    <p>
-                      {tt("ready", { topic: selectedTopic.name })}
-                    </p>
-                  </div>
-                )}
-
-                {messages.map((message, index) => {
-                  if (message.source === "system") {
-                    return (
-                      <div
-                        className="system-message"
-                        key={`${index}-${message.message}`}
-                      >
-                        {message.message}
-                      </div>
-                    );
-                  }
-
-                  const role =
-                    message.source === "user"
-                      ? (you?.name ?? tt("you")).toUpperCase()
-                      : whoUpper;
-
-                  const isStudent = message.source === "user";
-
-                  return (
-                    <div
-                      className={`transcript-message ${isStudent
-                        ? "user-message"
-                        : "grandma-message"
-                        }`}
-                      key={`${index}-${message.message}`}
-                    >
-                      <div className="speaker">
-                        {isStudent && you && (
-                          <img
-                            className="speaker-face"
-                            src={you.src}
-                            alt=""
-                          />
-                        )}
-                        {role}
-                      </div>
-                      <p>{message.message}</p>
-                    </div>
-                  );
-                })}
-                <div ref={transcriptEndRef} />
-              </div>
-              </>
               )}
               {error && (
                 <div className="error-message">
@@ -450,6 +391,63 @@ export function Session({
 
           {!voiceOnlyActive && (
           <aside className="progress">
+            {/* The words that produced the graph, beside it rather than
+                beneath it — the centre column belongs to the instrument. */}
+              <div className="transcript">
+                {messages.length === 0 && (
+                  <div className="transcript-message grandma-message">
+                    <div className="speaker">{whoUpper}</div>
+
+                    <p>
+                      {tt("ready", { topic: selectedTopic.name })}
+                    </p>
+                  </div>
+                )}
+
+                {messages.map((message, index) => {
+                  if (message.source === "system") {
+                    return (
+                      <div
+                        className="system-message"
+                        key={`${index}-${message.message}`}
+                      >
+                        {message.message}
+                      </div>
+                    );
+                  }
+
+                  const role =
+                    message.source === "user"
+                      ? (you?.name ?? tt("you")).toUpperCase()
+                      : whoUpper;
+
+                  const isStudent = message.source === "user";
+
+                  return (
+                    <div
+                      className={`transcript-message ${isStudent
+                        ? "user-message"
+                        : "grandma-message"
+                        }`}
+                      key={`${index}-${message.message}`}
+                    >
+                      <div className="speaker">
+                        {isStudent && you && (
+                          <img
+                            className="speaker-face"
+                            src={you.src}
+                            alt=""
+                          />
+                        )}
+                        {role}
+                      </div>
+                      <p>{message.message}</p>
+                    </div>
+                  );
+                })}
+                <div ref={transcriptEndRef} />
+              </div>
+
             <div className="progress-title">
               {tt("pointsMentioned")}
             </div>

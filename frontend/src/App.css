@@ -3667,3 +3667,50 @@ details.misconceptions-panel .misconceptions-list {
   line-height: 1.5;
   color: var(--text-muted, #8a8176);
 }
+
+/* =========================================================================
+   Session layout: the graph owns the centre
+   =========================================================================
+   The transcript moved into the right rail beside the graph rather than
+   underneath it. Stacked, the two shared one column and squeezed each
+   other — you could see one of the character's messages, cut off, above a
+   graph that had no room to breathe. Side by side, each gets a column.
+   ========================================================================= */
+
+.graph-wrap {
+  height: auto;
+  flex: 1;
+  min-height: 260px;
+  margin-bottom: 0;
+}
+
+/* The centre column is the instrument: graph on top, controls beneath. */
+.conversation > div:first-child {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* The right rail scrolls as one, with the transcript given a real share of
+   it rather than whatever the graph left over. */
+.progress .transcript {
+  max-height: 42vh;
+  min-height: 200px;
+  margin-bottom: 20px;
+  padding-right: 6px;
+}
+
+@media (max-width: 900px) {
+  /* Stacked again on a narrow screen, where side-by-side is not on offer.
+     The graph shrinks first: it is the part that still reads at a glance. */
+  .graph-wrap {
+    height: 220px;
+    flex: none;
+    min-height: 0;
+  }
+
+  .progress .transcript {
+    max-height: 46dvh;
+    min-height: 0;
+  }
+}
