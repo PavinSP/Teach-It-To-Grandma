@@ -654,3 +654,34 @@ more, following you, impressed) and the neutral `curious` state has no
 label at all, since there is nothing to report until the explanation
 gives her a reaction. Verified across six states that exactly one correct
 line shows, and that no mood label contains an activity word.
+
+## Session 31 — Three from the ideas files: jury, confidence gap, blind spots
+
+Working from `ChatGPT-Change Claude Email Antigravity-*.md` and `complex
+ideas.md` (note: that filename has a trailing space, which is why `*.md`
+never matched it), picked three that reinforce the doc's own rule — every
+feature must strengthen "teaching is a way of measuring understanding".
+
+**AI Jury** (their #2 shortlist pick). Four characters judge ONE
+explanation, each by their own `gradingStance` — which already existed
+per character, so the feature was mostly wiring. Judged in parallel via
+`Promise.allSettled`, so one juror failing doesn't lose the panel.
+Measured on a real explanation: Grandma 85, Mia 55, Victor 25, Marcus 15
+— a **spread of 70 on identical words**. The spread is the finding, not
+the average, and the UI says so: a wide gap means it worked for one kind
+of listener and failed for another. Convened by a button, never
+automatically — it costs one call per juror.
+
+**Confidence gap** (idea #8). Asked once, before the mic, and only while
+the transcript is empty: a prediction is only interesting if it was made
+in ignorance of the result. The recap puts predicted next to measured.
+
+**Blind spots** (idea #26, "unknown unknowns"). One more field on the
+grade we already run: ground the student never went near, as distinct
+from points they covered badly. Phrased as the thing itself ("where the
+training data comes from") rather than as criticism.
+
+Deliberately not built from those files: the live Understanding Graph
+(#1) — genuinely their best idea, but a live-updating concept graph
+during a voice call is a feature-sized risk, and the jury delivers a
+comparable "the AI is modelling this" moment for a fraction of it.

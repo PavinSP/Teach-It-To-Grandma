@@ -79,6 +79,16 @@ const DEFAULTS = {
   // and cross-faded — never a src swap, which would flicker.
   characterMouth: true,
 
+  // Four listeners judge the same explanation by their own standards.
+  // The gap between them is the finding, not the average.
+  aiJury: true,
+
+  // Predict how well you know it before teaching; compare afterwards.
+  confidenceGap: true,
+
+  // Ground the explanation never went near, as opposed to covered badly.
+  blindSpots: true,
+
   // #34 — several people teach the SAME stored lesson in turn, one board.
   // Same machine, sequential — the only multiplayer that honestly works
   // without deployment.

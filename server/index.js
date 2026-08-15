@@ -353,6 +353,8 @@ Here is what the listener said during the lesson:
 ${listenerText || "(the listener said nothing)"}
 ---
 
+In "blindSpots", name up to 3 things that genuinely matter for understanding this topic which the student never touched at all — not points they explained badly, but ground they never went near. Phrase each as the thing itself ("where the training data comes from"), not as criticism. Empty list if they covered the ground.
+
 In "stumbles", list up to 3 moments where the listener had to stop and ask what something meant or how it worked: copy the listener's question VERBATIM into "grandmaQuote", and put the single word or short phrase they were stuck on into "aboutTerm". Only real stops count — ordinary curiosity is not a stumble. Empty list if there were none.
 ${
   ambushedMisconception
@@ -373,7 +375,8 @@ Respond with JSON only, in exactly this shape:
   },
   "strongestMoment": { "quote": "<the student's exact sentence, or empty>", "why": "<one line, or empty>" },
   "practiceThis": "<one concrete action>",
-  "stumbles": [ { "grandmaQuote": "<the listener's exact question>", "aboutTerm": "<the word they were stuck on>" } ]${
+  "stumbles": [ { "grandmaQuote": "<the listener's exact question>", "aboutTerm": "<the word they were stuck on>" } ],
+  "blindSpots": [ "<something they never went near>" ]${
     ambushedMisconception
       ? `,\n  "misconceptionHandling": { "noticed": true or false, "corrected": true or false, "quote": "<their exact correcting words, or empty>" }`
       : ""
@@ -455,6 +458,7 @@ Respond with JSON only, in exactly this shape:
                 additionalProperties: false,
               },
               practiceThis: { type: "string" },
+              blindSpots: { type: "array", items: { type: "string" } },
               stumbles: {
                 type: "array",
                 items: {
@@ -489,6 +493,7 @@ Respond with JSON only, in exactly this shape:
               "strongestMoment",
               "practiceThis",
               "stumbles",
+              "blindSpots",
               ...(ambushedMisconception ? ["misconceptionHandling"] : []),
             ],
             additionalProperties: false,
@@ -536,6 +541,10 @@ Respond with JSON only, in exactly this shape:
       ) {
         graded.strongestMoment = { quote: "", why: "" };
       }
+
+      graded.blindSpots = (graded.blindSpots ?? [])
+        .filter((b) => typeof b === "string" && b.trim())
+        .slice(0, 3);
 
       graded.stumbles = (graded.stumbles ?? [])
         .filter(
@@ -839,6 +848,119 @@ Respond with JSON only, in exactly this shape:
   } catch (err) {
     console.error("Challenge generation failed:", err);
     res.status(502).json({ error: "Could not build a challenge." });
+  }
+});
+
+// The jury: four listeners judge ONE explanation through their own
+// lenses, in parallel. Not four opinions of the same thing — the Expert
+// marks precision, the Child marks whether it was made tangible, and a
+// wide spread between them is itself the finding.
+app.post("/api/jury", rateLimit, async (req, res) => {
+  const { topicName, points, transcript, jurors } = req.body ?? {};
+
+  if (
+    !topicName ||
+    !Array.isArray(points) ||
+    !Array.isArray(transcript) ||
+    !Array.isArray(jurors) ||
+    jurors.length === 0
+  ) {
+    return res
+      .status(400)
+      .json({ error: "Expected { topicName, points[], transcript[], jurors[] }." });
+  }
+
+  const studentText = transcript
+    .filter((line) => line.source === "user" && line.meta !== "prompt")
+    .map((line) => line.message)
+    .filter(Boolean)
+    .join("\n");
+
+  if (!studentText.trim()) {
+    return res.status(422).json({ error: "There's nothing to judge yet." });
+  }
+
+  const pointList = points.map((p, i) => `${i + 1}. ${p}`).join("\n");
+
+  const judge = async (juror) => {
+    const prompt = `A student explained "${topicName}" to ${juror.audience}.
+
+Here is everything the student said:
+---
+${studentText}
+---
+
+The four things worth getting across:
+${pointList}
+
+You are ${juror.name}. Judge this explanation ONLY as you would, by your own standard: ${juror.gradingStance}
+
+Give "score" out of 100 by that standard alone — do not moderate toward what another kind of listener would say. Then one sentence in your own voice saying what decided it, and the single word or short phrase that most defines your verdict as "headline".`;
+
+    const completion = await client.chat.completions.create({
+      model: MODEL,
+      max_completion_tokens: 300,
+      messages: [{ role: "user", content: prompt }],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "verdict",
+          schema: {
+            type: "object",
+            properties: {
+              score: { type: "number" },
+              headline: { type: "string" },
+              verdict: { type: "string" },
+            },
+            required: ["score", "headline", "verdict"],
+            additionalProperties: false,
+          },
+        },
+      },
+    });
+
+    const raw = completion.choices?.[0]?.message?.content;
+    const parsed = JSON.parse(raw);
+
+    return {
+      id: juror.id,
+      name: juror.name,
+      score: Math.max(0, Math.min(100, Math.round(parsed.score))),
+      headline: parsed.headline,
+      verdict: parsed.verdict,
+    };
+  };
+
+  try {
+    // In parallel: four sequential calls would make the panel feel slow
+    // on a screen the student is already waiting on.
+    const settled = await Promise.allSettled(
+      jurors.slice(0, 6).map((j) => judge(j))
+    );
+
+    const verdicts = settled
+      .filter((r) => r.status === "fulfilled")
+      .map((r) => r.value);
+
+    if (verdicts.length === 0) {
+      throw new Error("Every juror failed");
+    }
+
+    // The spread is the point: agreement means the explanation worked for
+    // everyone, a wide gap means it only worked for some kinds of listener.
+    const scores = verdicts.map((v) => v.score);
+    const spread = Math.max(...scores) - Math.min(...scores);
+
+    res.json({
+      verdicts,
+      average: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
+      spread,
+      toughest: verdicts.reduce((a, b) => (b.score < a.score ? b : a)).name,
+      kindest: verdicts.reduce((a, b) => (b.score > a.score ? b : a)).name,
+    });
+  } catch (err) {
+    console.error("Jury failed:", err);
+    res.status(502).json({ error: "The jury couldn't reach a verdict." });
   }
 });
 

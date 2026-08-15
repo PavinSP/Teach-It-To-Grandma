@@ -199,6 +199,12 @@ function App() {
   const [paused, setPaused] = useState(false);
   // 0 = mouth closed, 1 = open. Driven by her real output volume.
   const [mouthOpen, setMouthOpen] = useState(0);
+  // What the student predicted before teaching, 0-100, or null if they
+  // skipped the question. Snapshotted so a refresh keeps the comparison.
+  const [confidence, setConfidence] = useState(snap?.confidence ?? null);
+  const [jury, setJury] = useState(snap?.jury ?? null);
+  const [isConvening, setIsConvening] = useState(false);
+  const [juryError, setJuryError] = useState("");
   // #46 (student half) — who is doing the teaching.
   const [you, setYou] = useState(() =>
     FEATURES.youCharacter ? loadYou() : null
@@ -283,6 +289,8 @@ function App() {
       mirrorSubmitted,
       voiceOnly,
       topicInput,
+      confidence,
+      jury,
       characterId: character.id,
       lessonId: lessonIdRef.current,
       committedId: committedRef.current,
@@ -309,6 +317,8 @@ function App() {
     voiceOnly,
     topicInput,
     character,
+    confidence,
+    jury,
   ]);
 
   // If the tab died while grading was in flight, the recap comes back with
@@ -409,6 +419,58 @@ function App() {
 
   // Everything the explain-back feature accumulates. Cleared wherever a
   // lesson ends, so the next one never inherits the last one's recall.
+  const resetJury = () => {
+    setJury(null);
+    setIsConvening(false);
+    setJuryError("");
+  };
+
+  // Convening costs one call per juror, so it is asked for, never automatic.
+  const convene = async () => {
+    if (isConvening || jury) {
+      return;
+    }
+
+    setIsConvening(true);
+    setJuryError("");
+
+    try {
+      const response = await fetch(`${GRADING_API}/api/jury`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topicName: selectedTopic.name,
+          points: selectedTopic.points,
+          transcript: messages.filter(
+            (m) => m.meta !== "prompt" && m.source !== "system"
+          ),
+          jurors: CHARACTERS.filter((c) =>
+            ["grandma", "child", "expert", "manager"].includes(c.id)
+          ).map((c) => ({
+            id: c.id,
+            name: c.shortName,
+            audience: c.audience,
+            gradingStance: c.gradingStance,
+          })),
+        }),
+      });
+
+      const body = await response.json();
+
+      if (!response.ok) {
+        setJuryError(body.error || "The jury couldn't reach a verdict.");
+        return;
+      }
+
+      setJury(body);
+    } catch (err) {
+      console.error("Jury failed:", err);
+      setJuryError("Could not reach the server.");
+    } finally {
+      setIsConvening(false);
+    }
+  };
+
   const resetMood = () => {
     setMood("curious");
     lastToolMoodAt.current = 0;
@@ -1039,6 +1101,8 @@ function App() {
       resetAmbush();
       resetMirror();
       resetMood();
+      resetJury();
+      setConfidence(null);
     } catch (err) {
       console.error("Could not build challenge:", err);
       setChallengeError("Could not put together a challenge right now.");
@@ -1281,6 +1345,8 @@ function App() {
       resetTeachoff();
       resetMirror();
       resetMood();
+      resetJury();
+      setConfidence(null);
       resetProgression();
     } catch (err) {
       console.error("Could not build lesson:", err);
@@ -1754,6 +1820,38 @@ function App() {
                 ))}
               </ul>
 
+              {FEATURES.confidenceGap &&
+                confidence !== null &&
+                lessonXp.score !== null && (
+                  <div className="confidence-compare">
+                    <span className="cc-cell">
+                      <span className="cc-label">You predicted</span>
+                      <span className="cc-value">{confidence}</span>
+                    </span>
+
+                    <span className="cc-cell">
+                      <span className="cc-label">Measured</span>
+                      <span className="cc-value">{lessonXp.score}</span>
+                    </span>
+
+                    <span className="cc-verdict">
+                      {(() => {
+                        const gap = confidence - lessonXp.score;
+
+                        if (gap >= 20) {
+                          return `You were ${gap} points more confident than the explanation turned out to be.`;
+                        }
+
+                        if (gap <= -20) {
+                          return `You sold yourself short by ${-gap} points.`;
+                        }
+
+                        return "You knew roughly where you stood.";
+                      })()}
+                    </span>
+                  </div>
+                )}
+
               <div className="xp-total">
                 <strong>+{lessonXp.total} XP</strong>
                 {profileXp !== null && (
@@ -1854,6 +1952,80 @@ function App() {
                   ○ {who} walked away still believing it. That false idea
                   went unchallenged.
                 </p>
+              )}
+            </section>
+          )}
+
+          {FEATURES.blindSpots && aiGrade?.blindSpots?.length > 0 && (
+            <section className="recap-card">
+              <div className="recap-icon">🕳️</div>
+
+              <h2>What you never went near</h2>
+
+              <p className="recap-sub">
+                Not explained badly — never mentioned at all.
+              </p>
+
+              <ul className="blindspot-list">
+                {aiGrade.blindSpots.map((b) => (
+                  <li key={b}>{b}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {FEATURES.aiJury && (
+            <section className="recap-card jury-card">
+              <div className="recap-icon">🧑‍⚖️</div>
+
+              <h2>The jury</h2>
+
+              {!jury ? (
+                <>
+                  <p className="recap-sub">
+                    Four listeners, four standards. The same explanation can
+                    land for one and fail for another.
+                  </p>
+
+                  <button
+                    className="challenge-button"
+                    onClick={convene}
+                    disabled={isConvening}
+                  >
+                    {isConvening ? "The jury is deliberating…" : "Convene the jury →"}
+                  </button>
+
+                  {juryError && <p className="error-message">{juryError}</p>}
+                </>
+              ) : (
+                <>
+                  <div className="jury-rows">
+                    {jury.verdicts.map((v) => (
+                      <div className="juror" key={v.id}>
+                        <span className="juror-name">{v.name}</span>
+
+                        <span className="juror-bar">
+                          <span
+                            className={`juror-fill band-${bandForScore(v.score)}`}
+                            style={{ width: `${v.score}%` }}
+                          />
+                        </span>
+
+                        <span className="juror-score">{v.score}</span>
+
+                        <span className="juror-said">
+                          <strong>{v.headline}</strong> — {v.verdict}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="jury-spread">
+                    {jury.spread >= 30
+                      ? `${jury.spread} points between ${jury.kindest} and ${jury.toughest}. It worked for one of them and not the other — that gap is the thing worth fixing.`
+                      : `Only ${jury.spread} points apart. It landed about the same for all four, which is the hard part.`}
+                  </p>
+                </>
               )}
             </section>
           )}
@@ -2313,6 +2485,8 @@ function App() {
       resetTeachoff();
       resetMirror();
       resetMood();
+      resetJury();
+      setConfidence(null);
       resetProgression();
             }}      >
             ← Teach something else
@@ -2588,6 +2762,34 @@ function App() {
             </div>
 
             <div className="mic-area">
+              {FEATURES.confidenceGap &&
+                confidence === null &&
+                messages.length === 0 && (
+                  <div className="confidence-ask">
+                    <div className="confidence-question">
+                      Before you start — how well do you think you know{" "}
+                      {selectedTopic.name}?
+                    </div>
+
+                    <div className="confidence-options">
+                      {[
+                        [30, "😕", "Shaky"],
+                        [60, "🙂", "Pretty well"],
+                        [90, "😎", "I could teach it"],
+                      ].map(([value, icon, label]) => (
+                        <button
+                          key={value}
+                          className="confidence-option"
+                          onClick={() => setConfidence(value)}
+                        >
+                          <span className="confidence-icon">{icon}</span>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
               {!isConnected ? (
                 <>
                   <button
