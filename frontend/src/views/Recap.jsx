@@ -141,7 +141,7 @@ export function Recap({
       jury?.verdicts?.find((v) => v.id === openJuror) ?? null;
 
     const delivery = FEATURES.deliveryAnalysis
-      ? analyseDelivery(recap.userMessages, lessonDurationMs)
+      ? analyseDelivery(recap.userMessages, lessonDurationMs, language)
       : null;
     const readings = deliveryReadings(delivery);
 

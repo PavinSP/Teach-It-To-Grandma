@@ -599,6 +599,7 @@ function App() {
             audience: c.audience,
             gradingStance: c.gradingStance,
           })),
+          ...(FEATURES.multilingual ? { language } : {}),
         }),
       });
 
@@ -1137,6 +1138,7 @@ function App() {
           // If the listener already said it out loud, analyse those words.
           grandmaRecall: recallText || undefined,
           ...(FEATURES.characterPicker ? { characterName: who } : {}),
+          ...(FEATURES.multilingual ? { language } : {}),
         }),
       });
 
@@ -1269,6 +1271,7 @@ function App() {
           unexplainedTerms: explainBack?.unexplainedTerms ?? [],
           priorWeakness: null,
           ...(FEATURES.characterPicker ? { characterName: who } : {}),
+          ...(FEATURES.multilingual ? { language } : {}),
         }),
       });
 
@@ -1329,6 +1332,7 @@ function App() {
           misconceptions: selectedTopic.misconceptions,
           errorCount: 2,
           ...(FEATURES.characterPicker ? { characterName: who } : {}),
+          ...(FEATURES.multilingual ? { language } : {}),
         }),
       });
 

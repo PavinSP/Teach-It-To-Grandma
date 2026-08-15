@@ -42,6 +42,15 @@ export const MOOD_LABEL = {
 
 // Checked in order, so the strongest signal wins: being lost outranks
 // polite interest, and genuine delight outranks a mild "I see".
+//
+// Both languages live in the same buckets rather than behind a switch. This
+// is the ONLY mood source (the set_mood tool is not registered), so an
+// English-only list left the avatar frozen on `curious` for an entire German
+// lesson — the feature silently not running rather than running badly. One
+// merged list also survives switching language mid-session.
+//
+// Order does real work across languages too: "ich verstehe nicht" has to be
+// caught by `confused` before `understanding` sees "ich verstehe".
 const MOOD_HINTS = [
   [
     "confused",
@@ -65,6 +74,21 @@ const MOOD_HINTS = [
       "never explained",
       "you didn't say",
       "what exactly",
+      // German
+      "ich verstehe nicht",
+      "ich verstehe das nicht",
+      "verstehe ich nicht",
+      "was bedeutet",
+      "was heißt",
+      "was meinst du",
+      "was ist ein",
+      "was ist das",
+      "ich bin verwirrt",
+      "verwirrend",
+      "ich komme nicht mit",
+      "wie bitte",
+      "noch mal langsam",
+      "keine ahnung",
     ],
   ],
   [
@@ -82,6 +106,16 @@ const MOOD_HINTS = [
       "brilliant",
       "that's a good way",
       "lovely",
+      // German
+      "wie clever",
+      "wunderbar",
+      "das ist klug",
+      "jetzt verstehe ich es",
+      "wie interessant",
+      "gut gemacht",
+      "großartig",
+      "schön erklärt",
+      "sehr schön",
     ],
   ],
   [
@@ -102,6 +136,17 @@ const MOOD_HINTS = [
       /\bso\b[^.?!]{0,60}\bis like\b/,
       /\b(sort|kind) of like\b/,
       /\bis that like\b/,
+      // German
+      "ach so",
+      "aha",
+      "ich verstehe",
+      "also meinst du",
+      "das ergibt sinn",
+      "verstanden",
+      "alles klar",
+      "jetzt ist es klarer",
+      /\balso\b[^.?!]{0,60}\bist wie\b/,
+      /\bist das wie\b/,
     ],
   ],
   [
@@ -113,6 +158,14 @@ const MOOD_HINTS = [
       "really?",
       "how so",
       "keep going",
+      // German
+      "erzähl mir mehr",
+      "und dann",
+      "was passiert",
+      "wirklich?",
+      "wie denn",
+      "mach weiter",
+      "und weiter",
     ],
   ],
 ];

@@ -27,15 +27,50 @@ function isQuestionAbout(message, term) {
   return text.includes("?") && text.includes(term);
 }
 
+// Three sources, because any one of them alone has a hole.
+//
+// The keyword lists are the coverage matcher's vocabulary, and they miss
+// the obvious case: teaching "Backpropagation", the word backpropagation
+// is the TOPIC, not a keyword inside one of the four points. The lesson
+// was entirely about a word the panel could not see.
+//
+// The topic's own name closes that. And whatever the character puts in
+// quotes closes the rest — when she asks what "backpropagation" actually
+// means, she is naming the problem herself, which is better evidence than
+// any list decided before the lesson started.
+function vocabulary(topic, messages) {
+  const terms = new Set();
+  const add = (word) => {
+    const clean = String(word ?? "").toLowerCase().trim();
+
+    if (clean.length >= 4) terms.add(clean);
+  };
+
+  for (const check of topic?.checks ?? []) {
+    for (const keyword of check.keywords ?? []) add(keyword);
+  }
+
+  // The topic itself, whole and word by word: "Neural Networks" should
+  // catch both the phrase and "networks" on its own.
+  add(topic?.name);
+
+  for (const word of String(topic?.name ?? "").split(/\s+/)) add(word);
+
+  for (const message of messages ?? []) {
+    if (message.source === "user" || message.source === "system") continue;
+
+    for (const [, quoted] of String(message.message ?? "").matchAll(
+      /["“']([^"”']{4,30})["”']/g
+    )) {
+      add(quoted);
+    }
+  }
+
+  return [...terms];
+}
+
 export function buildDebt(topic, messages) {
-  const terms = [
-    ...new Set(
-      (topic?.checks ?? [])
-        .flatMap((check) => check.keywords ?? [])
-        .map((keyword) => String(keyword).toLowerCase().trim())
-        .filter(Boolean)
-    ),
-  ];
+  const terms = vocabulary(topic, messages);
 
   // Ordered turns, so "after she asked" means something.
   const turns = (messages ?? []).filter((m) => m.source !== "system");
@@ -48,26 +83,34 @@ export function buildDebt(topic, messages) {
 
       turns.forEach((message, i) => {
         const text = (message.message || "").toLowerCase();
+        const isStudent = message.source === "user" && message.meta !== "prompt";
+
+        // Clearing does NOT require the word to come back. Explaining
+        // "backpropagation" well means saying "it walks the error backwards
+        // and nudges each weight" — the jargon is the thing you are
+        // replacing, so demanding you repeat it to get credit had the rule
+        // exactly backwards. She asked about this term; the substantial
+        // answer that follows is the answer to it.
+        if (
+          isStudent &&
+          queriedAt >= 0 &&
+          i > queriedAt &&
+          clearedAt < 0 &&
+          text.split(/\s+/).length >= SUBSTANTIAL_REPLY
+        ) {
+          clearedAt = i;
+        }
 
         if (!text.includes(term)) return;
 
-        if (message.source === "user" && message.meta !== "prompt") {
+        if (isStudent) {
           if (usedAt < 0) usedAt = i;
-
-          if (
-            queriedAt >= 0 &&
-            i > queriedAt &&
-            clearedAt < 0 &&
-            text.split(/\s+/).length >= SUBSTANTIAL_REPLY
-          ) {
-            clearedAt = i;
-          }
 
           return;
         }
 
-        if (message.source !== "user" && isQuestionAbout(message, term)) {
-          if (queriedAt < 0) queriedAt = i;
+        if (isQuestionAbout(message, term) && queriedAt < 0) {
+          queriedAt = i;
         }
       });
 

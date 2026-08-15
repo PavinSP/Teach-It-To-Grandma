@@ -373,6 +373,10 @@ app.post("/api/grade", rateLimit, async (req, res) => {
     req.body ?? {};
   const language = req.body?.language ?? "en";
 
+  if (!languageName(language)) {
+    return res.status(400).json({ error: "Unsupported language." });
+  }
+
   if (!topicName || !Array.isArray(points) || !Array.isArray(transcript)) {
     return res
       .status(400)
@@ -789,6 +793,12 @@ Respond with JSON only, in exactly this shape:
 app.post("/api/explainback", rateLimit, async (req, res) => {
   const { topicName, points, transcript, grandmaRecall, characterName } =
     req.body ?? {};
+  const language = req.body?.language ?? "en";
+
+  if (!languageName(language)) {
+    return res.status(400).json({ error: "Unsupported language." });
+  }
+
   // Whoever is listening, the recall stays a closed world: they may only
   // use the student's own words. The Expert "knows things", but his recall
   // must not — otherwise the honesty invariant (the gap IS the product)
@@ -869,7 +879,7 @@ ${pointList}
 
 Put the words you used for it in "grandmaSaid". In "gap", name what they left out, in one short line — leave it empty when the point is correct.
 
-Finally, in "unexplainedTerms", list every word the student used but never explained to you. Copy those words exactly as the student said them. If they explained everything, return an empty list.`;
+Finally, in "unexplainedTerms", list every word the student used but never explained to you. Copy those words exactly as the student said them. If they explained everything, return an empty list.${inLanguage(language)}`;
 
   try {
     const completion = await client.chat.completions.create({
@@ -948,6 +958,12 @@ app.post("/api/challenge", rateLimit, async (req, res) => {
     priorWeakness,
     characterName,
   } = req.body ?? {};
+  const language = req.body?.language ?? "en";
+
+  if (!languageName(language)) {
+    return res.status(400).json({ error: "Unsupported language." });
+  }
+
   const coach = characterName || "Grandma";
 
   if (!topicName || !Array.isArray(points) || !Array.isArray(transcript)) {
@@ -1001,7 +1017,7 @@ Respond with JSON only, in exactly this shape:
   "instruction": "<one sentence telling the student what to do differently this time>",
   "bannedTerms": ["<word actually used above>", "..."],
   "successCriterion": "<one sentence describing what success on the re-run looks like>"
-}`;
+}${inLanguage(language)}`;
 
   try {
     const completion = await client.chat.completions.create({
@@ -1069,6 +1085,12 @@ Respond with JSON only, in exactly this shape:
 // wide spread between them is itself the finding.
 app.post("/api/jury", rateLimit, async (req, res) => {
   const { topicName, points, transcript, jurors } = req.body ?? {};
+  const language = req.body?.language ?? "en";
+
+  if (!languageName(language)) {
+    return res.status(400).json({ error: "Unsupported language." });
+  }
+
 
   if (
     !topicName ||
@@ -1107,7 +1129,7 @@ ${pointList}
 
 You are ${juror.name}. Judge this explanation ONLY as you would, by your own standard: ${juror.gradingStance}
 
-Give "score" out of 100 by that standard alone — do not moderate toward what another kind of listener would say. Then one sentence in your own voice saying what decided it, and the single word or short phrase that most defines your verdict as "headline".`;
+Give "score" out of 100 by that standard alone — do not moderate toward what another kind of listener would say. Then one sentence in your own voice saying what decided it, and the single word or short phrase that most defines your verdict as "headline".${inLanguage(language)}`;
 
     const completion = await client.chat.completions.create({
       // Four jurors have to stay four distinct people, not one voice with
@@ -1192,6 +1214,12 @@ app.post("/api/mirror", rateLimit, async (req, res) => {
     characterName,
     errorCount,
   } = req.body ?? {};
+  const language = req.body?.language ?? "en";
+
+  if (!languageName(language)) {
+    return res.status(400).json({ error: "Unsupported language." });
+  }
+
 
   if (!topicName || !Array.isArray(points) || !Array.isArray(transcript)) {
     return res
@@ -1239,7 +1267,7 @@ Respond with JSON only:
   "claims": [
     { "id": "c1", "text": "<the claim>", "isWrong": true or false, "why": "<one line>" }
   ]
-}`;
+}${inLanguage(language)}`;
 
   try {
     const completion = await client.chat.completions.create({

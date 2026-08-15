@@ -11,21 +11,43 @@
 // Sounds that fill a gap while the next thought arrives. Kept separate from
 // hedges below so a lesson can be fluent and uncommitted, or halting and
 // definite, without the two collapsing into one number.
-const FILLERS = [
-  "um", "umm", "uh", "uhh", "er", "erm", "ah", "mm", "mmm", "hmm",
-  "like", "basically", "actually", "literally", "obviously", "right",
-  "you know", "i mean", "so yeah",
-];
+// Kept per-language rather than merged into one list. German "also" is a
+// filler; English "also" is an ordinary connective, and a shared list would
+// count it every time an English speaker used it properly.
+//
+// Without the German half this card reported zero fillers and zero hedges on
+// every German lesson, then printed prose approving of it — the measurement
+// silently not running rather than running badly.
+const FILLERS = {
+  en: [
+    "um", "umm", "uh", "uhh", "er", "erm", "ah", "mm", "mmm", "hmm",
+    "like", "basically", "actually", "literally", "obviously", "right",
+    "you know", "i mean", "so yeah",
+  ],
+  de: [
+    "äh", "ähm", "ah", "ähh", "hm", "hmm", "mhm", "öh", "öhm",
+    "also", "halt", "quasi", "eben", "ja", "so", "genau", "irgendwie",
+    "sozusagen", "weißt du", "ich mein",
+  ],
+};
 
 // Words that back away from the claim being made. A teacher who hedges every
 // sentence gives a listener nothing to hold onto, which is a teaching problem
 // rather than a confidence one — that is the framing this card uses.
-const HEDGES = [
-  "sort of", "kind of", "kinda", "sorta", "i think", "i guess",
-  "i believe", "maybe", "perhaps", "probably", "possibly",
-  "i'm not sure", "not really sure", "or something", "more or less",
-  "pretty much", "i suppose",
-];
+const HEDGES = {
+  en: [
+    "sort of", "kind of", "kinda", "sorta", "i think", "i guess",
+    "i believe", "maybe", "perhaps", "probably", "possibly",
+    "i'm not sure", "not really sure", "or something", "more or less",
+    "pretty much", "i suppose",
+  ],
+  de: [
+    "ich glaube", "ich denke", "ich vermute", "vielleicht", "wahrscheinlich",
+    "eventuell", "womöglich", "ich bin mir nicht sicher", "nicht ganz sicher",
+    "sozusagen", "mehr oder weniger", "so ungefähr", "ungefähr",
+    "im prinzip", "eigentlich",
+  ],
+};
 
 function escapeForRegex(term) {
   return term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -33,13 +55,20 @@ function escapeForRegex(term) {
 
 // Whole-word matching only. Without the boundaries "er" would fire inside
 // "layer" and "gradient descent" would read as two hesitations.
+//
+// Unicode lookarounds rather than \b, because \b is ASCII-only: it sees a
+// word boundary between the "ä" and the "h" of "ähm", so that single filler
+// was being counted twice, once as "ähm" and once as "hm".
 function countTerms(haystack, terms) {
   const hits = [];
   let total = 0;
 
   for (const term of terms) {
     const matches = haystack.match(
-      new RegExp(`\\b${escapeForRegex(term)}\\b`, "g")
+      new RegExp(
+        `(?<![\\p{L}\\p{N}])${escapeForRegex(term)}(?![\\p{L}\\p{N}])`,
+        "gu"
+      )
     );
 
     if (matches?.length) {
@@ -54,7 +83,10 @@ function countTerms(haystack, terms) {
 // Rates are per 100 words rather than raw counts, because a raw count only
 // says the lesson was long. Bands are generous: ordinary confident speech
 // carries filler, and a card that calls normal speech a problem gets ignored.
-export function analyseDelivery(userMessages, durationMs) {
+export function analyseDelivery(userMessages, durationMs, language = "en") {
+  const fillerList = FILLERS[language] ?? FILLERS.en;
+  const hedgeList = HEDGES[language] ?? HEDGES.en;
+
   const messages = (userMessages ?? []).filter(
     (message) => typeof message === "string" && message.trim()
   );
@@ -71,8 +103,8 @@ export function analyseDelivery(userMessages, durationMs) {
     return null; // Too little said for any rate to mean anything.
   }
 
-  const fillers = countTerms(text, FILLERS);
-  const hedges = countTerms(text, HEDGES);
+  const fillers = countTerms(text, fillerList);
+  const hedges = countTerms(text, hedgeList);
 
   const sentences = text
     .split(/[.!?]+/)
