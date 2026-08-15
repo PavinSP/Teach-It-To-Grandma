@@ -12,11 +12,11 @@ import {
 // Kinds of turning point, labelled for whoever was listening — "Lost him"
 // when it was Marcus. Everywhere else in the recap is character-aware and a
 // hardcoded "her" here would stand out.
-function turningPointLabel(kind, obj) {
-  if (kind === "landed") return "Landed";
-  if (kind === "lost") return `Lost ${obj}`;
-  if (kind === "recovered") return "Recovered";
-  return "Jargon";
+function turningPointLabel(kind, tt) {
+  if (kind === "landed") return tt("tpLanded");
+  if (kind === "lost") return tt("tpLost");
+  if (kind === "recovered") return tt("tpRecovered");
+  return tt("tpJargon");
 }
 
 function formatDuration(ms) {
@@ -33,11 +33,11 @@ function formatDuration(ms) {
 // and knowing where it breaks are not the same achievement, and one
 // number cannot say which you reached.
 const DEPTH_RUNGS = [
-  { key: "named", label: "Named it", hint: "You said what it is called" },
-  { key: "defined", label: "Defined it", hint: "A correct definition — the kind you can memorise" },
-  { key: "mechanism", label: "Explained how", hint: "Why one step leads to the next" },
-  { key: "applied", label: "Showed it working", hint: "A concrete case, worked through" },
-  { key: "boundaries", label: "Knew its limits", hint: "When it fails or does not apply" },
+  { key: "named", label: "rungNamed", hint: "rungNamedHint" },
+  { key: "defined", label: "rungDefined", hint: "rungDefinedHint" },
+  { key: "mechanism", label: "rungMechanism", hint: "rungMechanismHint" },
+  { key: "applied", label: "rungApplied", hint: "rungAppliedHint" },
+  { key: "boundaries", label: "rungBoundaries", hint: "rungBoundariesHint" },
 ];
 
 // The notes screen. App owns every value below; what this file adds is
@@ -95,7 +95,6 @@ export function Recap({
   setTopicInput,
   startMirror,
   startTeachoff,
-  subj,
   takeChallenge,
   teachoff,
   teachoffBoard,
@@ -172,14 +171,18 @@ export function Recap({
 
     const copyReplay = async () => {
       const lines = [
-        `${selectedTopic.name} — taught to ${who}`,
-        lessonXp?.score != null ? `Feynman score: ${lessonXp.score}/100` : null,
-        `Points followed: ${understoodCount}/${totalPoints}`,
-        lessonDurationMs ? `Time on the mic: ${formatDuration(lessonDurationMs)}` : null,
-        aiGrade?.strongestMoment?.quote
-          ? `Best line: "${aiGrade.strongestMoment.quote}"`
+        tt("copyTaughtTo", { topic: selectedTopic.name }),
+        lessonXp?.score != null
+          ? tt("copyScore", { score: lessonXp.score })
           : null,
-        teachoff ? `Teach-Off code: ${teachoff.code}` : null,
+        tt("copyPoints", { count: understoodCount, total: totalPoints }),
+        lessonDurationMs
+          ? tt("copyTime", { duration: formatDuration(lessonDurationMs) })
+          : null,
+        aiGrade?.strongestMoment?.quote
+          ? tt("copyBestLine", { quote: aiGrade.strongestMoment.quote })
+          : null,
+        teachoff ? tt("copyCode", { code: teachoff.code }) : null,
       ].filter(Boolean);
 
       try {
@@ -207,9 +210,7 @@ export function Recap({
 
           {FEATURES.progression && isGrading && !lessonXp && (
             <section className="completion-band">
-              <p className="score-pending">
-                {who} is marking your lesson…
-              </p>
+              <p className="score-pending">{tt("marking")}</p>
             </section>
           )}
 
@@ -236,9 +237,7 @@ export function Recap({
                   </div>
                 </div>
               ) : (
-                <p className="score-unavailable">
-                  {who} couldn't mark this one — XP for coverage only.
-                </p>
+                <p className="score-unavailable">{tt("noMark")}</p>
               )}
 
               <ul className="xp-list">
@@ -261,12 +260,12 @@ export function Recap({
                 lessonXp.score !== null && (
                   <div className="confidence-compare">
                     <span className="cc-cell">
-                      <span className="cc-label">You predicted</span>
+                      <span className="cc-label">{tt("predictedLabel")}</span>
                       <span className="cc-value">{confidence}</span>
                     </span>
 
                     <span className="cc-cell">
-                      <span className="cc-label">Measured</span>
+                      <span className="cc-label">{tt("measuredLabel")}</span>
                       <span className="cc-value">{lessonXp.score}</span>
                     </span>
 
@@ -275,14 +274,14 @@ export function Recap({
                         const gap = confidence - lessonXp.score;
 
                         if (gap >= 20) {
-                          return `You were ${gap} points more confident than the explanation turned out to be.`;
+                          return tt("confidentBy", { gap });
                         }
 
                         if (gap <= -20) {
-                          return `You sold yourself short by ${-gap} points.`;
+                          return tt("soldShort", { gap: -gap });
                         }
 
-                        return "You knew roughly where you stood.";
+                        return tt("knewWhere");
                       })()}
                     </span>
                   </div>
@@ -292,7 +291,7 @@ export function Recap({
                 <strong>+{lessonXp.total} XP</strong>
                 {profileXp !== null && (
                   <span className="xp-running">
-                    {" "}· {profileXp} XP total in this browser
+                    {" "}· {tt("xpRunning", { xp: profileXp })}
                   </span>
                 )}
               </div>
@@ -333,9 +332,7 @@ export function Recap({
               <p>{aiGrade?.summary || recap.verdict}</p>
 
               {isGrading && (
-                <p className="grading-status">
-                  {who} is thinking it over…
-                </p>
+                <p className="grading-status">{tt("thinkingOver")}</p>
               )}
             </div>
           </div>
@@ -379,20 +376,19 @@ export function Recap({
               </div>
 
               <p className="myth-claim">
-                Mid-lesson, {who} claimed: “{ambush.text}”
+                {tt("midLessonClaimed")} “{ambush.text}”
               </p>
 
               {aiGrade.misconceptionHandling.corrected ? (
                 <p className="myth-verdict caught">
-                  ✓ You caught it
+                  {tt("youCaughtIt")}
                   {aiGrade.misconceptionHandling.quote && (
                     <em> — “{aiGrade.misconceptionHandling.quote}”</em>
                   )}
                 </p>
               ) : (
                 <p className="myth-verdict missed">
-                  ○ {who} walked away still believing it. That false idea
-                  went unchallenged.
+                  {tt("walkedAway")}
                 </p>
               )}
             </section>
@@ -435,18 +431,22 @@ export function Recap({
                         <span className="predict-verdict">
                           {surprise
                             ? hadTrouble
-                              ? "caught you out"
-                              : "you beat it"
-                            : hadTrouble
-                              ? "as predicted"
-                              : "as predicted"}
+                              ? tt("caughtYouOut")
+                              : tt("youBeatIt")
+                            : tt("asPredicted")}
                         </span>
 
                         <span className="predict-point">
                           <strong>{point}</strong>
                           <em>
-                            expected {predicted} · you{" "}
-                            {understood ? "got it across" : "did not"}
+                            {tt(
+                              understood ? "expectedYouGot" : "expectedYouDidnt",
+                              {
+                                level: tt(
+                                  `level${predicted[0].toUpperCase()}${predicted.slice(1)}`
+                                ),
+                              }
+                            )}
                           </em>
                         </span>
                       </li>
@@ -480,8 +480,8 @@ export function Recap({
                       </span>
 
                       <span className="depth-text">
-                        <strong>{rung.label}</strong>
-                        <em>{rung.hint}</em>
+                        <strong>{tt(rung.label)}</strong>
+                        <em>{tt(rung.hint)}</em>
                       </span>
 
                       {state === "here" && (
@@ -536,17 +536,14 @@ export function Recap({
 
               {!jury ? (
                 <>
-                  <p className="recap-sub">
-                    Four listeners, four standards. The same explanation can
-                    land for one and fail for another.
-                  </p>
+                  <p className="recap-sub">{tt("juryIntro")}</p>
 
                   <button
                     className="challenge-button"
                     onClick={convene}
                     disabled={isConvening}
                   >
-                    {isConvening ? "The jury is deliberating…" : "Convene the jury →"}
+                    {isConvening ? tt("juryDeliberating") : tt("convene")}
                   </button>
 
                   {juryError && <p className="error-message">{juryError}</p>}
@@ -622,15 +619,17 @@ export function Recap({
                       <p>{openVerdict.verdict}</p>
                     </div>
                   ) : (
-                    <p className="jury-hint">
-                      Tap a juror to hear what they made of it.
-                    </p>
+                    <p className="jury-hint">{tt("juryTap")}</p>
                   )}
 
                   <p className="jury-spread">
                     {jury.spread >= 30
-                      ? `${jury.spread} points between ${jury.kindest} and ${jury.toughest}. It worked for one of them and not the other — that gap is the thing worth fixing.`
-                      : `Only ${jury.spread} points apart. It landed about the same for all four, which is the hard part.`}
+                      ? tt("jurySpreadWide", {
+                          spread: jury.spread,
+                          kindest: jury.kindest,
+                          toughest: jury.toughest,
+                        })
+                      : tt("jurySpreadTight", { spread: jury.spread })}
                   </p>
                 </>
               )}
@@ -645,9 +644,7 @@ export function Recap({
                   <h2>{tt("explainBackTitle")}</h2>
                 </div>
               </div>
-              <p className="recap-pending">
-                {who} is working out what {subj} actually took away…
-              </p>
+              <p className="recap-pending">{tt("workingOutTookAway")}</p>
             </section>
           )}
 
@@ -697,9 +694,7 @@ export function Recap({
 
               <div className="grandma-recall">
                 <div className="recall-label">
-                  {recallText
-                    ? `What ${who} said out loud`
-                    : `What ${who} took away`}
+                  {recallText ? tt("saidOutLoud") : tt("tookAway")}
                 </div>
 
                 <p>{explainBack.recap}</p>
@@ -786,7 +781,7 @@ export function Recap({
                   ))}
                 </ul>
               ) : (
-                <p>Nothing came across clearly yet.</p>
+                <p>{tt("nothingClear")}</p>
               )}
             </section>
 
@@ -811,9 +806,7 @@ export function Recap({
                   ))}
                 </ul>
               ) : (
-                <p>
-                  {who} followed every point. That's the whole idea.
-                </p>
+                <p>{tt("followedEvery")}</p>
               )}
             </section>
           </div>
@@ -856,10 +849,7 @@ export function Recap({
                   ))}
               </ul>
             ) : (
-              <p>
-                {who} didn't have any major questions about
-                your explanation.
-              </p>
+              <p>{tt("noQuestions")}</p>
             )}
           </div>
           <div className="recap-card">
@@ -876,9 +866,7 @@ export function Recap({
                 {recap.userMessages.join(" ").length > 700 ? "..." : ""}
               </p>
             ) : (
-              <p>
-                You didn't give {who} an explanation yet.
-              </p>
+              <p>{tt("noExplanation")}</p>
             )}
           </div>
 
@@ -891,10 +879,7 @@ export function Recap({
                 </div>
               </div>
 
-              <p className="forensics-intro">
-                The moments that decided this lesson, in the order they
-                happened.
-              </p>
+              <p className="forensics-intro">{tt("turnedIntro")}</p>
 
               <div className="forensics-track">
                 {turningPoints.map((tp, index) => (
@@ -918,7 +903,7 @@ export function Recap({
                 {turningPoints.map((tp, index) => (
                   <li key={index} className={tp.kind}>
                     <span className="forensics-kind">
-                      {turningPointLabel(tp.kind, activeCharacter.obj)}
+                      {turningPointLabel(tp.kind, tt)}
                     </span>
                     <blockquote>“{tp.quote}”</blockquote>
                     <p>{tp.note}</p>
@@ -938,11 +923,14 @@ export function Recap({
               </div>
 
               <p className="delivery-intro">
-                Counted from your own words — {delivery.wordCount} of them
-                {lessonDurationMs
-                  ? ` over ${formatDuration(lessonDurationMs)}`
-                  : ""}
-                . This is about delivery, not whether you were right.
+                {tt("deliveryIntro", {
+                  words: delivery.wordCount,
+                  over: lessonDurationMs
+                    ? tt("deliveryOver", {
+                        duration: formatDuration(lessonDurationMs),
+                      })
+                    : "",
+                })}
               </p>
 
               <ul className="delivery-readings">
@@ -971,19 +959,14 @@ export function Recap({
 
               {!mirror ? (
                 <>
-                  <p className="mirror-blurb">
-                    {who} retells your lesson — with a couple of things
-                    deliberately wrong. Catch them.
-                  </p>
+                  <p className="mirror-blurb">{tt("mirrorIntro")}</p>
 
                   <button
                     className="mirror-button"
                     onClick={startMirror}
                     disabled={isBuildingMirror}
                   >
-                    {isBuildingMirror
-                      ? "Getting the story straight…"
-                      : "🪞 Let's hear it →"}
+                    {isBuildingMirror ? tt("mirrorGetting") : tt("mirrorStart")}
                   </button>
 
                   {mirrorError && (
@@ -996,10 +979,10 @@ export function Recap({
 
                   <p className="mirror-instructions">
                     {mirrorSubmitted
-                      ? "Here's how you did:"
-                      : `Flag every claim you think is wrong, then lock it in. (${
-                          mirror.claims.filter((c) => c.isWrong).length
-                        } of them are.)`}
+                      ? tt("mirrorHowYouDid")
+                      : tt("mirrorFlagAll", {
+                          count: mirror.claims.filter((c) => c.isWrong).length,
+                        })}
                   </p>
 
                   <ol className="mirror-claims">
@@ -1030,23 +1013,23 @@ export function Recap({
 
                             {!mirrorSubmitted && flagged && (
                               <span className="mirror-flag-mark">
-                                ⚑ that's wrong
+                                {tt("mirrorThatsWrong")}
                               </span>
                             )}
 
                             {mirrorSubmitted && outcome === "caught" && (
                               <span className="mirror-verdict caught">
-                                ✓ caught it
+                                {tt("mirrorCaught")}
                               </span>
                             )}
                             {mirrorSubmitted && outcome === "missed" && (
                               <span className="mirror-verdict missed">
-                                ✗ this one was wrong — you let it through
+                                {tt("mirrorMissed")}
                               </span>
                             )}
                             {mirrorSubmitted && outcome === "false-flag" && (
                               <span className="mirror-verdict false-flag">
-                                ○ this one was actually fine
+                                {tt("mirrorFine")}
                               </span>
                             )}
                           </button>
@@ -1065,7 +1048,7 @@ export function Recap({
                       onClick={() => setMirrorSubmitted(true)}
                       disabled={mirrorFlags.size === 0}
                     >
-                      Lock it in →
+                      {tt("mirrorLockIn")}
                     </button>
                   ) : (
                     <p className="mirror-score">
@@ -1078,13 +1061,15 @@ export function Recap({
                           (c) => !c.isWrong && mirrorFlags.has(c.id)
                         ).length;
 
-                        return `You caught ${caught} of ${wrong.length}${
-                          falseFlags === 0
-                            ? " — and didn't flag anything that was fine."
-                            : ` — but flagged ${falseFlags} that ${
-                                falseFlags === 1 ? "was" : "were"
-                              } actually fine.`
-                        }`;
+                        return (
+                          tt("mirrorCaughtN", {
+                            caught,
+                            total: wrong.length,
+                          }) +
+                          (falseFlags === 0
+                            ? tt("mirrorNoFalse")
+                            : tt("mirrorSomeFalse", { count: falseFlags }))
+                        );
                       })()}
                     </p>
                   )}
@@ -1102,17 +1087,14 @@ export function Recap({
                 </div>
               </div>
 
-              <p className="teachoff-blurb">
-                They teach the exact same lesson, {who} grades them the same
-                way, one board settles it.
-              </p>
+              <p className="teachoff-blurb">{tt("teachoffIntro")}</p>
 
               <div className="teachoff-form">
                 <input
                   className="teachoff-input"
                   value={teachoffName}
                   onChange={(event) => setTeachoffName(event.target.value)}
-                  placeholder="Your name"
+                  placeholder={tt("yourName")}
                   maxLength={24}
                 />
 
@@ -1121,7 +1103,7 @@ export function Recap({
                   onClick={startTeachoff}
                   disabled={!teachoffName.trim()}
                 >
-                  ⚔️ Start a Teach-Off
+                  {tt("startTeachoff")}
                 </button>
               </div>
             </section>
@@ -1137,9 +1119,7 @@ export function Recap({
               </div>
 
               <p className="teachoff-code-line">
-                Next teacher joins with code{" "}
-                <strong className="teachoff-code">{teachoff.code}</strong> on
-                the start page — same lesson, same judge.
+                {tt("teachoffNext", { code: teachoff.code })}
               </p>
 
               {teachoffBoard && teachoffBoard.length > 1 ? (
@@ -1158,16 +1138,17 @@ export function Recap({
                       <span className="board-score">{run.score}</span>
                       {run.understoodCount !== null && (
                         <span className="board-detail">
-                          {run.understoodCount}/{run.totalPoints} understood
+                          {tt("boardUnderstood", {
+                            count: run.understoodCount,
+                            total: run.totalPoints,
+                          })}
                         </span>
                       )}
                     </li>
                   ))}
                 </ol>
               ) : (
-                <p className="teachoff-first">
-                  You're first on the board. Hand someone the mic.
-                </p>
+                <p className="teachoff-first">{tt("teachoffFirst")}</p>
               )}
             </section>
           )}
@@ -1184,27 +1165,27 @@ export function Recap({
               <div className="replay-sheet">
                 <div className="replay-topline">
                   <span className="replay-topic">{selectedTopic.name}</span>
-                  <span className="replay-taught">taught to {who}</span>
+                  <span className="replay-taught">{tt("taughtTo")}</span>
                 </div>
 
                 <div className="replay-stats">
                   <div>
                     <strong>{lessonXp.score ?? "—"}</strong>
-                    <span>Feynman score</span>
+                    <span>{tt("scoreLabel")}</span>
                   </div>
                   <div>
                     <strong>
                       {understoodCount}/{totalPoints}
                     </strong>
-                    <span>points followed</span>
+                    <span>{tt("pointsFollowed")}</span>
                   </div>
                   <div>
                     <strong>{formatDuration(lessonDurationMs)}</strong>
-                    <span>on the mic</span>
+                    <span>{tt("onTheMic")}</span>
                   </div>
                   <div>
                     <strong>+{lessonXp.total}</strong>
-                    <span>XP earned</span>
+                    <span>{tt("xpEarned")}</span>
                   </div>
                 </div>
 
@@ -1216,7 +1197,7 @@ export function Recap({
 
                 {teachoff && (
                   <p className="replay-code">
-                    Teach-Off <strong>{teachoff.code}</strong>
+                    {tt("replayCode")} <strong>{teachoff.code}</strong>
                   </p>
                 )}
               </div>

@@ -340,7 +340,6 @@ function App() {
   const activeCharacter = FEATURES.characterPicker ? character : CHARACTERS[0];
   const who = activeCharacter.shortName;
   const whoUpper = who.toUpperCase();
-  const subj = activeCharacter.subj;
   const obj = activeCharacter.obj;
   const voiceOnlyActive = FEATURES.voiceOnly && voiceOnly;
 
@@ -1678,7 +1677,6 @@ function App() {
         setTopicInput={setTopicInput}
         startMirror={startMirror}
         startTeachoff={startTeachoff}
-        subj={subj}
         takeChallenge={takeChallenge}
         teachoff={teachoff}
         teachoffBoard={teachoffBoard}
