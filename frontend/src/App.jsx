@@ -18,7 +18,6 @@ import {
 import { CHARACTERS, buildPersonaPrompt, DIRECTOR } from "./characters";
 import { loadSnapshot, saveSnapshot } from "./snapshot";
 import { resetNow } from "./reset";
-import Motif from "./Motif";
 import {
   YOU_OPTIONS,
   YOU_PRESETS,
@@ -58,7 +57,6 @@ function toLesson(generated) {
       required: point.required,
     })),
     misconceptions: generated.misconceptions ?? [],
-    motif: generated.motif ?? null,
     analysis: generated.analysis ?? null,
     challenges: generated.challenges ?? [],
   };
@@ -2324,7 +2322,7 @@ function App() {
     );
   }
   return (
-      <main className="app">
+    <main className="app">
       <section className="session">
         <button
           className="back-button"
@@ -2477,43 +2475,31 @@ function App() {
 
             <div className="rail-name">{who}</div>
 
-            {FEATURES.characterMood && isConnected && (
-              <div className={`rail-mood ${paused ? "resting" : `mood-${mood}`}`}>
-                {paused ? "waiting for you" : MOOD_LABEL[mood]}
+            {isConnected && (
+              <div className={`rail-activity state-${paused ? "resting" : channel}`}>
+                <span className="activity-dot" />
+                {paused
+                  ? "waiting for you"
+                  : channel === "speaking"
+                    ? `${who} is speaking`
+                    : channel === "thinking"
+                      ? `${who} is thinking`
+                      : `${who} is listening`}
               </div>
             )}
 
-            <div
-              className={`speaking-indicator ${
-                conversation.isSpeaking ? "visible" : ""
-              }`}
-            >
-              <span className="speaking-dot" />
-              {who} is speaking
-            </div>
-
-            <div
-              className={`listening-indicator ${
-                conversation.isListening && !conversation.isSpeaking
-                  ? "visible"
-                  : ""
-              }`}
-            >
-              <span className="listening-dot" />
-              {who} is listening
-            </div>
+            {FEATURES.characterMood &&
+              isConnected &&
+              !paused &&
+              MOOD_LABEL[mood] && (
+                <div className={`rail-mood mood-${mood}`}>
+                  {MOOD_LABEL[mood]}
+                </div>
+              )}
 
           </aside>
 
           <section className="conversation">
-            {FEATURES.topicMotif && selectedTopic.motif && (
-              <Motif
-                name={selectedTopic.motif}
-                progress={totalCount ? completedCount / totalCount : 0}
-                speaking={conversation.isSpeaking}
-              />
-            )}
-
             <div>
               {voiceOnlyActive ? (
                 /* Pure conversation: everything still records and grades
@@ -2871,7 +2857,7 @@ function App() {
           )}
         </div>
       </section>
-      </main>
+    </main>
   );
 }
 

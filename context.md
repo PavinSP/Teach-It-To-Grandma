@@ -632,44 +632,25 @@ its target (factor 0.45), which measures as ~33ms to half-open and ~84ms
 to close — fast enough to track syllables, smooth enough not to strobe
 (max per-frame jump 0.35).
 
-## Session 29 — A shape that fills in as you teach
+## Session 30 — Motif reverted; the rail said two things at once
 
-The lesson now has a quiet moving background matched to what it is
-about: a connected network behind neural networks, travelling waves
-behind sound, a splitting tree behind recursion.
+**The motif is gone**, both commits reverted at the user's request.
 
-**Not fetched images.** A stock-photo API would mean licensing, an
-external dependency mid-demo, and whatever the search happened to return.
-Instead `/api/lesson` picks a `motif` from eight shapes we designed —
-network, waves, particles, orbits, flow, grid, branches, pulse — chosen
-on the topic's underlying structure rather than its words. Verified
-live: sound waves→waves, recursion→branches, digital images→grid, how
-the heart beats→pulse.
+**Fixed two indicator bugs that turned out to be one mistake.** The rail
+showed "Grandma is listening" before the call had even started, and
+"listening" above "Grandma is speaking" while she spoke.
 
-**CSS animations on SVG, never canvas.** Transforms and opacity only, so
-the browser runs them on the compositor. A canvas rAF loop would compete
-with the live voice call for the main thread, and there is already one
-running for the mouth. Everything sits inside a `prefers-reduced-motion`
-guard, at ~13% opacity in ink rather than colour, `position: fixed` and
-`pointer-events: none` so it never scrolls oddly or swallows a click.
+Cause: the speaking and listening indicators were always in the DOM with
+only opacity hiding them, and neither was guarded on `isConnected` — so
+one could claim the floor before anything had begun. Worse, `MOOD_LABEL`
+had `curious: "listening"`, so the mood caption literally printed the
+word "listening" directly above an activity line saying she was speaking.
+A label describing a FEELING had been given the name of an ACTIVITY.
 
-Looping is by construction rather than by fade: the wave path is two
-periods wide and slides exactly one, the pulse trace is duplicated and
-slides half its width.
-
-An unknown motif value degrades to no backdrop rather than breaking the
-lesson, same as `analysis` and `challenges`.
-
-**Revised the same session.** The first version put the motif behind the
-whole page as a slow decorative loop, and it was wrong on both counts. It
-now lives *inside the conversation panel*, and it is driven by the lesson
-rather than by a timer: each motif is an ordered list of parts, and the
-first `covered/total` fraction of them are lit. Teach a 4-point lesson and
-the network wires itself up 1 → 3 → 6 → 8 → 11 nodes; the tree grows limb
-by limb; the ECG trace is revealed left to right by a clip path.
-
-So it reads as an ambient second progress indicator rather than wallpaper.
-Unearned parts sit at 5% opacity, earned parts at ~20-26% — the gap is
-what makes progress legible at a glance. The whole shape also breathes
-while she is speaking, so the panel feels alive while the transcript is
-still catching up. One part is always lit, so the panel is never blank.
+Now: one activity line, rendered only while connected, driven by the same
+`channel` axis the avatar uses — speaking / thinking / listening /
+waiting-for-you. Mood labels describe comprehension only (lost, wants
+more, following you, impressed) and the neutral `curious` state has no
+label at all, since there is nothing to report until the explanation
+gives her a reaction. Verified across six states that exactly one correct
+line shows, and that no mood label contains an activity word.

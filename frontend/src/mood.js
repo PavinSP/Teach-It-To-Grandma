@@ -26,10 +26,16 @@ export const MOODS = [
   "impressed",
 ];
 
+// How she FEELS about the explanation — never what she is doing. The
+// activity line below already says whether she is speaking or listening,
+// and a mood label like "listening" collided with it on screen.
+//
+// `curious` is the neutral starting state and deliberately has no label:
+// there is nothing to report until the explanation gives her a reaction.
 export const MOOD_LABEL = {
-  curious: "listening",
+  curious: null,
   confused: "lost",
-  interested: "curious",
+  interested: "wants more",
   understanding: "following you",
   impressed: "impressed",
 };

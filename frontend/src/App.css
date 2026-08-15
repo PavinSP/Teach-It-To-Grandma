@@ -273,7 +273,6 @@ h2 {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  /* Also the positioning context for the motif behind the messages. */
   position: sticky;
   top: 16px;
   height: calc(100vh - 140px);
@@ -2517,162 +2516,43 @@ details.misconceptions-panel .misconceptions-list {
   will-change: opacity;
 }
 
-/* -----------------------------
-   Topic motif — inside the conversation, and it fills in
------------------------------ */
+/* One activity line, replacing the two stacked indicators that could both
+   claim the floor at once. */
 
-/* Sits inside the chat panel, behind the messages. The panel is the
-   frame; the shape is what the lesson is about, filling in as it lands. */
-.motif {
-  position: absolute;
-  inset: 18px;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
+.rail-activity {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #8a8176;
 }
 
-.motif svg {
-  width: 100%;
-  height: 100%;
+.activity-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #8a8176;
 }
 
-/* Everything the panel actually contains must sit above it. */
-.conversation > *:not(.motif) {
-  position: relative;
-  z-index: 1;
+.rail-activity.state-speaking {
+  color: #26221d;
 }
 
-/* Parts not yet earned are barely there; earned parts are clearly on.
-   The gap between the two is what makes progress readable at a glance. */
-.m-line {
-  fill: none;
-  stroke: #26221d;
-  stroke-width: 0.6;
-  transition: opacity 0.7s ease, stroke-width 0.7s ease;
+.rail-activity.state-speaking .activity-dot {
+  background: #26221d;
+  animation: speaking-dot 0.8s ease-in-out infinite alternate;
 }
 
-.m-dot {
-  fill: #26221d;
-  transition: opacity 0.7s ease;
+.rail-activity.state-listening .activity-dot {
+  animation: listening-dot 1.2s ease-in-out infinite alternate;
 }
 
-.m-cell {
-  fill: none;
-  stroke: #26221d;
-  stroke-width: 0.6;
-  transition: opacity 0.7s ease, fill 0.7s ease;
+.rail-activity.state-thinking .activity-dot {
+  animation: listening-dot 0.7s ease-in-out infinite alternate;
 }
 
-.m-line.off,
-.m-dot.off,
-.m-cell.off,
-g.off {
-  opacity: 0.05;
-}
-
-.m-line.on {
-  opacity: 0.2;
-  stroke-width: 0.9;
-}
-
-.m-dot.on {
-  opacity: 0.26;
-}
-
-.m-cell.on {
-  opacity: 0.24;
-  fill: rgba(38, 34, 29, 0.14);
-}
-
-g.on {
-  opacity: 0.22;
-}
-
-/* She is talking: the whole shape breathes, so the panel feels alive
-   while the transcript is still catching up. */
-.motif.is-speaking {
-  animation: motif-breathe 2.6s ease-in-out infinite;
-}
-
-@keyframes motif-breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.015); }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .m-dot.on {
-    animation: motif-blink 5s ease-in-out infinite;
-  }
-
-  .drift.on {
-    animation: motif-drift linear infinite;
-  }
-
-  .float.on {
-    animation: motif-float ease-in-out infinite;
-  }
-
-  .spin {
-    animation: motif-rotate linear infinite;
-  }
-
-  .travel {
-    animation: motif-travel linear infinite;
-  }
-
-  .m-cell.on {
-    animation: motif-glow 6s ease-in-out infinite;
-  }
-
-  .grow.on {
-    stroke-dasharray: 40;
-    animation: motif-grow 3s ease-out forwards;
-  }
-
-  .scroll {
-    animation: motif-scroll 14s linear infinite;
-  }
-}
-
-@keyframes motif-blink {
-  0%, 100% { opacity: 0.16; }
-  50% { opacity: 0.34; }
-}
-
-/* The path is two periods wide; sliding one period loops seamlessly. */
-@keyframes motif-drift {
-  from { transform: translateX(0) translateY(var(--y, 0)); }
-  to { transform: translateX(-50px) translateY(var(--y, 0)); }
-}
-
-@keyframes motif-float {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(4px, -8px); }
-}
-
-@keyframes motif-rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes motif-travel {
-  from { transform: translateX(0); opacity: 0; }
-  12% { opacity: 0.26; }
-  88% { opacity: 0.26; }
-  to { transform: translateX(94px); opacity: 0; }
-}
-
-@keyframes motif-glow {
-  0%, 100% { opacity: 0.16; }
-  50% { opacity: 0.3; }
-}
-
-@keyframes motif-grow {
-  from { stroke-dashoffset: 40; }
-  to { stroke-dashoffset: 0; }
-}
-
-@keyframes motif-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+.rail-activity.state-resting {
+  font-style: italic;
+  opacity: 0.75;
 }
