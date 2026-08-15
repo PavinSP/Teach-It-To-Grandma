@@ -1352,14 +1352,23 @@ app.post("/api/face", rateLimit, async (req, res) => {
     lists[dial] = values;
   }
 
+  // Note: TitanomGPT rejects an empty string inside a JSON-schema enum with a
+  // bare 500, and two of these dials use "" for "none". Swapping in a
+  // sentinel keeps the quirk here rather than forcing the client to send
+  // option values that don't match its own builder.
+  const NONE = "__none__";
+  const wire = Object.fromEntries(
+    DIALS.map((dial) => [dial, lists[dial].map((v) => (v === "" ? NONE : v))])
+  );
+
   const prompt = `Someone is building a cartoon avatar of themselves in an illustrated style, and has supplied a photo to start from.
 
 For each setting below, choose the value from its own list that best matches the photo, so the finished cartoon resembles them. This is a styling choice for that person's own avatar — pick the closest available option rather than describing or identifying anyone.
 
 skin — skin tone swatch: ${lists.skin.join(", ")}
 head — hair style, or a head covering: ${lists.head.join(", ")}
-facialHair — an empty string means none: ${lists.facialHair.join(", ")}
-accessories — glasses; an empty string means none: ${lists.accessories.join(", ")}
+facialHair — "${NONE}" means clean-shaven: ${wire.facialHair.join(", ")}
+accessories — glasses; "${NONE}" means none: ${wire.accessories.join(", ")}
 face — expression: ${lists.face.join(", ")}
 
 Where something is not visible, or you are unsure, choose the most neutral option in that list rather than guessing. Never return a value that is not in its list.`;
@@ -1384,7 +1393,7 @@ Where something is not visible, or you are unsure, choose the most neutral optio
           schema: {
             type: "object",
             properties: Object.fromEntries(
-              DIALS.map((dial) => [dial, { type: "string", enum: lists[dial] }])
+              DIALS.map((dial) => [dial, { type: "string", enum: wire[dial] }])
             ),
             required: DIALS,
             additionalProperties: false,
@@ -1400,6 +1409,12 @@ Where something is not visible, or you are unsure, choose the most neutral optio
     }
 
     const parsed = JSON.parse(raw);
+
+    for (const dial of DIALS) {
+      if (parsed[dial] === NONE) {
+        parsed[dial] = "";
+      }
+    }
 
     // The schema should already guarantee this, but the avatar is written to
     // the student's saved profile — an unrecognised value there would render

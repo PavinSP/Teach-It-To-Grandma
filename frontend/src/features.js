@@ -116,6 +116,10 @@ const DEFAULTS = {
   // Composed from numbers already on the page; adds no request.
   lessonReplay: true,
 
+  // A photo sets the avatar dials as a starting point. Off leaves the manual
+  // builder exactly as it was — the photo button simply isn't offered.
+  selfieAvatar: true,
+
   // It predicts which points trip teachers up before a word is spoken,
   // then the recap says where it was right and where you beat it.
   difficultyPrediction: true,

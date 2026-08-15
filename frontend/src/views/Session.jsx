@@ -1,6 +1,7 @@
 import { FEATURES } from "../features";
 import { MOOD_LABEL } from "../mood";
 import { UnderstandingGraph } from "../components/UnderstandingGraph";
+import { Waveform } from "../components/Waveform";
 
 // The live lesson. Everything here is driven by App: the ElevenLabs
 // conversation object, the transcript, the coverage the keyword pass
@@ -258,6 +259,11 @@ export function Session({
                   )}
                 </div>
               ) : (
+              /* Graph and waveform are one instrument in one box. The box
+                 matters beyond layout: a crystallizing particle leaves the
+                 waveform and arrives at a node, and both need to be
+                 measured against the same origin for that to land. */
+              <div className="instrument">
               <UnderstandingGraph
                 points={selectedTopic.points}
                 checks={selectedTopic.checks}
@@ -266,6 +272,14 @@ export function Session({
                 topic={selectedTopic.name}
                 waitingLabel={tt("waitingForSignal")}
               />
+
+              <Waveform
+                conversation={conversation}
+                isConnected={isConnected}
+                muted={conversation.isMuted}
+                paused={paused}
+              />
+              </div>
 
               )}
               {error && (

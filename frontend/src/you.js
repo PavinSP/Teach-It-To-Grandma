@@ -218,3 +218,50 @@ export async function saveYou(name, params) {
 
   return you;
 }
+
+// The dial values on their own, for the matching endpoint's JSON schema.
+// Sent with the photo so the server builds its enums from the real builder
+// rather than a second copy that could drift. `bg` is deliberately absent —
+// a backdrop colour isn't something a face can tell you, so a photo never
+// overwrites the one already chosen.
+export function youOptionValues() {
+  return {
+    skin: YOU_OPTIONS.skin.map((o) => o.value),
+    head: YOU_OPTIONS.head.map((o) => o.value),
+    facialHair: YOU_OPTIONS.facialHair.map((o) => o.value),
+    accessories: YOU_OPTIONS.accessories.map((o) => o.value),
+    face: YOU_OPTIONS.face.map((o) => o.value),
+  };
+}
+
+// Shrinks a camera photo to something worth sending: 512px on the long edge,
+// JPEG. A modern phone photo is several megabytes and would exceed the
+// server's 1mb body limit on its own, and the model only needs enough detail
+// to tell a beard from a bare chin.
+export function photoToDataUrl(file, maxEdge = 512) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+
+      const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      resolve(canvas.toDataURL("image/jpeg", 0.82));
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read that image file"));
+    };
+
+    img.src = url;
+  });
+}

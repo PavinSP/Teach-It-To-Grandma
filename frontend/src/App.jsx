@@ -16,7 +16,14 @@ import { CHARACTERS, buildPersonaPrompt, DIRECTOR } from "./characters";
 import { loadSnapshot, saveSnapshot } from "./snapshot";
 
 import { t, speakerVars } from "./strings";
-import { YOU_OPTIONS, DEFAULT_PARAMS, loadYou, saveYou } from "./you";
+import {
+  YOU_OPTIONS,
+  DEFAULT_PARAMS,
+  loadYou,
+  saveYou,
+  youOptionValues,
+  photoToDataUrl,
+} from "./you";
 import { Landing } from "./views/Landing";
 import { Recap } from "./views/Recap";
 import { Session } from "./views/Session";
@@ -291,6 +298,8 @@ function App() {
   const [showYouEditor, setShowYouEditor] = useState(false);
   const [youDraftName, setYouDraftName] = useState("");
   const [youDraftParams, setYouDraftParams] = useState(DEFAULT_PARAMS);
+  // "" | "reading" | "matched" | "failed"
+  const [youPhotoState, setYouPhotoState] = useState("");
   const [isSavingYou, setIsSavingYou] = useState(false);
   // #11 — the misconception the character was directed to state, if any.
   const [ambush, setAmbush] = useState(snap?.ambush ?? null);
@@ -1339,6 +1348,41 @@ function App() {
     }
   };
 
+  // A photo picks the dials; it never becomes the avatar. The composed
+  // Open Peeps face is still what gets saved, and every dial stays editable
+  // afterwards — the photo is a starting point, not a result.
+  const applyPhotoToAvatar = async (file) => {
+    if (!file) {
+      return;
+    }
+
+    setYouPhotoState("reading");
+
+    try {
+      const image = await photoToDataUrl(file);
+
+      const response = await fetch(`${GRADING_API}/api/face`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image, options: youOptionValues() }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Face matching failed: ${response.status}`);
+      }
+
+      const body = await response.json();
+
+      // Merge rather than replace: `bg` isn't something a face can tell you,
+      // so whatever backdrop they already picked survives.
+      setYouDraftParams((previous) => ({ ...previous, ...body.params }));
+      setYouPhotoState("matched");
+    } catch (err) {
+      console.error("Could not match that photo:", err);
+      setYouPhotoState("failed");
+    }
+  };
+
   const saveYouProfile = async () => {
     if (isSavingYou) {
       return;
@@ -1562,6 +1606,8 @@ function App() {
         joinTeachoff={joinTeachoff}
         language={language}
         lessonError={lessonError}
+        applyPhotoToAvatar={applyPhotoToAvatar}
+        youPhotoState={youPhotoState}
         saveYouProfile={saveYouProfile}
         setCharacter={setCharacter}
         setJoinCode={setJoinCode}

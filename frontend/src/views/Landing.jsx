@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { FEATURES } from "../features";
 import { CHARACTERS } from "../characters";
 import { resetNow } from "../reset";
@@ -49,6 +50,8 @@ export function Landing({
   joinTeachoff,
   language,
   lessonError,
+  applyPhotoToAvatar,
+  youPhotoState,
   saveYouProfile,
   setCharacter,
   setJoinCode,
@@ -70,6 +73,8 @@ export function Landing({
   youDraftName,
   youDraftParams,
 }) {
+  const photoInputRef = useRef(null);
+
   return (
       <main className="app">
         <section className="hero">
@@ -126,6 +131,47 @@ export function Landing({
                     maxLength={24}
                     autoFocus
                   />
+
+                  {FEATURES.selfieAvatar && (
+                    <div className="you-photo-row">
+                      <input
+                        ref={photoInputRef}
+                        className="you-photo-input"
+                        type="file"
+                        accept="image/*"
+                        capture="user"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          // Cleared so picking the same file twice still
+                          // fires a change event.
+                          event.target.value = "";
+                          applyPhotoToAvatar(file);
+                        }}
+                      />
+
+                      <button
+                        className="you-photo-button"
+                        onClick={() => photoInputRef.current?.click()}
+                        disabled={youPhotoState === "reading"}
+                      >
+                        {youPhotoState === "reading"
+                          ? tt("photoReading")
+                          : tt("usePhoto")}
+                      </button>
+
+                      <span
+                        className={`you-photo-note ${
+                          youPhotoState === "failed" ? "failed" : ""
+                        }`}
+                      >
+                        {youPhotoState === "failed"
+                          ? tt("photoFailed")
+                          : youPhotoState === "matched"
+                            ? tt("photoMatched")
+                            : tt("photoPrivacy")}
+                      </span>
+                    </div>
+                  )}
 
                   <div className="you-presets">
                     {YOU_PRESETS.map((preset, index) => (
