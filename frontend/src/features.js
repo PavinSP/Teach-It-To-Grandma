@@ -70,6 +70,11 @@ const DEFAULTS = {
   // are, teach-off fields come pre-filled.
   youCharacter: true,
 
+  // #4 + #43 — how she's feeling about the explanation, and the avatar
+  // reacting to it. Works with no dashboard setup (keyword heuristic);
+  // gets sharper once a set_mood client tool is registered on the agent.
+  characterMood: true,
+
   // #34 — several people teach the SAME stored lesson in turn, one board.
   // Same machine, sequential — the only multiplayer that honestly works
   // without deployment.

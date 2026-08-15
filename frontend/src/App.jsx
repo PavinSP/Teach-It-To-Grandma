@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useConversation } from "@elevenlabs/react";
+import {
+  useConversation,
+  useConversationClientTool,
+} from "@elevenlabs/react";
 import { FEATURES } from "./features";
+import { MOODS, MOOD_LABEL, guessMood, channelState } from "./mood";
 import {
   feynmanScore,
   verdictForScore,
@@ -187,6 +191,7 @@ function App() {
   // #18 — a view preference, not session state: it survives lesson changes
   // and never touches what gets recorded or graded.
   const [voiceOnly, setVoiceOnly] = useState(snap?.voiceOnly ?? false);
+  const [mood, setMood] = useState("curious");
   // #46 (student half) — who is doing the teaching.
   const [you, setYou] = useState(() =>
     FEATURES.youCharacter ? loadYou() : null
@@ -221,6 +226,9 @@ function App() {
   // director-channel sender records the student-turn it fired at, and no
   // sender may fire within 2 turns of the last.
   const directorTurnRef = useRef(snap?.directorTurn ?? -99);
+  // When the agent last set its own mood. While that's recent, the keyword
+  // heuristic stays quiet — a configured agent is never second-guessed.
+  const lastToolMoodAt = useRef(0);
   const transcriptEndRef = useRef(null);
   // Her next reply after we ask is the recall itself — catch it as it lands.
   const pendingRecallRef = useRef(false);
@@ -351,6 +359,21 @@ function App() {
         setRecallText(message.message ?? "");
       }
 
+      // Read the mood off what she just said — but only while the agent
+      // itself hasn't reported one recently. A guess never overrides the
+      // model's own judgement.
+      if (
+        FEATURES.characterMood &&
+        message.source !== "user" &&
+        Date.now() - lastToolMoodAt.current > 15000
+      ) {
+        const guessed = guessMood(message.message);
+
+        if (guessed) {
+          setMood(guessed);
+        }
+      }
+
       setMessages((previous) => [
         ...previous,
         message,
@@ -368,8 +391,22 @@ function App() {
   // before its declaration is a ReferenceError — a blank page, not a warning.
   const isConnected = conversation.status === "connected";
 
+  useConversationClientTool("set_mood", ({ mood: reported }) => {
+    if (!FEATURES.characterMood) {
+      return;
+    }
+
+    lastToolMoodAt.current = Date.now();
+    setMood(MOODS.includes(reported) ? reported : "curious");
+  });
+
   // Everything the explain-back feature accumulates. Cleared wherever a
   // lesson ends, so the next one never inherits the last one's recall.
+  const resetMood = () => {
+    setMood("curious");
+    lastToolMoodAt.current = 0;
+  };
+
   const resetRecall = () => {
     setExplainBack(null);
     setIsExplaining(false);
@@ -924,6 +961,7 @@ function App() {
       resetProgression();
       resetAmbush();
       resetMirror();
+      resetMood();
     } catch (err) {
       console.error("Could not build challenge:", err);
       setChallengeError("Could not put together a challenge right now.");
@@ -1165,6 +1203,7 @@ function App() {
       resetAmbush();
       resetTeachoff();
       resetMirror();
+      resetMood();
       resetProgression();
     } catch (err) {
       console.error("Could not build lesson:", err);
@@ -1491,6 +1530,15 @@ function App() {
   const lastSpeakerWasStudent =
     [...messages].reverse().find((m) => m.source !== "system")?.source ===
     "user";
+
+  // What she is doing, as opposed to how she feels — the two are
+  // independent, and she is routinely both confused and speaking.
+  const channel = channelState({
+    isConnected,
+    isSpeaking: conversation.isSpeaking,
+    isListening: conversation.isListening,
+    awaitingReply: lastSpeakerWasStudent,
+  });
 
   const progress = calculateProgress(selectedTopic, messages);
   const completedCount = progress.filter(Boolean).length;
@@ -2159,6 +2207,7 @@ function App() {
       resetAmbush();
       resetTeachoff();
       resetMirror();
+      resetMood();
       resetProgression();
             }}      >
             ← Teach something else
@@ -2290,21 +2339,31 @@ function App() {
             <div
               className={`grandma-character ${
                 activeCharacter.image ? "" : "glyph-character"
-              } ${conversation.isSpeaking ? "speaking" : ""}`}
+              } ${conversation.isSpeaking ? "speaking" : ""} state-${channel} ${
+                FEATURES.characterMood ? `mood-${mood}` : ""
+              }`}
             >
-              {activeCharacter.image ? (
-                <img src={activeCharacter.image} alt={who} />
-              ) : (
-                <span
-                  className="glyph-face"
-                  style={{ background: activeCharacter.color }}
-                >
-                  {activeCharacter.glyph}
-                </span>
-              )}
+              <span className="mood-shell" key={mood}>
+                {activeCharacter.image ? (
+                  <img src={activeCharacter.image} alt={who} />
+                ) : (
+                  <span
+                    className="glyph-face"
+                    style={{ background: activeCharacter.color }}
+                  >
+                    {activeCharacter.glyph}
+                  </span>
+                )}
+              </span>
             </div>
 
             <div className="rail-name">{who}</div>
+
+            {FEATURES.characterMood && isConnected && (
+              <div className={`rail-mood mood-${mood}`}>
+                {MOOD_LABEL[mood]}
+              </div>
+            )}
 
             <div
               className={`speaking-indicator ${

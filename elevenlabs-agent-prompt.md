@@ -74,3 +74,23 @@ Note: when a character override is active (#2), our generated persona prompt
 REPLACES this entire dashboard prompt — so the same Director Notes text is
 appended to every generated persona in `frontend/src/characters.js`. The two
 copies must stay identical.
+
+---
+
+## SET_MOOD TOOL (optional — improves #4/#43)
+
+The mood feature works without any dashboard change, driven by a keyword
+heuristic over what the character says. Registering this client tool makes
+it the model's own judgement instead of a guess:
+
+- Tools → add a **Client tool** named exactly `set_mood`
+- Description: `Call this whenever your understanding of what the student is explaining changes.`
+- One required string parameter `mood`, enum:
+  `curious, confused, interested, understanding, impressed`
+- **"Wait for response" must be OFF.** On means a round-trip inside every
+  spoken turn, which makes her feel laggy.
+- Publish.
+
+The instruction to call it already ships inside every generated persona in
+`frontend/src/characters.js`, so no prompt edit is needed for the character
+path. An unregistered tool simply never fires; the heuristic covers it.

@@ -490,3 +490,41 @@ the landing hero (chip with face + name, click to edit), the transcript
 (their name instead of YOU), and the teach-off name fields pre-filled.
 A convenience, never a gate — everything works untouched for someone who
 never sets it up.
+
+## Session 25 — Mood and reaction (#4 + #43)
+
+The listener's feeling about the explanation, and the avatar reacting to
+it. **Works with no dashboard setup**, which was the design goal — two
+layered sources:
+
+1. A `set_mood` client tool the agent calls itself (accurate, needs the
+   tool registered on the agent).
+2. A keyword heuristic over what she just said (crude, needs nothing).
+
+The heuristic is a floor, not a rival: it only acts when the tool has been
+silent for 15s, so a configured agent is never second-guessed by a regex.
+The instruction to call the tool ships inside every generated persona, so
+the character path needs no prompt edit; `elevenlabs-agent-prompt.md`
+documents the optional dashboard step.
+
+**Two axes, never one enum** — she is routinely confused *and* speaking.
+Channel state (idle/listening/thinking/speaking) loops on the outer
+element; mood plays ONCE on the inner shell, which React remounts via
+`key={mood}`. Putting both on one element would have them fighting over
+`transform` forever. Everything sits inside a `prefers-reduced-motion`
+guard.
+
+A caption ("lost", "following you", "impressed") sits under her name —
+without it the reaction is subliminal and a judge can't tell the avatar
+is responding to anything.
+
+Heuristic tuned against this project's own transcripts: her analogy-check
+("so the weight is like how important each ingredient is") reads as
+understanding via a pattern, not a literal string; and "go on" was
+removed after it misread her neutral opener as interest. Neutral lines
+return null, which HOLDS the current mood — resetting on every neutral
+sentence would make the avatar flicker constantly.
+
+Rejected, both per the plan: a marker token in her replies (TTS reads it
+aloud) and a classify call per turn (her face would lag her voice by a
+full turn).
