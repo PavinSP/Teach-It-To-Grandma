@@ -2052,12 +2052,12 @@ function App() {
     return (
       <main className="app">
         <section className="recap-page">
-          <div className="eyebrow">{whoUpper}'S NOTES</div>
+          <div className="eyebrow">{tt("notesOf", { name: whoUpper })}</div>
 
           <h1>{recapHeadline}</h1>
 
           <p className="recap-subtitle">
-            Here's what {who} understood from your lesson on{" "}
+            {tt("recapSub")}{" "}
             <strong>{selectedTopic.name}</strong>.
           </p>
 
@@ -2085,7 +2085,7 @@ function App() {
                   </div>
 
                   <div>
-                    <div className="score-label">FEYNMAN SCORE</div>
+                    <div className="score-label">{tt("feynmanScore")}</div>
                     <div className="score-verdict">
                       {verdictForScore(lessonXp.score, who)}
                     </div>
@@ -2183,7 +2183,7 @@ function App() {
 
             <div>
               <div className="grandma-verdict-label">
-                {whoUpper} SAYS
+                {tt("says", { name: whoUpper })}
               </div>
 
               <p>{aiGrade?.summary || recap.verdict}</p>
@@ -2199,8 +2199,10 @@ function App() {
           {aiGrade?.results && (
             <section className="recap-card ai-grade-card">
               <div className="recap-head">
-                <div className="recap-icon">🧠</div>
-                <h2>Did {who} really understand?</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">🧠</div>
+                  <h2>{tt("reallyUnderstand")}</h2>
+                </div>
               </div>
 
               <ul className="ai-grade-list">
@@ -2226,8 +2228,10 @@ function App() {
           {ambush && aiGrade?.misconceptionHandling && (
             <section className="recap-card myth-card">
               <div className="recap-head">
-                <div className="recap-icon">🧨</div>
-                <h2>The trap {who} set</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">🧨</div>
+                  <h2>{tt("trapTitle")}</h2>
+                </div>
               </div>
 
               <p className="myth-claim">
@@ -2254,12 +2258,13 @@ function App() {
             aiGrade?.results &&
             selectedTopic.predictions && (
               <section className="recap-card predict-card">
-                <div className="recap-icon">🔮</div>
-
-                <h2>What it expected you to struggle with</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">🔮</div>
+                  <h2>{tt("predictTitle")}</h2>
+                </div>
 
                 <p className="predict-intro">
-                  Predicted before you said a word, from the topic alone.
+                  {tt("predictIntro")}
                 </p>
 
                 <ul className="predict-list">
@@ -2310,8 +2315,10 @@ function App() {
           {FEATURES.depthLadder && aiGrade?.depth && (
             <section className="recap-card depth-card">
               <div className="recap-head">
-                <div className="recap-icon">🪜</div>
-                <h2>How deep you went</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">🪜</div>
+                  <h2>{tt("depthTitle")}</h2>
+                </div>
               </div>
 
               <ol className="depth-ladder">
@@ -2334,7 +2341,7 @@ function App() {
                       </span>
 
                       {state === "here" && (
-                        <span className="depth-you">you got here</span>
+                        <span className="depth-you">{tt("youGotHere")}</span>
                       )}
                     </li>
                   );
@@ -2347,7 +2354,7 @@ function App() {
 
               {aiGrade.depth.next && (
                 <p className="depth-next">
-                  <strong>Next rung:</strong> {aiGrade.depth.next}
+                  <strong>{tt("nextRung")}</strong> {aiGrade.depth.next}
                 </p>
               )}
             </section>
@@ -2356,12 +2363,14 @@ function App() {
           {FEATURES.blindSpots && aiGrade?.blindSpots?.length > 0 && (
             <section className="recap-card">
               <div className="recap-head">
-                <div className="recap-icon">🕳️</div>
-                <h2>What you never went near</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">🕳️</div>
+                  <h2>{tt("blindTitle")}</h2>
+                </div>
               </div>
 
               <p className="recap-sub">
-                Not explained badly — never mentioned at all.
+                {tt("blindIntro")}
               </p>
 
               <ul className="blindspot-list">
@@ -2375,8 +2384,10 @@ function App() {
           {FEATURES.aiJury && (
             <section className="recap-card jury-card">
               <div className="recap-head">
-                <div className="recap-icon">🧑‍⚖️</div>
-                <h2>The jury</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">🧑‍⚖️</div>
+                  <h2>{tt("juryTitle")}</h2>
+                </div>
               </div>
 
               {!jury ? (
@@ -2432,8 +2443,10 @@ function App() {
           {FEATURES.explainBack && isExplaining && !explainBack && (
             <section className="recap-card">
               <div className="recap-head">
-                <div className="recap-icon">🔄</div>
-                <h2>Let me see if I understood you</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">🔄</div>
+                  <h2>{tt("explainBackTitle")}</h2>
+                </div>
               </div>
               <p className="recap-pending">
                 {who} is working out what {subj} actually took away…
@@ -2444,15 +2457,17 @@ function App() {
           {FEATURES.explainBack && explainBack && (
             <section className="recap-card explainback-card">
               <div className="recap-head">
-                <div className="recap-icon">🔄</div>
-                <h2>Let me see if I understood you</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">🔄</div>
+                  <h2>{tt("explainBackTitle")}</h2>
+                </div>
               </div>
 
               {/* Counts, with their denominators visible. Coverage is what
                   you said; the other two are what actually landed. */}
               <div className="gap-scoreboard">
                 <div className="gap-stat">
-                  <span className="gap-label">You covered</span>
+                  <span className="gap-label">{tt("youCovered")}</span>
                   <span className="gap-value">
                     {progress.filter(Boolean).length} / {selectedTopic.points.length}
                   </span>
@@ -2460,7 +2475,7 @@ function App() {
 
                 {aiGrade?.results && (
                   <div className="gap-stat">
-                    <span className="gap-label">{who} followed</span>
+                    <span className="gap-label">{tt("theyFollowed")}</span>
                     <span className="gap-value">
                       {aiGrade.results.filter((r) => r.understood).length} /{" "}
                       {aiGrade.results.length}
@@ -2514,7 +2529,7 @@ function App() {
               {explainBack.unexplainedTerms.length > 0 && (
                 <div className="unexplained">
                   <div className="recall-label">
-                    Words you used but never explained
+                    {tt("undefinedWords")}
                   </div>
 
                   <div className="term-chips">
@@ -2526,7 +2541,7 @@ function App() {
                   </div>
 
                   <p className="recall-footnote">
-                    Every word above came from your own explanation.
+                    {tt("fromYourOwn")}
                   </p>
                 </div>
               )}
@@ -2536,8 +2551,10 @@ function App() {
           {FEATURES.richNotes && aiGrade?.strongestMoment?.quote && (
             <section className="recap-card strongest-card">
               <div className="recap-head">
-                <div className="recap-icon">💬</div>
-                <h2>Your strongest moment</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">💬</div>
+                  <h2>{tt("strongest")}</h2>
+                </div>
               </div>
 
               <blockquote className="strongest-quote">
@@ -2553,8 +2570,10 @@ function App() {
           <div className="recap-grid">
             <section className="recap-card">
               <div className="recap-head">
-                <div className="recap-icon">✓</div>
-                <h2>What {who} followed</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">✓</div>
+                  <h2>{tt("theyFollowedTitle")}</h2>
+                </div>
               </div>
 
               {clearPoints.length > 0 ? (
@@ -2570,8 +2589,10 @@ function App() {
 
             <section className="recap-card">
               <div className="recap-head">
-                <div className="recap-icon">💡</div>
-                <h2>What to improve</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">💡</div>
+                  <h2>{tt("toImprove")}</h2>
+                </div>
               </div>
 
               {FEATURES.richNotes && aiGrade?.practiceThis && (
@@ -2596,8 +2617,10 @@ function App() {
 
           <div className="recap-card conversation-summary">
             <div className="recap-head">
-              <div className="recap-icon">{activeCharacter.glyph}</div>
-              <h2>Where {who} needed help</h2>
+              <div className="recap-head">
+                <div className="recap-icon">{activeCharacter.glyph}</div>
+                <h2>{tt("neededHelp")}</h2>
+              </div>
             </div>
 
             {FEATURES.richNotes && aiGrade?.stumbles?.length > 0 ? (
@@ -2638,8 +2661,10 @@ function App() {
           </div>
           <div className="recap-card">
             <div className="recap-head">
-              <div className="recap-icon">💬</div>
-              <h2>Your explanation</h2>
+              <div className="recap-head">
+                <div className="recap-icon">💬</div>
+                <h2>{tt("yourExplanation")}</h2>
+              </div>
             </div>
 
             {recap.userMessages.length > 0 ? (
@@ -2657,8 +2682,10 @@ function App() {
           {FEATURES.forensics && turningPoints.length > 0 && (
             <section className="recap-card forensics-card">
               <div className="recap-head">
-                <div className="recap-icon">🕵️</div>
-                <h2>Where it turned</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">🕵️</div>
+                  <h2>{tt("turnedTitle")}</h2>
+                </div>
               </div>
 
               <p className="forensics-intro">
@@ -2701,8 +2728,10 @@ function App() {
           {FEATURES.deliveryAnalysis && delivery && (
             <section className="recap-card delivery-card">
               <div className="recap-head">
-                <div className="recap-icon">🗣️</div>
-                <h2>How you said it</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">🗣️</div>
+                  <h2>{tt("deliveryTitle")}</h2>
+                </div>
               </div>
 
               <p className="delivery-intro">
@@ -2731,8 +2760,10 @@ function App() {
           {FEATURES.mirrorMode && recap.userMessages.length > 0 && (
             <section className="recap-card mirror-card">
               <div className="recap-head">
-                <div className="recap-icon">🪞</div>
-                <h2>Now check {activeCharacter.obj === "her" ? "her" : "his"} work</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">🪞</div>
+                  <h2>{tt("mirrorTitle", { theirs: activeCharacter.obj === "her" ? "her" : "his" })}</h2>
+                </div>
               </div>
 
               {!mirror ? (
@@ -2862,8 +2893,10 @@ function App() {
           {FEATURES.teachOff && !teachoff && lessonXp?.score != null && (
             <section className="recap-card teachoff-card">
               <div className="recap-head">
-                <div className="recap-icon">⚔️</div>
-                <h2>Think someone can beat that?</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">⚔️</div>
+                  <h2>{tt("teachoffTitle")}</h2>
+                </div>
               </div>
 
               <p className="teachoff-blurb">
@@ -2894,8 +2927,10 @@ function App() {
           {FEATURES.teachOff && teachoff && (
             <section className="recap-card teachoff-card">
               <div className="recap-head">
-                <div className="recap-icon">⚔️</div>
-                <h2>This Teach-Off</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">⚔️</div>
+                  <h2>{tt("thisTeachoff")}</h2>
+                </div>
               </div>
 
               <p className="teachoff-code-line">
@@ -2937,8 +2972,10 @@ function App() {
           {FEATURES.lessonReplay && lessonXp && (
             <section className="recap-card replay-card">
               <div className="recap-head">
-                <div className="recap-icon">🎞️</div>
-                <h2>The run</h2>
+                <div className="recap-head">
+                  <div className="recap-icon">🎞️</div>
+                  <h2>{tt("runTitle")}</h2>
+                </div>
               </div>
 
               <div className="replay-sheet">
@@ -2982,7 +3019,7 @@ function App() {
               </div>
 
               <button className="replay-copy" onClick={copyReplay}>
-                {replayCopied ? "Copied ✓" : "Copy summary"}
+                {replayCopied ? "✓" : tt("copySummary")}
               </button>
             </section>
           )}
@@ -2995,8 +3032,8 @@ function App() {
                 disabled={isBuildingChallenge}
               >
                 {isBuildingChallenge
-                  ? "Working out what to target…"
-                  : "🎯 Take the challenge →"}
+                  ? tt("preparing")
+                  : tt("takeChallenge")}
               </button>
 
               {challengeError && (
