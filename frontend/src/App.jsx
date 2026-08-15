@@ -192,6 +192,10 @@ function App() {
   // and never touches what gets recorded or graded.
   const [voiceOnly, setVoiceOnly] = useState(snap?.voiceOnly ?? false);
   const [mood, setMood] = useState("curious");
+  // Thinking time: the mic is off AND she has been told to wait. Never
+  // snapshotted — the voice session dies on refresh, so a restored pause
+  // would be a lie.
+  const [paused, setPaused] = useState(false);
   // #46 (student half) — who is doing the teaching.
   const [you, setYou] = useState(() =>
     FEATURES.youCharacter ? loadYou() : null
@@ -405,6 +409,23 @@ function App() {
   const resetMood = () => {
     setMood("curious");
     lastToolMoodAt.current = 0;
+    setPaused(false);
+  };
+
+  // Take a moment to think without her filling the silence. Muting stops
+  // her hearing the room; the stage direction stops her prompting.
+  const togglePause = () => {
+    if (!isConnected) {
+      return;
+    }
+
+    const next = !paused;
+
+    setPaused(next);
+    conversation.setMuted(next);
+    conversation.sendContextualUpdate(
+      next ? DIRECTOR.pause : DIRECTOR.resume
+    );
   };
 
   const resetRecall = () => {
@@ -2339,9 +2360,9 @@ function App() {
             <div
               className={`grandma-character ${
                 activeCharacter.image ? "" : "glyph-character"
-              } ${conversation.isSpeaking ? "speaking" : ""} state-${channel} ${
-                FEATURES.characterMood ? `mood-${mood}` : ""
-              }`}
+              } ${conversation.isSpeaking && !paused ? "speaking" : ""} ${
+                paused ? "state-resting" : `state-${channel}`
+              } ${FEATURES.characterMood && !paused ? `mood-${mood}` : ""}`}
             >
               <span className="mood-shell" key={mood}>
                 {activeCharacter.image ? (
@@ -2360,8 +2381,8 @@ function App() {
             <div className="rail-name">{who}</div>
 
             {FEATURES.characterMood && isConnected && (
-              <div className={`rail-mood mood-${mood}`}>
-                {MOOD_LABEL[mood]}
+              <div className={`rail-mood ${paused ? "resting" : `mood-${mood}`}`}>
+                {paused ? "waiting for you" : MOOD_LABEL[mood]}
               </div>
             )}
 
@@ -2499,9 +2520,14 @@ function App() {
                       className={`mic-button ${
                         conversation.isMuted ? "muted" : "active"
                       }`}
-                      onClick={() =>
-                        conversation.setMuted(!conversation.isMuted)
-                      }
+                      onClick={() => {
+                        if (paused) {
+                          togglePause();
+                          return;
+                        }
+
+                        conversation.setMuted(!conversation.isMuted);
+                      }}
                       title={
                         conversation.isMuted
                           ? "Unmute your microphone"
@@ -2509,6 +2535,18 @@ function App() {
                       }
                     >
                       {conversation.isMuted ? "🔇" : "🎙️"}
+                    </button>
+
+                    <button
+                      className={`pause-button ${paused ? "resting" : ""}`}
+                      onClick={togglePause}
+                      title={
+                        paused
+                          ? `Carry on — ${who} starts listening again`
+                          : `Take a moment. ${who} waits, and won't ask if you're still there`
+                      }
+                    >
+                      {paused ? "▶︎ I'm ready" : "🤔 Let me think"}
                     </button>
 
                     <button
@@ -2536,7 +2574,9 @@ function App() {
                   )}
 
                   <p>
-                    {conversation.isMuted
+                    {paused
+                      ? `🤔 Take your time — ${who} is waiting quietly.`
+                      : conversation.isMuted
                       ? `🔇 Microphone muted — ${who} can't hear you.`
                       : conversation.isSpeaking
                         ? `🔊 ${who} is speaking...`

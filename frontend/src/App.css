@@ -2417,3 +2417,43 @@ details.misconceptions-panel .misconceptions-list {
   background: rgba(201, 138, 43, 0.14);
   color: #a06a17;
 }
+
+/* Thinking time (pause) */
+
+.pause-button {
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid #d8d0c4;
+  border-radius: 999px;
+  background: #fffdf8;
+  color: #4a443c;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.pause-button:hover {
+  border-color: #26221d;
+}
+
+.pause-button.resting {
+  background: #26221d;
+  border-color: #26221d;
+  color: #fff;
+}
+
+/* Paused overrides every mood colour — she is not feeling anything about
+   the explanation right now, she is waiting. */
+.rail-mood.resting {
+  background: rgba(38, 34, 29, 0.07);
+  color: #6d655b;
+  font-style: italic;
+}
+
+/* No ambient motion while resting: a breathing avatar reads as impatience. */
+.grandma-character.state-resting {
+  animation: none;
+  opacity: 0.72;
+  transition: opacity 0.4s ease;
+}

@@ -528,3 +528,33 @@ sentence would make the avatar flicker constantly.
 Rejected, both per the plan: a marker token in her replies (TTS reads it
 aloud) and a classify call per turn (her face would lag her voice by a
 full turn).
+
+## Session 26 — Thinking time (pause)
+
+A "🤔 Let me think" button beside the mic. Muting alone was never enough:
+session 25's own transcript shows the student pausing and Grandma asking
+"Are you still there, dear?" three times — exactly the pressure a pause is
+meant to remove. So pausing does two things at once: mutes the mic, and
+sends a `From now on` stage direction telling her to wait in silence and
+not check on you.
+
+Resuming unmutes and releases her, with an instruction not to comment on
+the pause.
+
+Named `paused`, not `thinking` — the channel axis already uses "thinking"
+for HER composing a reply, and one word for both would read as one thing.
+While paused she is visually at rest: no ambient animation (a breathing
+avatar reads as impatience), dimmed, and the mood caption is replaced by
+"waiting for you" since she isn't feeling anything about the explanation
+just then.
+
+Deliberately not snapshotted: the voice session dies on refresh, so a
+restored pause would claim a state that no longer exists.
+
+One desync closed — manually unmuting while paused now resumes properly,
+rather than leaving a live mic with a character still under orders to be
+silent. The paused+unmuted combination is unreachable by design.
+
+Note on the Speed Teacher badge: paused time counts as wall time, so a
+long think costs the badge. That is the honest reading of "under three
+minutes" and needs no special handling.

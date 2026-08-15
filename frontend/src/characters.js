@@ -211,6 +211,15 @@ If the note begins "From now on:" — change how you behave for the rest of the 
 // A directive lands on the character's NEXT reply (after the student speaks
 // again), never instantly — no UI copy may promise otherwise.
 export const DIRECTOR = {
+  // Thinking time. Muting alone isn't enough — she fills silence with
+  // "are you still there, dear?", which is exactly the pressure the pause
+  // exists to remove. She has to be told to wait.
+  pause:
+    "[DIRECTOR] From now on: the student has paused to think. Say absolutely nothing — no questions, no prompting, no checking whether they are still there. Wait in silence however long it takes, until they speak to you again.",
+
+  resume:
+    "[DIRECTOR] From now on: the student has finished thinking and is ready to carry on. Return to normal — but do not comment on the pause or mention that they were quiet.",
+
   misconception: (m) =>
     `[DIRECTOR] Next reply only: say you think you have got it now, then state this back as if you genuinely believe it — "${m}" — and ask if that's right. Sound pleased with yourself. Give no hint that it is wrong. One or two sentences.`,
 };
