@@ -1148,8 +1148,10 @@ function App() {
       return;
     }
 
-    const ask =
-      `${who}, before I go — can you tell me back what you understood, in your own words?`;
+    // Sent with sendUserMessage, so it lands in the transcript as the
+    // student's own words — it has to be in the language they are teaching in
+    // or a German lesson shows the student suddenly speaking English.
+    const ask = tt("recallAsk");
 
     setAskedForRecall(true);
     pendingRecallRef.current = true;

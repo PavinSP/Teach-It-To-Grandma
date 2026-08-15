@@ -97,7 +97,7 @@ export function Landing({
                     setYouDraftParams(you.params);
                     setShowYouEditor((v) => !v);
                   }}
-                  title="Change your character"
+                  title={tt("editCharacter")}
                 >
                   <img className="you-face" src={you.src} alt="" />
                   <span>{you.name}</span>
@@ -132,7 +132,7 @@ export function Landing({
                       <button
                         key={index}
                         className="you-preset"
-                        title="Start from this one, then tweak"
+                        title={tt("presetHint")}
                         onClick={() => setYouDraftParams(preset)}
                       >
                         <img src={`/you-${index + 1}.png`} alt="" />
@@ -409,7 +409,7 @@ export function Landing({
             <button
               className="reset-link"
               onClick={() => resetNow("session")}
-              title="Clears any half-finished lesson still saved in this tab. Keeps your name, XP and badges."
+              title={tt("clearLessonHint")}
             >
               {tt("clearLesson")}
             </button>
@@ -419,15 +419,13 @@ export function Landing({
             <button
               className="reset-link danger"
               onClick={() => {
-                const sure = window.confirm(
-                  "Clear everything?\n\nYour name, face, XP and badges will be deleted. This can't be undone."
-                );
+                const sure = window.confirm(tt("resetAllConfirm"));
 
                 if (sure) {
                   resetNow("all");
                 }
               }}
-              title="Deletes your name, face, XP and badges as well"
+              title={tt("resetAllHint")}
             >
               {tt("resetAll")}
             </button>

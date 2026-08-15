@@ -379,9 +379,7 @@ export function Session({
                         conversation.setMuted(!conversation.isMuted);
                       }}
                       title={
-                        conversation.isMuted
-                          ? "Unmute your microphone"
-                          : "Mute your microphone"
+                        conversation.isMuted ? tt("micUnmute") : tt("micMute")
                       }
                     >
                       {conversation.isMuted ? "🔇" : "🎙️"}
@@ -390,11 +388,7 @@ export function Session({
                     <button
                       className={`pause-button ${paused ? "resting" : ""}`}
                       onClick={togglePause}
-                      title={
-                        paused
-                          ? `Carry on — ${who} starts listening again`
-                          : `Take a moment. ${who} waits, and won't ask if you're still there`
-                      }
+                      title={paused ? tt("resumeHint") : tt("pauseHint")}
                     >
                       {paused ? tt("imReady") : tt("letMeThink")}
                     </button>
@@ -402,7 +396,7 @@ export function Session({
                     <button
                       className="end-call-button"
                       onClick={stopConversation}
-                      title="End the conversation"
+                      title={tt("endCallHint")}
                     >
                       {tt("endCall")}
                     </button>
@@ -548,8 +542,7 @@ export function Session({
 
                 {bannedHits.size > 0 && (
                   <p className="banned-hint">
-                    {bannedHits.size} slipped through — that's fine, keep
-                    going.
+                    {tt("bannedSlipped", { count: bannedHits.size })}
                   </p>
                 )}
               </div>
