@@ -394,6 +394,14 @@ Here is what the listener said during the lesson:
 ${listenerText || "(the listener said nothing)"}
 ---
 
+Also judge the DEPTH the explanation reached, as a ladder. Each rung requires the one below it:
+- "named": they said what it is called, nothing more.
+- "defined": they gave a definition — correct, but the kind you could memorise without understanding.
+- "mechanism": they explained how it actually works, why one step leads to the next.
+- "applied": they showed it working on a concrete case or example.
+- "boundaries": they said when it fails, breaks down, or does not apply.
+Set "depth.reached" to the highest rung genuinely earned. Set "depth.evidence" to the student's own words that earned it. Set "depth.next" to one sentence naming what the NEXT rung up would take. Be strict: a fluent definition is "defined", not "mechanism". Reciting a textbook line is "named" or "defined", never higher.
+
 In "blindSpots", name up to 3 things that genuinely matter for understanding this topic which the student never touched at all — not points they explained badly, but ground they never went near. Phrase each as the thing itself ("where the training data comes from"), not as criticism. Empty list if they covered the ground.
 
 In "stumbles", list up to 3 moments where the listener had to stop and ask what something meant or how it worked: copy the listener's question VERBATIM into "grandmaQuote", and put the single word or short phrase they were stuck on into "aboutTerm". Only real stops count — ordinary curiosity is not a stumble. Empty list if there were none.
@@ -417,6 +425,7 @@ Respond with JSON only, in exactly this shape:
   "strongestMoment": { "quote": "<the student's exact sentence, or empty>", "why": "<one line, or empty>" },
   "practiceThis": "<one concrete action>",
   "stumbles": [ { "grandmaQuote": "<the listener's exact question>", "aboutTerm": "<the word they were stuck on>" } ],
+  "depth": { "reached": "named|defined|mechanism|applied|boundaries", "evidence": "<their exact words, or empty>", "next": "<one sentence>" },
   "blindSpots": [ "<something they never went near>" ]${
     ambushedMisconception
       ? `,\n  "misconceptionHandling": { "noticed": true or false, "corrected": true or false, "quote": "<their exact correcting words, or empty>" }`
@@ -499,6 +508,19 @@ Respond with JSON only, in exactly this shape:
                 additionalProperties: false,
               },
               practiceThis: { type: "string" },
+              depth: {
+                type: "object",
+                properties: {
+                  reached: {
+                    type: "string",
+                    enum: ["named", "defined", "mechanism", "applied", "boundaries"],
+                  },
+                  evidence: { type: "string" },
+                  next: { type: "string" },
+                },
+                required: ["reached", "evidence", "next"],
+                additionalProperties: false,
+              },
               blindSpots: { type: "array", items: { type: "string" } },
               stumbles: {
                 type: "array",
@@ -534,6 +556,7 @@ Respond with JSON only, in exactly this shape:
               "strongestMoment",
               "practiceThis",
               "stumbles",
+              "depth",
               "blindSpots",
               ...(ambushedMisconception ? ["misconceptionHandling"] : []),
             ],
@@ -581,6 +604,15 @@ Respond with JSON only, in exactly this shape:
         !said.includes(graded.strongestMoment.quote.toLowerCase())
       ) {
         graded.strongestMoment = { quote: "", why: "" };
+      }
+
+      if (
+        graded.depth &&
+        typeof graded.depth.evidence === "string" &&
+        graded.depth.evidence &&
+        !said.includes(graded.depth.evidence.toLowerCase())
+      ) {
+        graded.depth.evidence = "";
       }
 
       graded.blindSpots = (graded.blindSpots ?? [])

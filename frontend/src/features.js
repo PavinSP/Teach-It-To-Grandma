@@ -93,6 +93,10 @@ const DEFAULTS = {
   // switches the lesson, the grading and her voice together.
   multilingual: true,
 
+  // The rungs from naming a thing to knowing where it breaks. One number
+  // cannot say which of those you reached.
+  depthLadder: true,
+
   // #34 — several people teach the SAME stored lesson in turn, one board.
   // Same machine, sequential — the only multiplayer that honestly works
   // without deployment.

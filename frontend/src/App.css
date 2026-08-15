@@ -2752,3 +2752,82 @@ details.misconceptions-panel .misconceptions-list {
   opacity: 0.5;
   cursor: default;
 }
+
+/* Depth ladder */
+
+.depth-ladder {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+}
+
+.depth-rung {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
+}
+
+.depth-mark {
+  font-size: 13px;
+  width: 14px;
+  text-align: center;
+}
+
+.depth-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.depth-text em {
+  font-size: 13px;
+  font-style: normal;
+  opacity: 0.55;
+}
+
+.depth-rung.below {
+  opacity: 0.75;
+}
+
+.depth-rung.below .depth-mark {
+  color: #2f7a4f;
+}
+
+.depth-rung.here {
+  background: rgba(47, 122, 79, 0.1);
+  border: 1px solid rgba(47, 122, 79, 0.3);
+}
+
+.depth-rung.here .depth-mark {
+  color: #2f7a4f;
+}
+
+.depth-rung.above {
+  opacity: 0.38;
+}
+
+.depth-you {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2f7a4f;
+}
+
+.depth-evidence {
+  margin: 0 0 10px;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.depth-next {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.8;
+}

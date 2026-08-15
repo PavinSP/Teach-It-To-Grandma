@@ -34,6 +34,17 @@ const GRADING_API = import.meta.env.VITE_GRADING_API || "http://localhost:3001";
 
 // Starting points, not limits — any topic can be typed in.
 // Both codes are in ElevenLabs' supported set and configured on the agent.
+// The ladder each rung of which needs the one below it. Naming a thing
+// and knowing where it breaks are not the same achievement, and one
+// number cannot say which you reached.
+const DEPTH_RUNGS = [
+  { key: "named", label: "Named it", hint: "You said what it is called" },
+  { key: "defined", label: "Defined it", hint: "A correct definition — the kind you can memorise" },
+  { key: "mechanism", label: "Explained how", hint: "Why one step leads to the next" },
+  { key: "applied", label: "Showed it working", hint: "A concrete case, worked through" },
+  { key: "boundaries", label: "Knew its limits", hint: "When it fails or does not apply" },
+];
+
 const LANGUAGES = [
   { code: "en", label: "English", flag: "🇬🇧" },
   { code: "de", label: "Deutsch", flag: "🇩🇪" },
@@ -2021,6 +2032,51 @@ function App() {
                 <p className="myth-verdict missed">
                   ○ {who} walked away still believing it. That false idea
                   went unchallenged.
+                </p>
+              )}
+            </section>
+          )}
+
+          {FEATURES.depthLadder && aiGrade?.depth && (
+            <section className="recap-card depth-card">
+              <div className="recap-icon">🪜</div>
+
+              <h2>How deep you went</h2>
+
+              <ol className="depth-ladder">
+                {DEPTH_RUNGS.map((rung, i) => {
+                  const reachedAt = DEPTH_RUNGS.findIndex(
+                    (r) => r.key === aiGrade.depth.reached
+                  );
+                  const state =
+                    i < reachedAt ? "below" : i === reachedAt ? "here" : "above";
+
+                  return (
+                    <li key={rung.key} className={`depth-rung ${state}`}>
+                      <span className="depth-mark">
+                        {state === "above" ? "○" : "●"}
+                      </span>
+
+                      <span className="depth-text">
+                        <strong>{rung.label}</strong>
+                        <em>{rung.hint}</em>
+                      </span>
+
+                      {state === "here" && (
+                        <span className="depth-you">you got here</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+
+              {aiGrade.depth.evidence && (
+                <p className="depth-evidence">“{aiGrade.depth.evidence}”</p>
+              )}
+
+              {aiGrade.depth.next && (
+                <p className="depth-next">
+                  <strong>Next rung:</strong> {aiGrade.depth.next}
                 </p>
               )}
             </section>
