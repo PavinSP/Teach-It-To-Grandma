@@ -12,6 +12,7 @@ import {
   evaluateAchievements,
 } from "./progression";
 import { CHARACTERS, buildPersonaPrompt, DIRECTOR } from "./characters";
+import { YOU_FACES, loadYou, saveYou } from "./you";
 import "./App.css";
 
 const AGENT_ID = "agent_8901kzzhzexhe2qt3903amp09nnq";
@@ -166,6 +167,13 @@ function App() {
   // #18 — a view preference, not session state: it survives lesson changes
   // and never touches what gets recorded or graded.
   const [voiceOnly, setVoiceOnly] = useState(false);
+  // #46 (student half) — who is doing the teaching.
+  const [you, setYou] = useState(() =>
+    FEATURES.youCharacter ? loadYou() : null
+  );
+  const [showYouEditor, setShowYouEditor] = useState(false);
+  const [youDraftName, setYouDraftName] = useState("");
+  const [youDraftFace, setYouDraftFace] = useState(YOU_FACES[0]);
   // #11 — the misconception the character was directed to state, if any.
   const [ambush, setAmbush] = useState(null);
   // #10 — the retelling game: claims, which the student flagged, whether
@@ -178,7 +186,9 @@ function App() {
   // #34 — the teach-off this session belongs to, if any: {code, player}.
   const [teachoff, setTeachoff] = useState(null);
   const [teachoffBoard, setTeachoffBoard] = useState(null);
-  const [teachoffName, setTeachoffName] = useState("");
+  const [teachoffName, setTeachoffName] = useState(
+    () => (FEATURES.youCharacter ? loadYou()?.name : "") ?? ""
+  );
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
   const [isJoining, setIsJoining] = useState(false);
@@ -856,6 +866,20 @@ function App() {
     }
   };
 
+  const saveYouProfile = () => {
+    const saved = saveYou(youDraftName, youDraftFace);
+
+    if (saved) {
+      setYou(saved);
+      setShowYouEditor(false);
+
+      // Convenience, not identity: prefill the board name if it's empty.
+      if (!teachoffName.trim()) {
+        setTeachoffName(saved.name);
+      }
+    }
+  };
+
   const toggleMirrorFlag = (id) => {
     if (mirrorSubmitted) {
       return;
@@ -1042,6 +1066,72 @@ function App() {
             Name anything you know. Then try to teach it to someone
             who knows absolutely nothing about it.
           </p>
+
+          {FEATURES.youCharacter && (
+            <div className="you-widget">
+              {you ? (
+                <button
+                  className="you-chip"
+                  onClick={() => {
+                    setYouDraftName(you.name);
+                    setYouDraftFace(you.face);
+                    setShowYouEditor((v) => !v);
+                  }}
+                  title="Change your character"
+                >
+                  <img className="you-face" src={you.face} alt="" />
+                  <span>{you.name}</span>
+                  <span className="you-edit-hint">✎</span>
+                </button>
+              ) : (
+                <button
+                  className="you-chip you-chip-empty"
+                  onClick={() => {
+                    setYouDraftName("");
+                    setYouDraftFace(YOU_FACES[0]);
+                    setShowYouEditor((v) => !v);
+                  }}
+                >
+                  🙂 Create your character
+                </button>
+              )}
+
+              {showYouEditor && (
+                <div className="you-editor">
+                  <input
+                    className="you-name-input"
+                    value={youDraftName}
+                    onChange={(event) => setYouDraftName(event.target.value)}
+                    placeholder="Your name"
+                    maxLength={24}
+                    autoFocus
+                  />
+
+                  <div className="you-face-grid">
+                    {YOU_FACES.map((face) => (
+                      <button
+                        key={face}
+                        className={`you-face-option ${
+                          youDraftFace === face ? "selected" : ""
+                        }`}
+                        onClick={() => setYouDraftFace(face)}
+                      >
+                        <img src={face} alt="" />
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    className="you-save"
+                    onClick={saveYouProfile}
+                    disabled={!youDraftName.trim()}
+                  >
+                    That's me →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {FEATURES.characterPicker && CHARACTERS.length > 1 && (
             <>
@@ -2065,7 +2155,7 @@ function App() {
 
                   const role =
                     message.source === "user"
-                      ? "YOU"
+                      ? (you?.name ?? "YOU").toUpperCase()
                       : whoUpper;
 
                   return (

@@ -2000,3 +2000,121 @@ details.misconceptions-panel .misconceptions-list {
   font-size: 16px;
   font-weight: 700;
 }
+
+/* -----------------------------
+   Your character (#46, student half)
+----------------------------- */
+
+.you-widget {
+  margin-bottom: 26px;
+}
+
+.you-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 8px;
+  border: 1px solid #d8d0c4;
+  border-radius: 999px;
+  background: #fffdf8;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.you-chip:hover {
+  border-color: #26221d;
+}
+
+.you-chip-empty {
+  padding: 10px 18px;
+  font-weight: 600;
+}
+
+.you-face {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.you-edit-hint {
+  opacity: 0.4;
+  font-weight: 400;
+}
+
+.you-editor {
+  margin-top: 14px;
+  padding: 18px;
+  border: 1px solid #d8d0c4;
+  border-radius: 16px;
+  background: #fffdf8;
+  max-width: 560px;
+}
+
+.you-name-input {
+  width: 100%;
+  padding: 11px 16px;
+  border: 1px solid #d8d0c4;
+  border-radius: 10px;
+  font-size: 15px;
+  outline: none;
+  margin-bottom: 14px;
+}
+
+.you-name-input:focus {
+  border-color: #26221d;
+}
+
+.you-face-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.you-face-option {
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+  transition: transform 0.12s ease;
+}
+
+.you-face-option:hover {
+  transform: scale(1.07);
+}
+
+.you-face-option.selected {
+  border-color: #26221d;
+}
+
+.you-face-option img {
+  width: 100%;
+  border-radius: 50%;
+}
+
+.you-save {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 999px;
+  background: #26221d;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.you-save:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@media (max-width: 600px) {
+  .you-face-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

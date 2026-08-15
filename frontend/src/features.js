@@ -66,6 +66,10 @@ const DEFAULTS = {
   // flags the wrong ones. Scored client-side: we know which were planted.
   mirrorMode: true,
 
+  // #46 (student half) — your own name and face: transcript says who you
+  // are, teach-off fields come pre-filled.
+  youCharacter: true,
+
   // #34 — several people teach the SAME stored lesson in turn, one board.
   // Same machine, sequential — the only multiplayer that honestly works
   // without deployment.
