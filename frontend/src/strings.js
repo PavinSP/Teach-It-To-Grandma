@@ -333,6 +333,7 @@ const STRINGS = {
     quizNobody: "nobody",
     quizPlayAgain: "New game",
     quizLeave: "← Back to teaching",
+    quizLeaveGame: "← Leave this game",
     quizRecallNote:
       "Fifteen right answers is a good memory. Whether you could explain any one of them out loud is a different question — and that one is upstairs.",
     quizNoGame: "No game with that code.",
@@ -658,6 +659,7 @@ const STRINGS = {
     quizNobody: "niemand",
     quizPlayAgain: "Neues Spiel",
     quizLeave: "← Zurück zum Unterrichten",
+    quizLeaveGame: "← Dieses Spiel verlassen",
     quizRecallNote:
       "Fünfzehn richtige Antworten sind ein gutes Gedächtnis. Ob du eine davon laut erklären könntest, ist eine andere Frage — und die stellt die Lektion.",
     quizNoGame: "Kein Spiel mit diesem Code.",

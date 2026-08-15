@@ -22,11 +22,36 @@
 }
 
 .quiz-exit,
+.quiz-escape,
 .quiz-eyebrow {
   font-size: 12px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #8c8378;
+}
+
+/* The way out of a game in progress. Quieter than the menu's exit and
+   pinned top-right, so it is reachable from every screen without competing
+   with the question a player is trying to read. */
+.quiz-escape {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 6px 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
+  z-index: 2;
+}
+
+.quiz-escape:hover {
+  opacity: 1;
+}
+
+.quiz-inner {
+  position: relative;
 }
 
 .quiz-exit {

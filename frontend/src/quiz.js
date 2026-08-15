@@ -27,6 +27,38 @@ export function playerId() {
   return id;
 }
 
+// The proof that this tab is that player, issued by the server and kept
+// beside the id it belongs to.
+//
+// The id alone was the credential until a review found what that allowed:
+// both devices are told each other's ids so the screen can say who has
+// answered, so either player could answer as the other and — answers being
+// first-write-wins — leave the victim's real tap to be discarded. The id
+// still says who; this says it is really them.
+//
+// sessionStorage, like the id: the same lifetime, the same per-tab scope,
+// gone when the tab is. Nothing else works — a pass that outlived the id it
+// authenticates would be a pass for a player who no longer exists.
+const PASS_KEY = "quiz-player-pass";
+
+export function playerPass() {
+  try {
+    return sessionStorage.getItem(PASS_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function keepPass(pass) {
+  try {
+    if (pass) {
+      sessionStorage.setItem(PASS_KEY, pass);
+    }
+  } catch {
+    // Private mode. The join below will simply be treated as a first join.
+  }
+}
+
 // The name is worth remembering across tabs — it is the one thing a player
 // would have to type twice otherwise.
 const NAME_KEY = "quiz-player-name";
@@ -99,18 +131,37 @@ const post = (path, body) =>
     body: JSON.stringify(body ?? {}),
   });
 
-export const createGame = (topic, language, player) =>
-  post("/api/quiz/game", { topic, language, player });
+// Both routes that seat a player hand back a pass, and both keep it before
+// the caller sees the response — so no call site has to remember to.
+export const createGame = async (topic, language, player) => {
+  const game = await post("/api/quiz/game", { topic, language, player });
+
+  keepPass(game.pass);
+
+  return game;
+};
 
 export const voiceGame = (code) => post(`/api/quiz/${code}/voice`);
 
-export const joinGame = (code, id, name) =>
-  post(`/api/quiz/${code}/join`, { id, name });
+export const joinGame = async (code, id, name) => {
+  const state = await post(`/api/quiz/${code}/join`, {
+    id,
+    name,
+    // Present on a rejoin, empty on a first join. The server mints one when
+    // there is nothing to prove yet, and demands a match when there is.
+    pass: playerPass(),
+  });
 
-export const startGame = (code, id) => post(`/api/quiz/${code}/start`, { id });
+  keepPass(state.pass);
+
+  return state;
+};
+
+export const startGame = (code, id) =>
+  post(`/api/quiz/${code}/start`, { id, pass: playerPass() });
 
 export const sendAnswer = (code, id, index, choice) =>
-  post(`/api/quiz/${code}/answer`, { id, index, choice });
+  post(`/api/quiz/${code}/answer`, { id, index, choice, pass: playerPass() });
 
 export const fetchQuestions = (code) => call(`/api/quiz/${code}`);
 

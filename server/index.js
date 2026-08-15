@@ -1986,6 +1986,38 @@ function scoreGame(meta, state) {
 // own argument is that being told the answer immediately teaches nothing, so
 // the summary at the end is where all of it arrives, and a network tab is
 // not a way around that.
+// A player's id says WHO they are and is shared with the room. Their pass
+// says they ARE that person and never leaves the device it was issued to.
+//
+// The two were one thing until a review pointed out what that meant: ids are
+// published to both devices so the screen can say who has answered, and the
+// answer route authorised on nothing more than "is this id in the game". So
+// either player could read the other's id off /state and answer AS them —
+// and because the first answer per player per question wins and cannot be
+// overwritten, the victim's real tap was then thrown away as a duplicate.
+// One player quietly picking the other's answers, with the summary blaming
+// the victim for them.
+function makePass() {
+  let pass = "";
+
+  for (let i = 0; i < 24; i++) {
+    pass += ALPHANUMERIC[Math.floor(Math.random() * ALPHANUMERIC.length)];
+  }
+
+  return pass;
+}
+
+const ALPHANUMERIC =
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+// Answers to "is this really them", and the only place that question is
+// asked. A player rejoining after a reload presents the pass they kept.
+function isReally(state, id, pass) {
+  const player = state.players.find((entry) => entry.id === id);
+
+  return Boolean(player && pass && player.pass === pass);
+}
+
 function publicState(meta, live, now) {
   const state = project(meta, live, now);
   const answered = state.players
@@ -2046,13 +2078,21 @@ app.post("/api/quiz/game", rateLimit, async (req, res) => {
       hostId: id,
     });
 
+    const pass = makePass();
+
     await setQuizField(meta.code, `p:${id}`, {
       id,
       name,
       joinedAt: Date.now(),
+      pass,
     });
 
-    res.json({ code: meta.code, name: meta.name, count: meta.questions.length });
+    res.json({
+      code: meta.code,
+      name: meta.name,
+      count: meta.questions.length,
+      pass,
+    });
   } catch (err) {
     console.error("Could not start a quiz game:", err);
 
@@ -2154,22 +2194,42 @@ app.post("/api/quiz/:code/join", async (req, res) => {
     return res.status(400).json({ error: "Expected { id, name }." });
   }
 
+  // The pass is minted here, never accepted from the body on a first join —
+  // a client-chosen secret is only as unguessable as the client bothered to
+  // make it, and the whole point is that the other device cannot produce it.
+  const offered = String(req.body?.pass ?? "").trim().slice(0, 64);
   const { players } = readLive(game.live);
-  const known = players.some((player) => player.id === id);
+  const existing = players.find((player) => player.id === id);
 
   // A returning player is not a third player. Without this, a refresh mid
   // game locks you out of your own game.
-  if (!known && players.length >= QUIZ_PLAYERS) {
+  if (!existing && players.length >= QUIZ_PLAYERS) {
     return res.status(409).json({ error: "That game already has two players." });
   }
 
-  await setQuizField(code, `p:${id}`, {
+  // Coming back to a seat means proving it was yours. Rejoining is the one
+  // route that must accept a player who already exists, so without this it
+  // would be the way around every other check: claim the opponent's id,
+  // receive their seat, and answer as them for the rest of the game.
+  if (existing && existing.pass && existing.pass !== offered) {
+    return res.status(403).json({ error: "That player is someone else's." });
+  }
+
+  const seat = {
     id,
     name,
-    joinedAt: players.find((player) => player.id === id)?.joinedAt ?? Date.now(),
-  });
+    joinedAt: existing?.joinedAt ?? Date.now(),
+    pass: existing?.pass ?? makePass(),
+  };
 
-  res.json(publicState(game.meta, (await getQuizLive(code)) ?? {}, Date.now()));
+  await setQuizField(code, `p:${id}`, seat);
+
+  res.json({
+    // Sent once, to the device that owns it, and never included in the
+    // state both players can read.
+    pass: seat.pass,
+    ...publicState(game.meta, (await getQuizLive(code)) ?? {}, Date.now()),
+  });
 });
 
 app.post("/api/quiz/:code/start", async (req, res) => {
@@ -2181,9 +2241,11 @@ app.post("/api/quiz/:code/start", async (req, res) => {
   }
 
   const id = String(req.body?.id ?? "").trim();
-  const { players, durations } = readLive(game.live);
+  const pass = String(req.body?.pass ?? "").trim();
+  const live = readLive(game.live);
+  const { players, durations } = live;
 
-  if (id !== game.meta.hostId) {
+  if (id !== game.meta.hostId || !isReally(live, id, pass)) {
     return res.status(403).json({ error: "Only the player who made the game can start it." });
   }
 
@@ -2193,7 +2255,14 @@ app.post("/api/quiz/:code/start", async (req, res) => {
 
   // Freeze the clip lengths into the run, so the timeline cannot be moved
   // afterwards by a clip that arrived late.
-  await setQuizField(
+  //
+  // Set-once for the same reason "run" is. This wrote unconditionally at
+  // first, which meant a second POST — a retry, a double tap, a proxy
+  // replaying the request — re-froze the durations of a game already in
+  // progress. Every clip voiced since the real start would join the array,
+  // every round after the current one would move, and the two devices would
+  // disagree about when the question they were both looking at closed.
+  await setQuizFieldOnce(
     code,
     "dur",
     JSON.stringify(
@@ -2216,6 +2285,7 @@ app.post("/api/quiz/:code/answer", async (req, res) => {
   }
 
   const id = String(req.body?.id ?? "").trim();
+  const pass = String(req.body?.pass ?? "").trim();
   const index = Number(req.body?.index);
   const choice = Number(req.body?.choice);
 
@@ -2226,7 +2296,9 @@ app.post("/api/quiz/:code/answer", async (req, res) => {
   const now = Date.now();
   const state = project(game.meta, game.live, now);
 
-  if (!state.players.some((player) => player.id === id)) {
+  // Being in the game is not enough — the other player is also in the game,
+  // and their id is on this player's screen.
+  if (!isReally(state, id, pass)) {
     return res.status(403).json({ error: "You are not in that game." });
   }
 

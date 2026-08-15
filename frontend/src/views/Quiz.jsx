@@ -417,9 +417,29 @@ export function Quiz({ language, initialCode = "", onExit }) {
     onExit();
   };
 
-  const shell = (children) => (
+  // Every screen gets a way out, which is why this lives in the shell rather
+  // than on the screens that happened to think of it.
+  //
+  // Four of them did not. The lobby, the countdown, the question and the gap
+  // rendered no exit at all, and a reload could not escape either — the app
+  // reopens the quiz whenever this tab remembers a game and rejoins it on
+  // mount. So a guest whose host closed their tab, or a host nobody joined,
+  // sat on a screen with nothing to press until they thought to close the
+  // tab. The game itself lives for six hours.
+  //
+  // Deliberately quiet, and deliberately not on the menu, which has its own
+  // way back to the lesson.
+  const shell = (children, escapable = false) => (
     <main className="quiz">
-      <div className="quiz-inner">{children}</div>
+      <div className="quiz-inner">
+        {escapable && (
+          <button className="quiz-escape" onClick={leaveGame}>
+            {tt("quizLeaveGame")}
+          </button>
+        )}
+
+        {children}
+      </div>
     </main>
   );
 
@@ -516,7 +536,7 @@ export function Quiz({ language, initialCode = "", onExit }) {
   }
 
   if (!state) {
-    return shell(<p className="quiz-progress">{tt("quizBuilding")}</p>);
+    return shell(<p className="quiz-progress">{tt("quizBuilding")}</p>, true);
   }
 
   const players = state.results?.players ?? state.players;
@@ -573,6 +593,8 @@ export function Quiz({ language, initialCode = "", onExit }) {
 
         {error && <p className="quiz-error">{error}</p>}
       </>
+    ,
+    true
     );
   }
 
@@ -585,6 +607,8 @@ export function Quiz({ language, initialCode = "", onExit }) {
 
         <p className="quiz-what">{tt("quizCountdown")}</p>
       </div>
+    ,
+    true
     );
   }
 
@@ -757,5 +781,7 @@ export function Quiz({ language, initialCode = "", onExit }) {
 
       {error && <p className="quiz-error">{error}</p>}
     </div>
+  ,
+  true
   );
 }
