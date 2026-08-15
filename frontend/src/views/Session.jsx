@@ -1,5 +1,6 @@
 import { FEATURES } from "../features";
 import { MOOD_LABEL } from "../mood";
+import { UnderstandingGraph } from "../components/UnderstandingGraph";
 
 // The live lesson. Everything here is driven by App: the ElevenLabs
 // conversation object, the transcript, the coverage the keyword pass
@@ -257,6 +258,19 @@ export function Session({
                   )}
                 </div>
               ) : (
+              <>
+              {/* The machine's own view of the lesson, above the words that
+                  produced it. Everything it draws is derived from the
+                  checklist and the coverage pass App already computes. */}
+              <UnderstandingGraph
+                points={selectedTopic.points}
+                checks={selectedTopic.checks}
+                progress={progress}
+                grade={null}
+                topic={selectedTopic.name}
+                waitingLabel={tt("waitingForSignal")}
+              />
+
               <div className="transcript">
                 {messages.length === 0 && (
                   <div className="transcript-message grandma-message">
@@ -311,6 +325,7 @@ export function Session({
                 })}
                 <div ref={transcriptEndRef} />
               </div>
+              </>
               )}
               {error && (
                 <div className="error-message">

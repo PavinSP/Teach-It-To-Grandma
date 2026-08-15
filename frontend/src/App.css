@@ -1,3 +1,6 @@
+@import "./styles/tokens.css";
+@import "./styles/grain.css";
+
 * {
   box-sizing: border-box;
 }
@@ -3568,5 +3571,89 @@ details.misconceptions-panel .misconceptions-list {
 
   .recall-button {
     width: 100%;
+  }
+}
+
+/* =========================================================================
+   The understanding graph
+   =========================================================================
+
+   A dark instrument panel inset into the page: the one surface that is
+   measuring rather than reporting. The contrast is deliberate — the graph
+   is the machine's own view of the lesson, and it should not look like the
+   notes around it.
+
+   Colours come from tokens.css, including the ones the canvas reads back
+   out through getComputedStyle. Nothing here is a literal.
+   ========================================================================= */
+
+.graph-wrap {
+  position: relative;
+  height: 320px;
+  margin-bottom: 18px;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--r-panel);
+  background: var(--bg-void);
+  overflow: hidden;
+  contain: layout paint;
+}
+
+.graph-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Before a word is spoken there is nothing to draw, so the panel says so
+   rather than sitting empty and looking broken. */
+.graph-waiting {
+  position: absolute;
+  left: var(--s4);
+  bottom: var(--s3);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.graph-waiting::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: var(--s2);
+  border-radius: var(--r-pill);
+  background: var(--signal);
+  vertical-align: middle;
+  animation: graph-waiting-pulse 1.6s var(--e-out-quad) infinite;
+}
+
+@keyframes graph-waiting-pulse {
+  0%, 100% { opacity: 0.25; }
+  50%      { opacity: 1; }
+}
+
+/* The designed alternative, not the absence of one: the dot stops breathing
+   and simply stays lit, so the panel still reads as live. */
+[data-motion="reduced"] .graph-waiting::after {
+  animation: none;
+  opacity: 1;
+}
+
+/* Available to a screen reader, invisible to everyone else. The canvas is
+   decorative and marked aria-hidden, so this carries its meaning. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 900px) {
+  .graph-wrap {
+    height: 240px;
   }
 }
