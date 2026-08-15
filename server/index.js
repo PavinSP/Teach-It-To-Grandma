@@ -70,16 +70,38 @@ function inLanguage(code) {
 
 const app = express();
 
-// Only the app's own dev origins — an open CORS policy plus an
-// unauthenticated endpoint that spends API credits is an invitation.
+const DEV_ORIGINS = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+];
+
+// A browser's Origin header never carries a trailing slash or a path, but
+// the value people paste out of an address bar usually does. Matching them
+// raw turns one invisible character into a site where every button silently
+// does nothing, so normalise both sides instead.
+function normaliseOrigin(value) {
+  return String(value ?? "").trim().replace(/\/+$/, "");
+}
+
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGIN
+  ? process.env.ALLOWED_ORIGIN.split(",").map(normaliseOrigin).filter(Boolean)
+  : DEV_ORIGINS;
+
+// Only the app's own origins — an open CORS policy plus an unauthenticated
+// endpoint that spends API credits is an invitation.
 app.use(
   cors({
-    origin: process.env.ALLOWED_ORIGIN?.split(",") ?? [
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "http://127.0.0.1:5173",
-      "http://127.0.0.1:5174",
-    ],
+    origin(origin, callback) {
+      // No Origin header at all is curl, a health check, or a same-origin
+      // request. None of those are the attack this list exists to stop.
+      if (!origin || ALLOWED_ORIGINS.includes(normaliseOrigin(origin))) {
+        return callback(null, true);
+      }
+
+      callback(null, false);
+    },
   })
 );
 
@@ -124,8 +146,19 @@ setInterval(() => {
 // Reports which teach-off store is live, because "codes don't work across
 // devices" and "the deploy is reading the local file" are the same bug, and
 // this is the fastest way to tell them apart from a phone.
+// Reports which teach-off store is live, and which origins the browser is
+// allowed to call from. Both are things that fail silently and invisibly:
+// "codes don't work across devices" and "the deploy is reading a local
+// file" are the same bug, and a CORS mismatch looks exactly like a dead
+// button. Neither value is a secret — the allowlist is public by
+// construction, since the browser is told it on every request.
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, store: backend });
+  res.json({
+    ok: true,
+    store: backend,
+    allowedOrigins: ALLOWED_ORIGINS,
+    originConfigured: Boolean(process.env.ALLOWED_ORIGIN),
+  });
 });
 
 // Turns any topic the student types into a lesson: what they should cover,
