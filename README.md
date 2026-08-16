@@ -151,9 +151,9 @@ Everything beyond the core loop sits behind a flag in `frontend/src/features.js`
 switchable from the URL without touching code:
 
 ```
-?off=aiJury            turn one feature off
-?off=xp,achievements   turn several off
-?safe                  turn everything optional off
+?off=aiJury                    turn one feature off
+?off=aiJury,achievements       turn several off
+?safe                          turn everything optional off
 ```
 
 The core loop is deliberately unflagged. It is the demo; if it breaks, flags

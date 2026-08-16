@@ -7,7 +7,7 @@
 // code or touch git. Add it to the URL instead:
 //
 //   ?off=misconceptionAttack          turn one feature off
-//   ?off=xp,achievements,levels       turn several off
+//   ?off=aiJury,achievements          turn several off
 //   ?safe                             turn EVERYTHING optional off
 //
 // The setting lasts until you change the URL, so the fallback is always one
