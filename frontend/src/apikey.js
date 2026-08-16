@@ -41,6 +41,18 @@ export const PROVIDERS = [
     hint: "aistudio.google.com",
   },
   {
+    id: "anthropic",
+    label: "Anthropic Claude",
+    base: "https://api.anthropic.com/v1",
+    model: "claude-sonnet-4-20250514",
+    // Anthropic's OpenAI-compatible layer covers chat completions but treats
+    // response_format as a hint rather than a guarantee — it ignores `strict`.
+    // Every graded route here asks for JSON, so a reply that drifts from the
+    // schema fails validation and the recap falls back to keyword grading.
+    // Works, and worth knowing it is the least exact of these four.
+    hint: "console.anthropic.com",
+  },
+  {
     id: "openrouter",
     label: "OpenRouter",
     base: "https://openrouter.ai/api/v1",
