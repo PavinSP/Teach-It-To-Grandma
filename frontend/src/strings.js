@@ -367,7 +367,7 @@ const STRINGS = {
     // Shown when the deploy's own key has expired and a visitor can carry on
     // with their own.
     keyTitle: "This demo needs an API key",
-    keyBody: "The key this demo shipped with is no longer active. Pick a provider and paste your own key — OpenAI, Gemini, OpenRouter or DeutschlandGPT all work — and everything comes back: lessons, grading and the quiz.",
+    keyBody: "The key this demo shipped with is no longer active. Pick any provider below, paste your own key, and everything comes back: lessons, grading and the quiz.",
     keyModel: "Which model to use",
     keyPlaceholder: "sk_…",
     keySave: "Use this key",
@@ -724,7 +724,7 @@ const STRINGS = {
     introHint: "Enter drücken",
 
     keyTitle: "Diese Demo braucht einen API-Schlüssel",
-    keyBody: "Der Schlüssel, mit dem diese Demo ausgeliefert wurde, ist nicht mehr aktiv. Wähle einen Anbieter und füge deinen eigenen Schlüssel ein — OpenAI, Gemini, OpenRouter oder DeutschlandGPT funktionieren alle — dann läuft wieder alles: Lektionen, Bewertung und das Quiz.",
+    keyBody: "Der Schlüssel, mit dem diese Demo ausgeliefert wurde, ist nicht mehr aktiv. Wähle unten einen Anbieter, füge deinen eigenen Schlüssel ein, und alles läuft wieder: Lektionen, Bewertung und das Quiz.",
     keyModel: "Welches Modell verwendet werden soll",
     keyPlaceholder: "sk_…",
     keySave: "Diesen Schlüssel verwenden",

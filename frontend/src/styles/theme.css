@@ -676,7 +676,10 @@ body,
 }
 
 .keyprompt-model {
-  min-width: 150px;
+  /* OpenRouter names are long — google/gemini-2.0-flash-001 truncated at the
+     narrower width, which hides exactly the part that differs between models. */
+  min-width: 240px;
+  flex: 1;
   padding: 12px 16px;
   border: 1px solid var(--line);
   border-radius: 999px;
