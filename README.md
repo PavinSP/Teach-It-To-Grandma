@@ -1,32 +1,104 @@
 # Teach It To Grandma
 
-🏆 **Winner of the ElevenLabs Sonderpreis for Best Project Built With ElevenLabs**, awarded 3 months of ElevenLabs Scale.
+🏆 **Winner of the ElevenLabs Sonderpreis for Best Project Built With
+ElevenLabs**, awarded 3 months of ElevenLabs Scale — Student Hackathon 2026,
+Titanom Solutions × DeutschlandGPT, Germering.
 
-**[Try it live](https://titanom-hackathon-8xts.vercel.app/)**
+Every AI teaches you something. This one makes you teach it.
 
-A voice app that tests whether you actually understand something, using the Feynman technique: explain a concept out loud to an AI "Grandma" persona who catches jargon, logic gaps, and vagueness instead of teaching it back to you.
+Name any topic, pick who you are explaining it to, and talk out loud. At the end
+they tell you whether they actually understood — and the gap between sounding
+right and being understood is the entire point.
 
-Say a topic, any topic. Grandma listens by voice, asks follow-up questions, and occasionally states something confidently wrong to see if you catch it. At the end, a grading layer judges whether each point was genuinely explained, not just keyword-matched, and produces a score you can compare against other people teaching the same topic ("Teach-Off" mode).
+**Live:** https://titanom-hackathon-8xts.vercel.app
+
+> ⚠️ The hackathon's own API key has since been archived by the provider, so the
+> deployed demo cannot generate lessons on its own. It now asks a visitor to
+> paste their own TitanomGPT key, which stays in that browser tab and is never
+> stored server-side. See [Bring your own key](#bring-your-own-key).
+
+---
+
+## The argument
+
+Fluency is not understanding. You can read a paper, nod along, pass the exam,
+and still not be able to make another person see it.
+
+So the listener is the measurement. Six of them, each with a different voice and
+a different way of failing to follow you:
+
+| Character | How they listen |
+|---|---|
+| **Grandma** | Stops you the moment you use a word she does not know |
+| **Curious Child** | Asks *why* until you run out of answers |
+| **Student** | Knows the words, not the how |
+| **Manager** | Cuts you off if you sound too academic |
+| **Expert** | Knows the field next door, so analogies have to survive scrutiny |
+| **Professor** | Quotes your own sentence back when you contradict yourself |
+
+The same explanation lands differently for each. **That gap is the result.**
 
 ## How it works
 
-1. **Conversation** — the frontend opens a live voice session with an ElevenLabs Conversational AI agent (Gemini-backed persona, "Grandma"). She responds in character, asks questions, and occasionally plants a deliberately wrong claim to test whether the student corrects her.
-2. **Live progress** — a lightweight in-browser keyword/context check tracks a per-topic checklist in real time so the session has instant feedback, independent of the network round-trip to the grading server.
-3. **Finish lesson** — the full transcript is sent to a small Express server, which asks Claude 4.5 Sonnet (via an OpenAI-compatible client) whether each checklist point was *actually explained*, not just name-dropped. This never blocks the recap: if the grading call fails or is slow, the recap still renders using the live keyword grading as a fallback.
-4. **Recap** — shows the AI's per-point verdict and reasoning, self-correction bonuses, whether the student caught Grandma's planted mistake, and a Teach-Off leaderboard comparing scores on the same topic.
+1. **Lesson generation.** A topic becomes four things worth covering, the
+   misconceptions people actually hold, and a prediction of which points will
+   trip you up — written before you say a word, so the recap can say where it
+   was right and where you beat it.
+
+2. **The conversation.** A live ElevenLabs voice session with the chosen
+   character. They interrupt, ask, and occasionally state something confidently
+   wrong to see whether you catch it.
+
+3. **Live signals.** Coverage, jargon and mood update from the transcript as you
+   speak, computed in-browser so nothing waits on the network.
+
+4. **Grading.** The transcript goes to the server, which judges whether each
+   point was *genuinely explained* rather than name-dropped. The recap never
+   blocks on it: if grading is slow or fails, the keyword pass still renders.
+
+5. **The recap.** A Feynman score computed from booleans (never asked from a
+   model), what the listener took away in their own words, the moments that
+   decided the lesson, delivery analysis, and a four-juror panel that scores the
+   same explanation by four different standards.
+
+## Side modes
+
+**Teach-Off** — several people teach the *same stored lesson* and land on one
+board. Codes are shareable across devices, backed by Upstash Redis.
+
+**Two-player quiz** — deliberately a *different* measurement, and deliberately
+not the headline: fifteen generated questions, both players hear each one read
+aloud and race to tap. Scores are hidden until the end, because being told the
+answer immediately teaches nothing.
+
+The quiz is worth reading for the timing model. Nothing runs a timer — a
+serverless function exists for the length of a request, so the game's position
+is **derived** from two timestamps and the clock, recomputed identically on
+every request. Two devices agree because they are reading the same arithmetic,
+not because messages arrived on time.
 
 ## Stack
 
-- **Frontend**: React + Vite, `@elevenlabs/react` for the voice session
-- **Grading server**: Express, `openai` SDK pointed at an OpenAI-compatible Claude endpoint, model `claude-4.5-sonnet`
-- **Persistence**: Upstash Redis (Teach-Off codes/leaderboard persist across restarts)
+- **Frontend** — React + Vite, `@elevenlabs/react` for the voice session
+- **Server** — Express, `openai` SDK against DeutschlandGPT's OpenAI-compatible
+  endpoint (`api.deutschlandgpt.de/v2`)
+- **Voice** — ElevenLabs Conversational AI for the characters, and
+  `eleven_flash_v2_5` TTS for the quiz's pre-generated question audio
+- **State** — Upstash Redis in production, a JSON file locally
 
-Two other models were evaluated for grading and rejected: a faster Claude model let a vague answer pass 3 of 4 checks, and a smaller GPT model passed it 4 of 4. A grader that rubber-stamps jargon defeats the point of the app, so the slower, stricter model was kept.
+### Model choice
+
+`gemini-3.1-flash-lite` does the graded work, chosen by measurement rather than
+reputation: it scores a jargon-stuffed answer 1/4 and a genuinely good one 4/4,
+four runs each, at ~1.7s. Two faster models were rejected outright —
+`claude-4.5-haiku` passed the vague answer 3/4 and `gpt-5.4-mini` passed it 4/4.
+**A grader that rubber-stamps jargon destroys the one thing this product
+claims.** Judgement-heavy work stays on `claude-4.5-sonnet`.
 
 ## Running locally
 
 ```bash
-# terminal 1 — grading server
+# terminal 1 — API
 cd server
 npm install
 npm run dev        # http://localhost:3001
@@ -37,10 +109,66 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-The grading server reads `ANTHROPIC_API_KEY` from a project-root `.env` (gitignored, never put it in the frontend). To point the frontend at a deployed server instead of localhost, set `VITE_GRADING_API` in `frontend/.env.local`.
+Create a project-root `.env` (gitignored):
 
-Run `./smoke-test.sh` before a live demo to sanity-check both processes are up and the grading endpoint responds.
+```bash
+TITANOM_API_KEY=sk_...      # DeutschlandGPT — lessons, grading, quiz questions
+ELEVENLABS_API_KEY=sk_...   # voice + quiz audio
+```
 
-## Status
+`./smoke-test.sh` checks both processes and the grading endpoint before a demo.
 
-Built for a hackathon; won the ElevenLabs Sonderpreis for Best Project Built With ElevenLabs.
+Locally the app runs on a JSON file rather than Redis. That is dev-only: a
+deployed build **refuses to boot** without Redis rather than half-working, since
+a file-backed board succeeds only when two requests happen to hit the same warm
+instance. Check `/health` — it reports which store is live.
+
+## Bring your own key
+
+A visitor can supply their own TitanomGPT key when the deploy's key is dead. The
+rules that make that reasonable to ask are all about not keeping it: the key
+rides one request header, builds a client for the life of that call, and is
+never logged, never persisted, never echoed back, and never cached — a cache
+keyed on a secret is a store of secrets. In the browser it lives in
+`sessionStorage`, so it dies with the tab.
+
+## Deploying
+
+Two Vercel projects from this one repo, so each half gets zero-config detection
+— Vite on one side, Express on the other, no `vercel.json`.
+
+| Project | Root Directory | Environment |
+|---|---|---|
+| Frontend | `frontend` | `VITE_GRADING_API` |
+| API | `server` | `TITANOM_API_KEY`, `ELEVENLABS_API_KEY`, `ALLOWED_ORIGIN`, Upstash |
+
+Full walkthrough, including the CORS loop and how to roll back mid-demo, is in
+[DEPLOY.md](DEPLOY.md).
+
+## Feature flags
+
+Everything beyond the core loop sits behind a flag in `frontend/src/features.js`,
+switchable from the URL without touching code:
+
+```
+?off=aiJury            turn one feature off
+?off=xp,achievements   turn several off
+?safe                  turn everything optional off
+```
+
+The core loop is deliberately unflagged. It is the demo; if it breaks, flags
+will not save it.
+
+## Accessibility and themes
+
+Light and dark, user-selectable, with light as the default so a first-time
+visitor sees what was designed. Every colour resolves through a token — there
+are no colour literals left in the component stylesheets — and both themes are
+verified by a contrast audit across the landing page, the teaching flow and
+every quiz screen.
+
+## Built at
+
+Student Hackathon 2026, Titanom Solutions, Germering — 14–15 August 2026.
+Team **Epoch One**: [Pavin Sumathi Palanichamy](https://github.com/PavinSP) and
+Prethebha Muthukumaran. Roughly 30 hours.
