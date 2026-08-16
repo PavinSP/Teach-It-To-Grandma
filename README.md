@@ -20,9 +20,10 @@
 <br/>
 
 > [!IMPORTANT]
-> The hackathon's own API key has since been archived by the provider, so the live
-> demo cannot generate lessons on its own. It now asks visitors to paste their own
-> TitanomGPT key, which stays in that browser tab and is **never stored
+> The hackathon's own API key has since been archived by the provider, so the
+> live demo asks you to bring your own. **Any OpenAI-compatible key works** —
+> OpenAI, Google Gemini, Anthropic, OpenRouter or DeutschlandGPT — picked from
+> buttons in the app. It stays in your browser tab and is **never stored
 > server-side**. See [Bring your own key](#bring-your-own-key).
 
 <br/>
@@ -126,7 +127,7 @@ flowchart TB
         Multi["/api/teachoff · /api/quiz"]
     end
 
-    subgraph brains["🧠 TitanomGPT — OpenAI-compatible"]
+    subgraph brains["🧠 Any OpenAI-compatible provider"]
         Fast["gemini-3.1-flash-lite<br/>fast grading, ~1.7s"]
         Deep["claude-4.5-sonnet<br/>jury &amp; closed-world recall"]
     end
@@ -209,9 +210,26 @@ npm run dev        # http://localhost:5173
 Create a project-root `.env` (gitignored):
 
 ```bash
-TITANOM_API_KEY=sk_...      # DeutschlandGPT — lessons, grading, quiz questions
+AI_API_KEY=sk_...           # any OpenAI-compatible provider
+AI_BASE_URL=https://api.openai.com/v1
+FAST_MODEL=gpt-4o-mini      # graded work
+DEEP_MODEL=gpt-4o           # jury, closed-world recall
 ELEVENLABS_API_KEY=sk_...   # voice + quiz audio
 ```
+
+Any provider speaking the `/chat/completions` shape works. Set all three
+together — a base URL from one provider with a model name from another
+authenticates fine and then fails on the first request.
+
+| Provider | `AI_BASE_URL` |
+|---|---|
+| OpenAI | `https://api.openai.com/v1` |
+| Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` |
+| Anthropic | `https://api.anthropic.com/v1` |
+| OpenRouter | `https://openrouter.ai/api/v1` |
+| DeutschlandGPT | `https://api.deutschlandgpt.de/v2` *(the default)* |
+
+`TITANOM_API_KEY` still works as an alias for `AI_API_KEY`.
 
 `./smoke-test.sh` checks both processes and the grading endpoint before a demo.
 
@@ -225,8 +243,9 @@ ELEVENLABS_API_KEY=sk_...   # voice + quiz audio
 
 ## Bring your own key
 
-A visitor can supply their own TitanomGPT key when the deploy's key is dead. The
-rules that make that reasonable to ask are all about **not keeping it**:
+A visitor can supply their own key when the deploy's key is dead — from any of
+the five providers above, picked from buttons in the app. The rules that make
+that reasonable to ask are all about **not keeping it**:
 
 | | |
 |---|---|
@@ -248,7 +267,7 @@ Vite on one side, Express on the other, no `vercel.json`.
 | Project | Root Directory | Environment |
 |---|---|---|
 | Frontend | `frontend` | `VITE_GRADING_API` |
-| API | `server` | `TITANOM_API_KEY`, `ELEVENLABS_API_KEY`, `ALLOWED_ORIGIN`, Upstash |
+| API | `server` | `AI_API_KEY`, `AI_BASE_URL`, `ELEVENLABS_API_KEY`, `ALLOWED_ORIGIN`, Upstash |
 
 Full walkthrough, including the CORS loop and how to roll back mid-demo, is in
 **[DEPLOY.md](DEPLOY.md)**.
