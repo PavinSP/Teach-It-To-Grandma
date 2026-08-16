@@ -12,6 +12,42 @@
 // never persisted and never echoed back.
 
 const KEY = "titanom-byo-key";
+const BASE = "titanom-byo-base";
+const MODEL_KEY = "titanom-byo-model";
+
+// Known OpenAI-compatible providers, so nobody has to remember a base URL.
+// "Compatible" means the /chat/completions shape the OpenAI SDK speaks, which
+// is most of them now — including Google's and Anthropic's own gateways.
+export const PROVIDERS = [
+  {
+    id: "titanom",
+    label: "DeutschlandGPT",
+    base: "https://api.deutschlandgpt.de/v2",
+    model: "gemini-3.1-flash-lite",
+    hint: "What this was built for",
+  },
+  {
+    id: "openai",
+    label: "OpenAI",
+    base: "https://api.openai.com/v1",
+    model: "gpt-4o-mini",
+    hint: "platform.openai.com",
+  },
+  {
+    id: "gemini",
+    label: "Google Gemini",
+    base: "https://generativelanguage.googleapis.com/v1beta/openai",
+    model: "gemini-2.0-flash",
+    hint: "aistudio.google.com",
+  },
+  {
+    id: "openrouter",
+    label: "OpenRouter",
+    base: "https://openrouter.ai/api/v1",
+    model: "google/gemini-2.0-flash-001",
+    hint: "One key, most models",
+  },
+];
 
 export function byoKey() {
   try {
@@ -38,12 +74,58 @@ export function setByoKey(value) {
 
 export function clearByoKey() {
   setByoKey("");
+  setByoProvider("", "");
 }
 
 // Folded into every request that reaches a model. Absent when there is no
 // key, so a working deploy sends nothing extra.
+export function byoBase() {
+  try {
+    return sessionStorage.getItem(BASE) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function byoModel() {
+  try {
+    return sessionStorage.getItem(MODEL_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function setByoProvider(base, model) {
+  try {
+    base ? sessionStorage.setItem(BASE, base) : sessionStorage.removeItem(BASE);
+    model
+      ? sessionStorage.setItem(MODEL_KEY, model)
+      : sessionStorage.removeItem(MODEL_KEY);
+  } catch {
+    // Private mode. The choice applies for this page load and no longer.
+  }
+}
+
+// A key is useless without knowing where to send it and what to ask for, so
+// all three travel together or none of them do.
 export function keyHeaders() {
   const key = byoKey();
 
-  return key ? { "x-titanom-key": key } : {};
+  if (!key) {
+    return {};
+  }
+
+  const headers = { "x-titanom-key": key };
+  const base = byoBase();
+  const model = byoModel();
+
+  if (base) {
+    headers["x-ai-base-url"] = base;
+  }
+
+  if (model) {
+    headers["x-ai-model"] = model;
+  }
+
+  return headers;
 }

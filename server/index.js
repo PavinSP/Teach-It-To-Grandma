@@ -25,9 +25,24 @@ dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), "..", ".env"
 
 const PORT = process.env.PORT || 3001;
 
-// TitanomGPT is OpenAI-compatible, so the OpenAI SDK works against it
-// once the base URL is swapped.
-const TITANOM_BASE_URL = "https://api.deutschlandgpt.de/v2";
+// Any OpenAI-compatible provider, not just the one this was built against.
+//
+// TitanomGPT is OpenAI-compatible, so the OpenAI SDK works against it once the
+// base URL is swapped — and the same is true of OpenAI itself, OpenRouter,
+// Groq, Together, a local Ollama, or anything else speaking that protocol. The
+// URL was hardcoded here, which meant the app could only ever be run by
+// somebody holding a key from one particular German startup. That is a strange
+// thing to require of a public repository, and it stopped being theoretical
+// the day this deploy's own key was archived.
+//
+// So the provider is three environment variables: where to send the request,
+// and which model does the fast and the slow work. Change all three together —
+// a base URL from one provider and a model name from another authenticates
+// fine and then fails on an unknown model, which is a confusing way to
+// discover a configuration mistake.
+const DEFAULT_BASE_URL = "https://api.deutschlandgpt.de/v2";
+
+const BASE_URL = process.env.AI_BASE_URL || DEFAULT_BASE_URL;
 // Measured on this project's own test cases, not chosen by reputation.
 //
 // gemini-3.1-flash-lite grades the jargon-stuffed answer at 1/4 and the
@@ -44,7 +59,9 @@ const FAST_MODEL = process.env.FAST_MODEL || "gemini-3.1-flash-lite";
 const DEEP_MODEL = process.env.DEEP_MODEL || "claude-4.5-sonnet";
 const MODEL = FAST_MODEL;
 
-const apiKey = process.env.TITANOM_API_KEY;
+// AI_API_KEY is the name to use; TITANOM_API_KEY still works so an existing
+// deployment does not break the moment this lands.
+const apiKey = process.env.AI_API_KEY || process.env.TITANOM_API_KEY;
 
 // No longer fatal. A deploy whose own key has expired is still worth serving:
 // the quiz's stored games, the teach-off boards and every screen that does not
@@ -56,7 +73,7 @@ if (!apiKey) {
   );
 }
 
-const client = apiKey ? new OpenAI({ apiKey, baseURL: TITANOM_BASE_URL }) : null;
+const client = apiKey ? new OpenAI({ apiKey, baseURL: BASE_URL }) : null;
 
 // A caller may bring their own key, which is what keeps this demo usable after
 // the key it shipped with is archived — as happened.
@@ -69,7 +86,44 @@ const client = apiKey ? new OpenAI({ apiKey, baseURL: TITANOM_BASE_URL }) : null
 //
 // It is also never accepted over anything but the app's own origins, because
 // the CORS allowlist above runs first.
+// A key alone is not enough to identify a provider, so the caller sends all
+// three: the key, where to send it, and what to call the model. An OpenAI key
+// posted at a German endpoint authenticates against nothing, and a valid key
+// with the wrong model name fails on the first request — both look like "your
+// key is broken" to somebody who just pasted a working key.
 const BYO_HEADER = "x-titanom-key";
+const BYO_BASE_HEADER = "x-ai-base-url";
+const BYO_MODEL_HEADER = "x-ai-model";
+
+// Only http(s), and only an absolute URL. This value is used to build an
+// outbound request, so anything else is a request to make this server fetch
+// something on the caller's behalf.
+function suppliedBase(req) {
+  const raw = String(req.get(BYO_BASE_HEADER) ?? "").trim();
+
+  if (!raw) {
+    return BASE_URL;
+  }
+
+  try {
+    const url = new URL(raw);
+
+    return url.protocol === "https:" || url.protocol === "http:"
+      ? url.toString().replace(/\/+$/, "")
+      : BASE_URL;
+  } catch {
+    return BASE_URL;
+  }
+}
+
+// The model the caller's key can actually reach. Falls back to the server's
+// own choice when unset, which is right for a visitor using the deploy's key.
+function suppliedModel(req, fallback) {
+  const raw = String(req.get(BYO_MODEL_HEADER) ?? "").trim();
+
+  // Model names are short identifiers; anything long is not one.
+  return raw && raw.length <= 100 ? raw : fallback;
+}
 
 function clientFor(req) {
   const supplied = String(req.get(BYO_HEADER) ?? "").trim();
@@ -77,10 +131,16 @@ function clientFor(req) {
   if (supplied) {
     // Built per request and thrown away with it. Deliberately not cached by
     // key: a cache keyed on a secret is a store of secrets.
-    return new OpenAI({ apiKey: supplied, baseURL: TITANOM_BASE_URL });
+    return new OpenAI({ apiKey: supplied, baseURL: suppliedBase(req) });
   }
 
   return client;
+}
+
+// Every route resolves its model through this, so a visitor's chosen model
+// reaches the request that uses their key.
+function modelFor(req, tier = "fast") {
+  return suppliedModel(req, tier === "deep" ? DEEP_MODEL : MODEL);
 }
 
 // The distinction a caller needs: "this deploy has no working key" is a
@@ -189,7 +249,12 @@ app.use(
   cors({
     // Without naming it here the browser's preflight refuses the request and
     // a visitor's own key never reaches the server at all.
-    allowedHeaders: ["Content-Type", "x-titanom-key"],
+    allowedHeaders: [
+      "Content-Type",
+      "x-titanom-key",
+      "x-ai-base-url",
+      "x-ai-model",
+    ],
     origin(origin, callback) {
       // No Origin header at all is curl, a health check, or a same-origin
       // request. None of those are the attack this list exists to stop.
@@ -302,7 +367,7 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
 
   try {
     const completion = await ai.chat.completions.create({
-      model: MODEL,
+      model: modelFor(req),
       max_completion_tokens: 1900,
       messages: [{ role: "user", content: prompt }],
       response_format: {
@@ -625,7 +690,7 @@ Respond with JSON only, in exactly this shape:
 
   try {
     const completion = await ai.chat.completions.create({
-      model: MODEL,
+      model: modelFor(req),
       // Note: TitanomGPT silently ignores max_tokens — it wants this name.
       max_completion_tokens: 1700,
       messages: [{ role: "user", content: prompt }],
@@ -1009,7 +1074,7 @@ Finally, in "unexplainedTerms", list every word the student used but never expla
     const completion = await ai.chat.completions.create({
       // The closed world is the hard part: she must reproduce only what
       // she was told, and a weaker model quietly repairs the gaps.
-      model: DEEP_MODEL,
+      model: modelFor(req, "deep"),
       max_completion_tokens: 1200,
       messages: [{ role: "user", content: prompt }],
       response_format: {
@@ -1155,7 +1220,7 @@ Respond with JSON only, in exactly this shape:
 
   try {
     const completion = await ai.chat.completions.create({
-      model: MODEL,
+      model: modelFor(req),
       max_completion_tokens: 600,
       messages: [{ role: "user", content: prompt }],
       response_format: {
@@ -1278,7 +1343,7 @@ Give "score" out of 100 by that standard alone — do not moderate toward what a
     const completion = await ai.chat.completions.create({
       // Four jurors have to stay four distinct people, not one voice with
       // four scores — that separation is what the panel is for.
-      model: DEEP_MODEL,
+      model: modelFor(req, "deep"),
       max_completion_tokens: 300,
       messages: [{ role: "user", content: prompt }],
       response_format: {
@@ -1425,7 +1490,7 @@ Respond with JSON only:
 
   try {
     const completion = await ai.chat.completions.create({
-      model: MODEL,
+      model: modelFor(req),
       max_completion_tokens: 900,
       messages: [{ role: "user", content: prompt }],
       response_format: {
@@ -1567,7 +1632,7 @@ Where something is not visible, or you are unsure, choose the most neutral optio
 
   try {
     const completion = await ai.chat.completions.create({
-      model: MODEL,
+      model: modelFor(req),
       max_completion_tokens: 200,
       messages: [
         {
@@ -1711,7 +1776,7 @@ const QUIZ_COUNT = 15;
 // two copies of this prompt would drift apart the first time either was
 // tuned. Throws with .status set, so both callers can pass the distinction
 // between "that topic is not quizzable" and "something broke" straight on.
-async function generateQuiz(topic, language, ai) {
+async function generateQuiz(topic, language, ai, model = MODEL) {
   const prompt = `Write ${QUIZ_COUNT} multiple-choice questions about "${topic}" for a fast two-player game. Both players hear each question read aloud and then race to tap an answer, so every question must work when HEARD rather than read.
 
 Keep each question under 18 words and answerable in a few seconds. Four options, each under 8 words.
@@ -1741,7 +1806,7 @@ For each question write "why" — one sentence, under 25 words, saying what make
 If the topic is too vague or is not a real subject, set "ok" to false and say why in "problem".${inLanguage(language)}`;
 
   const completion = await ai.chat.completions.create({
-    model: MODEL,
+    model,
     max_completion_tokens: 3000,
     messages: [{ role: "user", content: prompt }],
     response_format: {
@@ -1888,7 +1953,7 @@ app.post("/api/quiz", rateLimit, async (req, res) => {
   }
 
   try {
-    res.json(await generateQuiz(topic, language, ai));
+    res.json(await generateQuiz(topic, language, ai, modelFor(req)));
   } catch (err) {
     console.error("Could not build quiz:", err);
 
@@ -2209,7 +2274,7 @@ app.post("/api/quiz/game", rateLimit, async (req, res) => {
   }
 
   try {
-    const quiz = await generateQuiz(topic, language, ai);
+    const quiz = await generateQuiz(topic, language, ai, modelFor(req));
 
     const meta = await createQuizGame({
       topic,

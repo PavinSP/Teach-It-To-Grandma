@@ -642,3 +642,57 @@ body,
   .keyprompt-input { flex-basis: 100%; }
   .keyprompt-save { flex: 1; }
 }
+
+/* Provider picker inside the key prompt. */
+.keyprompt-providers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-basis: 100%;
+  margin-bottom: 4px;
+}
+
+.keyprompt-provider {
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-3);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.keyprompt-provider:hover {
+  border-color: var(--ink-muted);
+  color: var(--ink);
+}
+
+.keyprompt-provider.selected {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
+}
+
+.keyprompt-model {
+  min-width: 150px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+  font-family: var(--font-mono, monospace);
+  outline: none;
+}
+
+.keyprompt-model:focus {
+  border-color: var(--ink);
+}
+
+@media (max-width: 560px) {
+  .keyprompt-model {
+    flex-basis: 100%;
+  }
+}
