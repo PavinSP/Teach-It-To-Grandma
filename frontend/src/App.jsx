@@ -1102,7 +1102,7 @@ function App() {
     }
   };
 
-  // Asks Claude whether the student really explained each point. The recap
+  // Asks the grader whether the student really explained each point. The recap
   // renders immediately either way — this only enriches it once it arrives,
   // so a slow or failed call never blocks the lesson from ending.
   const gradeWithAI = async () => {
