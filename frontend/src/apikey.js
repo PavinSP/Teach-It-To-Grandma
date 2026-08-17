@@ -27,6 +27,17 @@ export const PROVIDERS = [
     hint: "What this was built for",
   },
   {
+    id: "ollama",
+    label: "Ollama (local)",
+    base: "http://localhost:11434/v1",
+    model: "qwen2.5:7b",
+    // Ollama ignores the key entirely, but the OpenAI SDK refuses to send a
+    // request without one, so anything non-empty works. "ollama" is the
+    // convention their own docs use.
+    hint: "Runs on your machine, no key needed",
+    keyless: true,
+  },
+  {
     id: "openai",
     label: "OpenAI",
     base: "https://api.openai.com/v1",

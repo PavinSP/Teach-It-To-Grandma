@@ -231,6 +231,47 @@ authenticates fine and then fails on the first request.
 
 `TITANOM_API_KEY` still works as an alias for `AI_API_KEY`.
 
+<br/>
+
+### Running it entirely offline
+
+No key, no account, no network. Ollama speaks the same `/chat/completions`
+shape, so it needs no code change at all:
+
+```bash
+brew install ollama          # or https://ollama.com/download
+ollama serve                 # leave running
+ollama pull qwen2.5:7b       # 4.7 GB — the graded work
+ollama pull qwen2.5:14b      # 9 GB — the jury, if you have the RAM
+
+cd server && npm run dev:local
+```
+
+`dev:local` points the server at `localhost:11434` and uses 7B for grading,
+14B for judgement-heavy work. `dev:local:small` uses 7B for both, which is
+enough on a 16 GB machine.
+
+In the browser, the key panel has an **Ollama (local)** button that fills in
+the URL and model for you. No key is required.
+
+Measured on an M4 Pro with qwen2.5:7b:
+
+| Task | Time |
+|---|---|
+| Lesson generation | ~15s |
+| Grading a transcript | ~15s |
+| 15 quiz questions | ~32s |
+
+Slower than a hosted model, and worth knowing the 7B holds the grading line
+that matters: it scores a jargon-stuffed explanation 0/2 and the same idea in
+plain language 2/2. Quiz generation is the weakest point — expect 13–15 of 15
+questions to survive schema validation, with the rest dropped by the validator
+rather than shown broken.
+
+**ElevenLabs is still needed for voice.** The characters speak through their
+Conversational AI, so a fully offline run is text-only — the lessons, grading,
+recap and quiz all work, but nobody talks.
+
 `./smoke-test.sh` checks both processes and the grading endpoint before a demo.
 
 > [!NOTE]

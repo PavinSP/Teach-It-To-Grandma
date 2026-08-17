@@ -44,11 +44,14 @@ export function KeyPrompt({ tt, onSaved }) {
 
     const clean = value.trim();
 
-    if (!clean) {
+    // Ollama and friends ignore the key, but the OpenAI SDK will not send a
+    // request without one — so a placeholder goes out rather than nothing,
+    // and the field stops being a barrier to something running locally.
+    if (!clean && !provider.keyless) {
       return;
     }
 
-    setByoKey(clean);
+    setByoKey(clean || "local");
     setByoProvider(provider.base, model.trim() || provider.model);
     setSaved(true);
     onSaved?.();
@@ -90,7 +93,7 @@ export function KeyPrompt({ tt, onSaved }) {
           type="password"
           value={value}
           onChange={(event) => setValue(event.target.value)}
-          placeholder={tt("keyPlaceholder")}
+          placeholder={provider.keyless ? tt("keyNotNeeded") : tt("keyPlaceholder")}
           autoComplete="off"
           spellCheck="false"
         />
@@ -105,7 +108,11 @@ export function KeyPrompt({ tt, onSaved }) {
           title={tt("keyModel")}
         />
 
-        <button className="keyprompt-save" type="submit" disabled={!value.trim()}>
+        <button
+          className="keyprompt-save"
+          type="submit"
+          disabled={!value.trim() && !provider.keyless}
+        >
           {tt(saved ? "keySaved" : "keySave")}
         </button>
 
