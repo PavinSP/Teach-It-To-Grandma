@@ -64,6 +64,17 @@ export const PROVIDERS = [
     hint: "console.anthropic.com",
   },
   {
+    id: "groq",
+    label: "Groq",
+    base: "https://api.groq.com/openai/v1",
+    model: "openai/gpt-oss-120b",
+    // Much faster per token than the hosted alternatives, and a far tighter
+    // token budget: 8,000 a minute on the free tier against Gemini's 250,000.
+    // One quiz generation is ~3,500, so this is two calls a minute before it
+    // throttles — fine for one person, thin for a shared link.
+    hint: "Fastest, but a tight token budget",
+  },
+  {
     id: "openrouter",
     label: "OpenRouter",
     base: "https://openrouter.ai/api/v1",
