@@ -497,7 +497,7 @@ h2 {
 .user-message {
   align-self: flex-end;
   background: var(--ink);
-  color: white;
+  color: var(--on-ink);
   border-bottom-right-radius: 6px;
 }
 
@@ -536,7 +536,7 @@ h2 {
   border: none;
   border-radius: 50%;
   background: var(--ink);
-  color: white;
+  color: var(--on-ink);
   font-size: 32px;
   cursor: pointer;
 }
@@ -649,7 +649,7 @@ h2 {
   display: grid;
   place-items: center;
   background: var(--ink);
-  color: white;
+  color: var(--on-ink);
   font-size: 26px;
   font-weight: 800;
   animation: completion-pop 0.4s ease-out;
@@ -675,7 +675,7 @@ h2 {
 .new-lesson-button {
   border: none;
   background: var(--ink);
-  color: white;
+  color: var(--on-ink);
   border-radius: 14px;
   padding: 15px 18px;
   cursor: pointer;
