@@ -15,8 +15,7 @@
 
 const DEFAULTS = {
   // Features get added here as they are built, each defaulting to true once
-  // it has passed its own test. Keep the key identical to the flag name in
-  // PLAN.md so the two never drift apart.
+  // it has passed its own test.
 
   // #9 — Grandma says back what she understood, using only the student's
   // words. Two halves, separately killable: the written analysis on the

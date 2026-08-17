@@ -29,8 +29,9 @@ curl -s http://localhost:3001/health          # {"ok":true}
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5173
 ```
 
-If the server exits immediately, it is almost always the API key — it prints
-`Missing TITANOM_API_KEY` and stops. The key lives in the project-root `.env`,
+If lessons come back as a 503 asking for a key, that is the API key — the
+server now boots without one on purpose and warns `No AI_API_KEY set`, so
+every screen that needs no model still works. The key lives in the project-root `.env`,
 not in `server/`.
 
 ---
@@ -153,7 +154,7 @@ the smoke test. It is always safe to land on.
 Before a feature counts as done:
 
 - [ ] `cd frontend && npm run build` — no errors
-- [ ] Its own test from `PLAN.md` passes, including the described failure case
+- [ ] Its own failure case has been tried, not just the happy path
 - [ ] The **smoke test** above still passes end to end
 - [ ] Its flag turns it off cleanly — with `?off=<flag>` the app behaves as it
       did before the feature existed

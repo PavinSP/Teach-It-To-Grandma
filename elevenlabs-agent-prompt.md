@@ -3,7 +3,7 @@
 Agent: `agent_8901kzzhzexhe2qt3903amp09nnq` ("Teach It To Grandma")
 
 The dashboard text box this mirrors has **no version history** — this file is
-the only undo. The rule (PLAN.md, D1): every dashboard edit lands here in the
+the only undo. The rule: every dashboard edit lands here in the
 same commit, append-only, one named section per change. To restore a broken
 agent, paste the CURRENT PROMPT section back into the dashboard and publish.
 

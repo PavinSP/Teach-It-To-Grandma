@@ -69,7 +69,7 @@ const apiKey = process.env.AI_API_KEY || process.env.TITANOM_API_KEY;
 // rest. Refusing to boot would take all of that down too.
 if (!apiKey) {
   console.warn(
-    "No TITANOM_API_KEY set. Model-backed features will only work for callers who bring their own key."
+    "No AI_API_KEY set. Model-backed features will only work for callers who bring their own key."
   );
 }
 
@@ -166,7 +166,7 @@ function isKeyProblem(err) {
 function noKey(res) {
   return res.status(503).json({
     error:
-      "This demo's own API key is no longer active. Paste your own TitanomGPT key to carry on — it stays in your browser and is never stored.",
+      "This demo's own API key is no longer active. Pick a provider and paste your own key to carry on — it stays in your browser and is never stored.",
     needsKey: true,
   });
 }
@@ -2723,7 +2723,7 @@ app.get("/api/quiz/:code/stream", async (req, res) => {
   res.end();
 });
 
-// On Vercel the app is imported by api/index.js and the platform owns the
+// On Vercel the platform imports this module and owns the
 // socket — binding a port there would throw. Locally, nothing imports this
 // file, so it starts its own listener exactly as it always did.
 if (!process.env.VERCEL) {

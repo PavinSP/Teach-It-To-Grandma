@@ -11,7 +11,7 @@ testing. Nothing here is aspirational.
 
 ## Setup — 30 minutes before, not 3
 
-1. Both processes up, then `./smoke-test.sh` → **5/5 or stop and fix.**
+1. Both processes up, then `./smoke-test.sh` → **4/4 or stop and fix.**
 2. Open the app with the ambush armed:
    `http://localhost:5174/?on=misconceptionAmbush`
    (check the port Vite actually printed)

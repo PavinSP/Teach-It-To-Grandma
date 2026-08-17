@@ -1,16 +1,41 @@
-# React + Vite
+# Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite. The whole interface: the arrival screen, the landing page, the
+live voice session, the recap, and the two-player quiz.
 
-Currently, two official plugins are available:
+```bash
+npm install
+npm run dev          # http://localhost:5173
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+It needs the API running too — `cd ../server && npm run dev` — and finds it on
+`localhost:3001` automatically in development. To point at a deployed server
+instead, set `VITE_GRADING_API` in `.env.local`.
 
-## React Compiler
+See the [root README](../README.md) for what this is and how the pieces fit.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Layout
 
-## Expanding the ESLint configuration
+| | |
+|---|---|
+| `views/` | the five top-level screens: Intro, Landing, Session, Recap, Quiz |
+| `components/` | reusable pieces — the jargon ledger, theme toggle, key prompt, loading state |
+| `styles/` | `tokens.css` and `theme.css` hold every colour; no component stylesheet contains a literal |
+| `motion/` | the shared animation loop and reduced-motion handling, behind one barrel file |
+| `strings.js` | every user-facing string, English and German |
+| `features.js` | the flags, switchable from the URL — see the root README |
+| `characters.js` | the six learners: voices, personas, grading strictness |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Scripts
+
+| Command | Does |
+|---|---|
+| `npm run dev` | dev server with hot reload |
+| `npm run build` | production build into `dist/` |
+| `npm run preview` | serve the built output locally |
+| `npm run lint` | ESLint |
+
+`npm run lint` currently reports pre-existing errors in `App.jsx` — mostly
+`react-hooks` rules around setting state in effects. They are longstanding, the
+build passes, and none of them affect behaviour. Worth fixing; not worth
+blocking on.

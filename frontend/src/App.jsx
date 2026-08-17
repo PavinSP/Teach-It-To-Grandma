@@ -543,12 +543,17 @@ function App() {
 
   const conversation = useConversation({
     onConnect: () => {
-      console.log("Connected to Grandma");
+      if (import.meta.env.DEV) {
+        console.log("Connected to Grandma");
+      }
+
       setError("");
     },
 
     onDisconnect: (details) => {
-      console.log("Disconnected:", details?.reason, details);
+      if (import.meta.env.DEV) {
+        console.log("Disconnected:", details?.reason, details);
+      }
 
       // "user" is the student hanging up deliberately — silent. Anything
       // else ended without them asking, and saying so beats a dead screen.
@@ -558,7 +563,9 @@ function App() {
     },
 
     onMessage: (message) => {
-      console.log("Conversation message:", message);
+      if (import.meta.env.DEV) {
+        console.log("Conversation message:", message?.source);
+      }
 
       // If we just asked her to say back what she understood, her next reply
       // is that answer — keep it so the recap can analyse her real words

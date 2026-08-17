@@ -28,18 +28,26 @@ check `/health`, which reports `{"ok":true,"store":"redis"}`.
 
 ## 1. The API project
 
-**Add New → Project → import `PavinSP/titanom-hackathon`.**
+**Add New → Project → import `PavinSP/titanom-hackathon`** (the repo; the
+local folder is named `titanom-hack-2026`).
 
 | Setting | Value |
 |---|---|
 | Root Directory | `server` — click **Edit** beside it and pick the folder |
 | Framework Preset | Express (auto-detected) |
 
-Add one environment variable before deploying:
+Add these before deploying:
 
 | Name | Value |
 |---|---|
-| `TITANOM_API_KEY` | the key from your local `.env` |
+| `AI_API_KEY` | a key from any OpenAI-compatible provider |
+| `AI_BASE_URL` | that provider's endpoint — see the table in [README.md](README.md#running-it-locally) |
+| `FAST_MODEL` | the model that does the graded work |
+| `DEEP_MODEL` | the model for the jury and closed-world recall |
+| `ELEVENLABS_API_KEY` | voice for the characters and the quiz audio |
+
+`TITANOM_API_KEY` is still read as a fallback for `AI_API_KEY`, so a project
+set up before the provider migration keeps working untouched.
 
 **The build will succeed.** Vercel bundles your code without running it, so
 the storage guard — which fires when the module is first imported — has
