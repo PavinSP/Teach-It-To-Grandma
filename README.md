@@ -19,12 +19,12 @@
 
 <br/>
 
-> [!IMPORTANT]
-> The hackathon's own API key has since been archived by the provider, so the
-> live demo asks you to bring your own. **Any OpenAI-compatible key works** —
-> OpenAI, Google Gemini, Anthropic, OpenRouter or DeutschlandGPT — picked from
-> buttons in the app. It stays in your browser tab and is **never stored
-> server-side**. See [Bring your own key](#bring-your-own-key).
+> [!NOTE]
+> The live demo works with no setup — voice included. The key it shipped with
+> was archived by its provider after the hackathon, so it now runs on Gemini
+> instead. If that quota is ever exhausted the app asks for your own key
+> instead of dying: **any OpenAI-compatible key works**, and it stays in your
+> browser tab. See [Bring your own key](#bring-your-own-key).
 
 <br/>
 
@@ -227,9 +227,31 @@ authenticates fine and then fails on the first request.
 | Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` |
 | Anthropic | `https://api.anthropic.com/v1` |
 | OpenRouter | `https://openrouter.ai/api/v1` |
+| Groq | `https://api.groq.com/openai/v1` |
+| Ollama (local) | `http://localhost:11434/v1` |
 | DeutschlandGPT | `https://api.deutschlandgpt.de/v2` *(the default)* |
 
 `TITANOM_API_KEY` still works as an alias for `AI_API_KEY`.
+
+<br/>
+
+### What each provider is actually like
+
+Measured on this app rather than taken from a benchmark. The test that matters
+is whether a grader rejects a jargon-stuffed explanation *and* accepts the same
+idea in plain language — one without the other is useless.
+
+| Provider | Jargon rejected | Plain language accepted | Quiz (15 questions) |
+|---|:---:|:---:|---|
+| **Gemini 3.1 Flash-Lite** | ✅ | ✅ | 13–15, consistent |
+| Groq `gpt-oss-120b` | ✅ | ✅ | **15, 13, 12, 11, 9, then 0** |
+| Ollama `qwen2.5:7b` | ✅ | ✅ | 13–15, ~32s |
+
+Gemini is what production runs on, for the quiz column. Groq is the fastest and
+grades correctly, but quiz generation failed outright on one run in six — the
+validator caught it and refused to serve a broken game, which is the right
+behaviour and still a bad demo. Groq's free tier also allows 8,000 tokens a
+minute against Gemini's 250,000, and one quiz is ~3,500.
 
 <br/>
 
@@ -273,6 +295,16 @@ Conversational AI, so a fully offline run is text-only — the lessons, grading,
 recap and quiz all work, but nobody talks.
 
 `./smoke-test.sh` checks both processes and the grading endpoint before a demo.
+
+Five ways to start the API, depending on what you have a key for:
+
+| Command | Runs on |
+|---|---|
+| `npm run dev` | whatever is in `.env` |
+| `npm run dev:local` | Ollama — `qwen2.5:7b` grading, `qwen2.5:14b` judgement |
+| `npm run dev:local:small` | Ollama — `qwen2.5:7b` for everything |
+| `npm run dev:groq` | Groq `gpt-oss-120b` (needs `AI_API_KEY`) |
+| `npm start` | production mode, no file watching |
 
 > [!NOTE]
 > Locally the app runs on a JSON file rather than Redis. That's dev-only: a deployed
