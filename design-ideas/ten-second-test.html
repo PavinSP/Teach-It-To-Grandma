@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The ten-second test: six treatments</title>
+<style>
+  :root { --bg:#14130f; --card:#1d1b16; --ink:#f1ece1; --ink2:#c4bdae; --ink3:#8f887a; --line:#353128; --gold:#e0b35a; --good:#6fcf97; --bad:#e8806f; --lilac:#a994df; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 -apple-system,"Inter","Segoe UI",sans-serif; }
+  .wrap { max-width:1120px; margin:0 auto; padding:0 24px; }
+  header.top { padding:48px 0 8px; }
+  header.top h1 { margin:0 0 8px; font-size:clamp(30px,4vw,44px); letter-spacing:-.03em; line-height:1.1; }
+  header.top p { margin:0; max-width:72ch; color:var(--ink2); }
+  .rules { margin:20px 0 6px; padding:16px 20px; border:1px solid var(--line); border-radius:16px; background:var(--card); color:var(--ink2); font-size:15px; }
+  .rules ul { margin:6px 0 0; padding-left:20px; }
+  section.idea { margin:56px 0; }
+  .idea-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:10px 14px; margin-bottom:6px; }
+  .num { padding:2px 11px; border-radius:999px; background:var(--ink); color:var(--bg); font-size:12px; font-weight:800; letter-spacing:.08em; }
+  .idea-head h2 { margin:0; font-size:26px; letter-spacing:-.02em; }
+  .tag { padding:2px 10px; border-radius:999px; border:1px solid var(--line); font-size:12px; font-weight:700; color:var(--ink3); }
+  .tag.hot { color:var(--gold); border-color:color-mix(in srgb,var(--gold) 45%,var(--line)); }
+  .lede { margin:0 0 14px; color:var(--ink2); max-width:74ch; }
+  .why { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
+  .why div { padding:12px 16px; border:1px solid var(--line); border-radius:12px; background:var(--card); font-size:14px; color:var(--ink2); }
+  .why strong { display:block; color:var(--ink); margin-bottom:2px; }
+  @media (max-width:760px){ .why{grid-template-columns:1fr;} }
+
+  .stage { position:relative; min-height:560px; border:1px solid var(--line); border-radius:22px; overflow:hidden; background:radial-gradient(ellipse at 30% 20%,#2a2318,#14130f 62%); padding:clamp(20px,4vw,48px); display:flex; flex-direction:column; justify-content:center; }
+  .stage .hint { position:absolute; right:16px; top:14px; font-size:12px; color:var(--ink3); letter-spacing:.08em; text-transform:uppercase; }
+  .eyebrow { font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink3); margin-bottom:18px; }
+  .q { margin:0 0 14px; font-size:clamp(28px,4.6vw,56px); line-height:1.04; letter-spacing:-.03em; font-weight:800; font-style:italic; }
+  .sub { margin:0 0 20px; color:var(--ink2); font-size:18px; max-width:52ch; }
+  .actions { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  button.cta { padding:14px 24px; border:0; border-radius:999px; background:var(--ink); color:var(--bg); font:inherit; font-weight:800; cursor:pointer; transition:transform .15s; }
+  button.cta:hover { transform:translateY(-2px); }
+  button.link { padding:8px 4px; border:0; background:none; color:var(--ink3); font:inherit; font-size:14px; text-decoration:underline; cursor:pointer; }
+  button.link:hover { color:var(--ink); }
+  textarea.in, input.in { width:100%; padding:14px 16px; border:1px solid var(--line); border-radius:14px; background:#100f0b; color:var(--ink); font:inherit; font-size:18px; resize:none; }
+  textarea.in:focus, input.in:focus { outline:2px solid var(--lilac); outline-offset:2px; }
+  .private { margin:10px 0 0; color:var(--ink3); font-size:13px; }
+  img.face { border-radius:50%; object-fit:cover; display:block; }
+  .pop { animation:pop .35s cubic-bezier(.2,.9,.3,1.3); }
+  @keyframes pop { from{transform:translateY(10px) scale(.97);opacity:0;} to{transform:none;opacity:1;} }
+
+  /* A: leans in */
+  .A .grid { display:grid; grid-template-columns:320px 1fr; gap:clamp(20px,4vw,56px); align-items:center; }
+  @media (max-width:820px){ .A .grid { grid-template-columns:1fr; justify-items:center; text-align:center; } }
+  .A .avatar { position:relative; width:260px; height:260px; }
+  .A .avatar svg { position:absolute; inset:-20px; width:300px; height:300px; transform:rotate(-90deg); }
+  .A .avatar img { width:260px; height:260px; border:4px solid var(--lilac); transition:transform .5s cubic-bezier(.2,.9,.3,1.2); }
+  .A .avatar.lean img { transform:scale(1.08) translateY(6px); }
+  .A .avatar .n { position:absolute; right:-6px; bottom:6px; min-width:58px; height:58px; padding:0 12px; border-radius:29px; display:grid; place-items:center; background:var(--ink); color:var(--bg); font-weight:800; font-size:26px; }
+  .A .says { padding:12px 16px; border-radius:18px 18px 18px 4px; background:#26231b; border:1px solid var(--line); font-size:20px; margin-bottom:16px; }
+
+  /* B: exam paper */
+  .B .stage { background:radial-gradient(ellipse at 50% 10%,#2d2a22,#14130f 70%); }
+  .B .paper { position:relative; max-width:760px; margin:0 auto; width:100%; padding:30px 38px 34px; border-radius:6px; background:#f6efe0; color:#2b2619; box-shadow:0 30px 60px rgba(0,0,0,.55); transform:rotate(-.6deg); font-family:"Bradley Hand","Segoe Print","Comic Sans MS",cursive; background-image:repeating-linear-gradient(transparent 0 33px,#d9cfb8 33px 34px); background-position:0 70px; }
+  .B .paper .fuse { position:absolute; left:0; top:0; height:6px; border-radius:6px 6px 0 0; background:#b4452f; transition:width 1s linear; }
+  .B .paper h3 { margin:0 0 4px; font-size:14px; letter-spacing:.14em; text-transform:uppercase; color:#7a705a; font-family:-apple-system,"Inter",sans-serif; }
+  .B .paper .qq { font-size:clamp(26px,3.6vw,40px); line-height:1.15; margin:0 0 16px; }
+  .B .paper textarea { width:100%; min-height:150px; border:0; background:transparent; font:inherit; font-size:24px; line-height:34px; color:#1c3a8a; resize:none; padding:0; outline:none; }
+  .B .paper .btns { display:flex; gap:12px; align-items:center; margin-top:12px; font-family:-apple-system,"Inter",sans-serif; }
+  .B .paper button.cta { background:#2b2619; color:#f6efe0; }
+  .B .paper button.link { color:#7a705a; }
+  .B .stamp { position:absolute; right:30px; bottom:64px; padding:6px 18px; border:5px solid #b4452f; color:#b4452f; border-radius:8px; font:900 30px/1 -apple-system,"Inter",sans-serif; letter-spacing:.06em; transform:rotate(11deg); animation:stamp .4s cubic-bezier(.2,1.6,.4,1) both; }
+  .B .stamp.ok { border-color:#2f7a4f; color:#2f7a4f; }
+  @keyframes stamp { from{transform:rotate(11deg) scale(2.4);opacity:0;} to{transform:rotate(11deg) scale(1);opacity:1;} }
+  .B .redpen { margin-top:14px; max-width:58%; color:#b4452f; font-size:26px; }
+
+  /* C: say it out loud */
+  .C .center { display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; }
+  .C .orbwrap { position:relative; width:200px; height:200px; margin:14px 0 6px; display:grid; place-items:center; }
+  .C .orbwrap svg { position:absolute; inset:0; transform:rotate(-90deg); }
+  .C .orb { position:relative; width:130px; height:130px; border-radius:50%; border:0; background:var(--ink); color:var(--bg); font-size:46px; cursor:pointer; box-shadow:0 0 0 0 rgba(169,148,223,.5); }
+  .C .orb.live { animation:orb 1.4s ease-out infinite; }
+  @keyframes orb { 0%{box-shadow:0 0 0 0 rgba(169,148,223,.55);} 100%{box-shadow:0 0 0 46px rgba(169,148,223,0);} }
+  .C .bars { display:flex; gap:4px; align-items:center; height:34px; }
+  .C .bars i { width:5px; border-radius:3px; background:var(--lilac); animation:bar 1s ease-in-out infinite; }
+  @keyframes bar { 0%,100%{height:6px;} 50%{height:30px;} }
+  .C .typebox { width:min(640px,100%); }
+
+  /* D: chat */
+  .D .phone { width:min(460px,100%); margin:0 auto; border:1px solid var(--line); border-radius:28px; overflow:hidden; background:#100f0b; display:flex; flex-direction:column; height:500px; }
+  .D .bar { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line); background:#1a1812; }
+  .D .bar b { display:block; line-height:1.1; } .D .bar small { color:var(--good); font-size:12px; }
+  .D .timer { margin-left:auto; padding:4px 12px; border-radius:999px; border:1px solid var(--line); font-weight:800; font-variant-numeric:tabular-nums; }
+  .D .timer.hot { border-color:var(--bad); color:var(--bad); }
+  .D .log { flex:1; overflow:hidden; padding:14px; display:flex; flex-direction:column; gap:10px; justify-content:flex-end; }
+  .D .m { max-width:84%; padding:10px 14px; border-radius:18px; font-size:16px; line-height:1.4; }
+  .D .m.her { background:#26231b; border-bottom-left-radius:4px; }
+  .D .m.me { align-self:flex-end; background:var(--lilac); color:#1a1430; border-bottom-right-radius:4px; }
+  .D .dots span { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--ink3); margin:0 2px; animation:dot 1s infinite; }
+  .D .dots span:nth-child(2){animation-delay:.15s;} .D .dots span:nth-child(3){animation-delay:.3s;}
+  @keyframes dot { 0%,60%,100%{transform:none;opacity:.5;} 30%{transform:translateY(-4px);opacity:1;} }
+  .D .send { display:flex; gap:8px; padding:10px; border-top:1px solid var(--line); }
+  .D .send input { flex:1; padding:12px 14px; border-radius:999px; border:1px solid var(--line); background:#1a1812; color:var(--ink); font:inherit; }
+  .D .send button { padding:0 18px; border:0; border-radius:999px; background:var(--ink); color:var(--bg); font-weight:800; cursor:pointer; }
+
+  /* E: countdown theatre */
+  .E .stage { transition:background 1s linear; }
+  .E .giant { position:absolute; right:-2%; bottom:-14%; font-size:min(60vw,520px); font-weight:900; letter-spacing:-.06em; line-height:.8; opacity:.09; pointer-events:none; font-variant-numeric:tabular-nums; }
+  .E .stage > *:not(.giant):not(.hint) { position:relative; z-index:1; }
+  .E .shake { animation:shake .3s infinite; }
+  @keyframes shake { 25%{transform:translateX(-3px);} 75%{transform:translateX(3px);} }
+  .E input.in { border:0; border-bottom:3px solid var(--ink); border-radius:0; background:transparent; font-size:clamp(22px,3vw,34px); padding:10px 2px; }
+
+  /* F: choose */
+  .F .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:6px 0 18px; }
+  @media (max-width:820px){ .F .cards { grid-template-columns:1fr; } }
+  .F .card { padding:20px; border:1px solid var(--line); border-radius:18px; background:var(--card); cursor:pointer; text-align:left; color:var(--ink); font:inherit; transition:transform .2s,border-color .2s; }
+  .F .card:hover { transform:translateY(-4px) rotate(-.6deg); border-color:var(--gold); }
+  .F .card small { display:block; margin-bottom:8px; color:var(--gold); font-weight:800; letter-spacing:.12em; text-transform:uppercase; font-size:11px; }
+  .F .card b { font-size:21px; line-height:1.2; letter-spacing:-.01em; }
+  .F .own { display:flex; gap:10px; flex-wrap:wrap; }
+  .F .own input { flex:1; min-width:220px; }
+
+  .end-head { margin:0 0 10px; font-size:clamp(34px,5vw,64px); line-height:1; letter-spacing:-.035em; font-weight:800; font-style:italic; }
+  .pick { margin:48px 0 90px; padding:24px 26px; border:1px solid color-mix(in srgb,var(--gold) 40%,var(--line)); border-radius:20px; background:var(--card); }
+  .pick h2 { margin:0 0 8px; } .pick ol { margin:8px 0 0; padding-left:22px; color:var(--ink2); } .pick li { margin:6px 0; }
+  @media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>The ten-second test: six ways to play it</h1>
+  <p>This is the second screen of the new intro: a question, a clock, then three "but why?"s. Your screenshot is the quiet version, and it works, but it is a text page with a button. Each treatment below is the <b>same test</b> in a different skin, and each is playable end to end: press Start, answer, and get asked why.</p>
+  <div class="rules">
+    <b>Common to all six</b>
+    <ul>
+      <li>The same script, the same three whys, the same end screens. Only the look and the feel change.</li>
+      <li>Nothing you type leaves the page, no model is used, and Skip and Escape still work from every one of them.</li>
+      <li>A reduced-motion version is calm: no shaking, no pulsing, the clock still counts.</li>
+    </ul>
+  </div>
+</header>
+
+<section class="idea A" id="A">
+  <div class="idea-head"><span class="num">A</span><h2>She leans in</h2><span class="tag hot">warmest</span><span class="tag">effort: low</span></div>
+  <p class="lede">Grandma is big on the left, listening. The clock is a ring that closes around her, and as you start she leans towards you. Her "but why?" is a speech bubble above your answer box.</p>
+  <div class="stage" id="sA"><span class="hint">try it</span></div>
+  <div class="why"><div><strong>Why it works</strong>It turns a quiz into a conversation: you are answering a person, not a form. The ring makes the time feel physical.</div><div><strong>Cost</strong>Needs the character art (we have it). Layout stacks on phones, with her above the question.</div></div>
+</section>
+
+<section class="idea B" id="B">
+  <div class="idea-head"><span class="num">B</span><h2>The exam paper</h2><span class="tag hot">most memorable</span><span class="tag">effort: medium</span></div>
+  <p class="lede">A sheet of ruled paper on a dark desk. The question is written in a pen-like hand, your answer goes on the lines, and a red fuse shrinks along the top. At the end the paper gets stamped: "NOT QUITE" or "TOP MARKS", with a note in red pen.</p>
+  <div class="stage" id="sB"><span class="hint">try it</span></div>
+  <div class="why"><div><strong>Why it works</strong>Everyone has felt the dread of an exam sheet. The stamp is the shareable moment, and it matches "You think you know it" perfectly.</div><div><strong>Cost</strong>Needs a handwriting-style font bundled (no web fonts fetched). The stamp text must never claim a real grade: here it only reflects whether you finished the three whys.</div></div>
+</section>
+
+<section class="idea C" id="C">
+  <div class="idea-head"><span class="num">C</span><h2>Say it out loud</h2><span class="tag hot">closest to the product</span><span class="tag">effort: medium</span></div>
+  <p class="lede">One big microphone orb in the middle with the clock around it. The real product is a spoken conversation, so the test is too: you tap and talk. A "type instead" link keeps it usable anywhere. In this mock-up the orb only pretends to listen.</p>
+  <div class="stage" id="sC"><span class="hint">try it</span></div>
+  <div class="why"><div><strong>Why it works</strong>It sells the actual experience in the first minute and teaches the gesture you use later.</div><div><strong>Careful</strong>Speech recognition in a browser may send audio to a third party, which would break the privacy promise. A real build would use typing here, or the same local path as the rest of the app, never the browser's built-in service for a document.</div></div>
+</section>
+
+<section class="idea D" id="D">
+  <div class="idea-head"><span class="num">D</span><h2>A chat with Grandma</h2><span class="tag hot">most familiar</span><span class="tag">effort: low</span></div>
+  <p class="lede">A phone-style chat. She types the question, you reply, and she sends the next "but why?" after a little typing indicator. The countdown is a chip in the header that turns red.</p>
+  <div class="stage" id="sD"><span class="hint">try it</span></div>
+  <div class="why"><div><strong>Why it works</strong>No explanation is needed. People know chat, and the typing dots make her feel present.</div><div><strong>Cost</strong>Least visually dramatic. It looks like a messaging app, which could undersell the "voice" idea unless the next screen is clearly different.</div></div>
+</section>
+
+<section class="idea E" id="E">
+  <div class="idea-head"><span class="num">E</span><h2>Countdown theatre</h2><span class="tag hot">loudest</span><span class="tag">effort: low</span></div>
+  <p class="lede">The clock is the scenery. A giant number fills the corner and ticks down, the background warms from calm to hot, and in the last three seconds the question trembles. The answer is a single line, because pressure makes you brief.</p>
+  <div class="stage" id="sE"><span class="hint">try it</span></div>
+  <div class="why"><div><strong>Why it works</strong>Pure adrenaline in ten seconds. It makes the stakes obvious with no instruction.</div><div><strong>Careful</strong>Can feel stressful, and trembling is exactly what some people cannot tolerate. It must switch off under reduced motion, and the clock should be optional ("No clock").</div></div>
+</section>
+
+<section class="idea F" id="F">
+  <div class="idea-head"><span class="num">F</span><h2>Pick your question</h2><span class="tag hot">most personal</span><span class="tag">effort: low</span></div>
+  <p class="lede">Instead of being handed a random question, you choose: three cards (everyday, science, work) or a box that says "Ask me about..." where you type what you are studying or presenting. The test then runs on your own subject, so the stakes feel real from the start.</p>
+  <div class="stage" id="sF"><span class="hint">try it</span></div>
+  <div class="why"><div><strong>Why it works</strong>Choice creates ownership, and a test on your own topic feels like it is about you, not a trick.</div><div><strong>Honest limit</strong>The "whys" for your own topic are generic ("But why is that?") because no model runs here. The real model can write sharper ones after the click.</div></div>
+</section>
+
+<div class="pick">
+  <h2>What I would pick</h2>
+  <ol>
+    <li><b>A as the base.</b> It keeps Grandma alive from the first screen, so the test feels like a continuation, not a change of scene.</li>
+    <li><b>Borrow B's stamp for the ending</b> ("NOT QUITE" on a card that appears over her). It is the one bit that people will remember and share.</li>
+    <li><b>Offer F's "Ask me about..."</b> as a link under the question, so people with something real to present can test themselves on it.</li>
+    <li>Keep C for the screen after this one, where the real microphone takes over.</li>
+  </ol>
+</div>
+</div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const QUESTIONS = [
+  { q: "How does a bicycle stay upright?", whys: ["Hmm. And why does steering fix a lean?", "But why does the wheel turn under the lean, dear?", "And what is pulling you down in the first place?"] },
+  { q: "Why is the sky blue?", whys: ["But why does blue scatter more than red?", "And why is the sun orange at the end of the day?", "What is light actually doing there?"] },
+  { q: "How does a fridge make things cold?", whys: ["But where does the heat go?", "And why does squeezing a gas make it hot?", "So what is cold, really?"] }
+];
+const GENERIC = ["And why is that, exactly?", "But why does that happen, dear?", "What is underneath that?"];
+const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+/* One engine, many skins: the same script and clock behind every treatment. */
+function engine(render) {
+  const S = { phase: "intro", q: QUESTIONS[0], qi: 0, round: 0, left: 10, said: [], gaveUp: false };
+  let timer = null;
+  const view = () => ({ ...S, why: S.round < 3 ? S.q.whys[S.round] : null });
+  const emit = () => render(view());
+  const api = {
+    S,
+    start() { clearInterval(timer); S.phase = "clock"; S.left = 10; S.round = 0; S.said = []; S.gaveUp = false;
+      timer = setInterval(() => { S.left -= 1; if (S.left <= 0) { clearInterval(timer); S.left = 0; S.said.push(""); S.phase = "why"; } emit(); }, 1000); emit(); },
+    submit(text) { const t = (text || "").trim();
+      if (S.phase === "clock") { clearInterval(timer); S.said.push(t); S.phase = "why"; }
+      else if (S.phase === "why") { S.said.push(t); S.round += 1; if (S.round >= 3) S.phase = "end"; }
+      emit(); },
+    giveUp() { clearInterval(timer); S.gaveUp = true; S.phase = "end"; emit(); },
+    reset() { clearInterval(timer); S.phase = "intro"; S.round = 0; S.said = []; S.gaveUp = false; S.left = 10; emit(); },
+    next() { S.qi = (S.qi + 1) % QUESTIONS.length; S.q = QUESTIONS[S.qi]; api.reset(); },
+    own(topic) { S.q = { q: "Explain " + topic + ".", whys: GENERIC }; api.start(); },
+    setIndex(i) { S.qi = i; S.q = QUESTIONS[i]; api.start(); },
+    emit
+  };
+  return api;
+}
+const onEnter = (el, fn) => el.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); fn(); } });
+const RING = 2 * Math.PI * 140;
+
+/* ---------- A: she leans in ---------- */
+(() => {
+  const root = $("#sA");
+  const e = engine(render);
+  function render(s) {
+    const lean = s.phase === "clock" || s.phase === "why";
+    const off = RING * (1 - (s.phase === "clock" ? s.left / 10 : s.phase === "intro" ? 1 : 0));
+    let right = "";
+    if (s.phase === "intro") right = `<div class="eyebrow">The ten-second test</div><p class="q">${s.q.q}</p><p class="sub">One sentence is plenty. Then she will ask why.</p><div class="actions"><button class="cta" id="a-go">Start the clock</button><button class="link" id="a-next">Another question</button></div>`;
+    else if (s.phase === "clock") right = `<div class="eyebrow">The ten-second test</div><p class="q" style="font-size:clamp(24px,3.4vw,40px)">${s.q.q}</p><textarea class="in" id="a-in" rows="3" placeholder="It works because..."></textarea><p class="private">Enter when you are done. Nothing here leaves the page.</p>`;
+    else if (s.phase === "why") right = `<div class="says pop" key="${s.round}">${s.why}</div><textarea class="in" id="a-in" rows="3" placeholder="Well, because..."></textarea><div class="actions" style="margin-top:12px"><button class="cta" id="a-ans">Answer</button><button class="link" id="a-unsure">I'm not sure</button></div>`;
+    else right = `<p class="end-head">${s.gaveUp ? "That is the gap." : "Further than most."}</p><p class="sub">${s.gaveUp ? "Knowing and explaining are different things. The second one counts." : "Now try it on something you really have to explain."}</p><div class="actions"><button class="cta">Meet who is listening</button><button class="link" id="a-again">Again</button></div>`;
+    root.innerHTML = `<span class="hint">try it</span><div class="grid"><div class="avatar ${lean ? "lean" : ""}"><svg viewBox="0 0 300 300"><circle cx="150" cy="150" r="140" fill="none" stroke="#353128" stroke-width="8"/><circle cx="150" cy="150" r="140" fill="none" stroke="#e0b35a" stroke-width="8" stroke-linecap="round" stroke-dasharray="${RING}" stroke-dashoffset="${off}" style="transition:stroke-dashoffset 1s linear"/></svg><img class="face" src="../frontend/public/peep-grandma.png" alt="">${s.phase === "clock" ? `<div class="n">${s.left}</div>` : ""}</div><div>${right}</div></div>`;
+    const bind = (id, fn) => { const x = $(id, root); if (x) x.onclick = fn; };
+    bind("#a-go", e.start); bind("#a-next", e.next); bind("#a-ans", () => e.submit($("#a-in", root).value)); bind("#a-unsure", e.giveUp); bind("#a-again", e.reset);
+    const inp = $("#a-in", root); if (inp) { inp.focus(); onEnter(inp, () => e.submit(inp.value)); }
+  }
+  e.emit();
+})();
+
+/* ---------- B: exam paper ---------- */
+(() => {
+  const root = $("#sB");
+  const e = engine(render);
+  function render(s) {
+    const pct = s.phase === "clock" ? (s.left / 10) * 100 : s.phase === "intro" ? 100 : 0;
+    let body = "";
+    if (s.phase === "intro") body = `<p class="qq">${s.q.q}</p><p style="font-size:22px;margin:0 0 14px">Answer in one sentence. You have ten seconds.</p><div class="btns"><button class="cta" id="b-go">Turn the paper over</button><button class="link" id="b-next">Another paper</button></div>`;
+    else if (s.phase === "clock") body = `<p class="qq">${s.q.q}</p><textarea id="b-in" placeholder="Write here..."></textarea><div class="btns"><span style="font-size:18px">${s.left}s</span><span style="color:#7a705a;font-size:13px">Enter to hand in</span></div>`;
+    else if (s.phase === "why") body = `<p class="qq">${s.why}</p><textarea id="b-in" placeholder="Well, because..."></textarea><div class="btns"><button class="cta" id="b-ans">Hand in</button><button class="link" id="b-unsure">I'm not sure</button></div>`;
+    else body = `<div class="stamp ${s.gaveUp ? "" : "ok"}">${s.gaveUp ? "NOT QUITE" : "TOP MARKS"}</div><p class="qq">${s.q.q}</p><p class="redpen">${s.gaveUp ? "See me after class. (That is the gap.)" : "You kept going. Try it on something real."}</p><div class="btns"><button class="cta">Meet who is listening</button><button class="link" id="b-again">Another paper</button></div>`;
+    root.innerHTML = `<span class="hint">try it</span><div class="paper"><div class="fuse" style="width:${pct}%"></div><h3>Question ${s.phase === "why" ? s.round + 2 : 1}</h3>${body}</div>`;
+    const bind = (id, fn) => { const x = $(id, root); if (x) x.onclick = fn; };
+    bind("#b-go", e.start); bind("#b-next", e.next); bind("#b-ans", () => e.submit($("#b-in", root).value)); bind("#b-unsure", e.giveUp); bind("#b-again", e.next);
+    const inp = $("#b-in", root); if (inp) { inp.focus(); onEnter(inp, () => e.submit(inp.value)); }
+  }
+  e.emit();
+})();
+
+/* ---------- C: say it out loud ---------- */
+(() => {
+  const root = $("#sC"); let typing = false;
+  const e = engine(render);
+  const bars = '<div class="bars">' + Array.from({ length: 9 }, (_, i) => `<i style="animation-delay:${i * 0.1}s"></i>`).join("") + "</div>";
+  function render(s) {
+    const live = s.phase === "clock";
+    const off = RING * (1 - (live ? s.left / 10 : s.phase === "intro" ? 1 : 0)) * (190 / 300);
+    const R = 92, C = 2 * Math.PI * R, offset = C * (1 - (live ? s.left / 10 : s.phase === "intro" ? 1 : 0));
+    let line, below = "";
+    if (s.phase === "intro") { line = `<p class="q" style="font-size:clamp(26px,4vw,48px)">${s.q.q}</p><p class="sub" style="margin:0">Tap the microphone and say it out loud.</p>`; }
+    else if (s.phase === "clock") { line = `<p class="q" style="font-size:clamp(22px,3.2vw,36px)">${s.q.q}</p>${bars}`; }
+    else if (s.phase === "why") { line = `<p class="q pop" style="font-size:clamp(24px,3.6vw,42px)">${s.why}</p>${bars}`; }
+    else { line = `<p class="end-head">${s.gaveUp ? "That is the gap." : "Further than most."}</p><p class="sub">${s.gaveUp ? "Knowing and explaining are different things." : "Now try it on something real."}</p><div class="actions" style="justify-content:center"><button class="cta">Meet who is listening</button><button class="link" id="c-again">Again</button></div>`; }
+    if (s.phase !== "end") below = typing ? `<div class="typebox"><textarea class="in" id="c-in" rows="2" placeholder="Type your answer..."></textarea></div>` : "";
+    root.innerHTML = `<span class="hint">try it (the orb only pretends to listen)</span><div class="center"><div class="eyebrow" style="margin:0">The ten-second test</div>${line}${s.phase !== "end" ? `<div class="orbwrap"><svg width="200" height="200"><circle cx="100" cy="100" r="${R}" fill="none" stroke="#353128" stroke-width="6"/><circle cx="100" cy="100" r="${R}" fill="none" stroke="#e0b35a" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${offset}" style="transition:stroke-dashoffset 1s linear"/></svg><button class="orb ${s.phase !== "intro" ? "live" : ""}" id="c-orb">${s.phase === "intro" ? "🎙" : "■"}</button></div><div class="actions" style="justify-content:center">${s.phase === "intro" ? `<button class="link" id="c-next">Another question</button>` : ""}<button class="link" id="c-type">${typing ? "Hide typing" : "Type instead"}</button>${s.phase !== "intro" ? `<button class="link" id="c-unsure">I'm not sure</button>` : ""}</div>` : ""}${below}</div>`;
+    const bind = (id, fn) => { const x = $(id, root); if (x) x.onclick = fn; };
+    bind("#c-orb", () => { if (s.phase === "intro") e.start(); else e.submit($("#c-in", root)?.value || "(spoken)"); });
+    bind("#c-next", e.next); bind("#c-type", () => { typing = !typing; e.emit(); }); bind("#c-unsure", e.giveUp); bind("#c-again", () => { typing = false; e.next(); });
+    const inp = $("#c-in", root); if (inp) { inp.focus(); onEnter(inp, () => e.submit(inp.value)); }
+  }
+  e.emit();
+})();
+
+/* ---------- D: chat ---------- */
+(() => {
+  const root = $("#sD"); let waiting = false, shownWhy = -1;
+  const e = engine(render);
+  function msgs(s) {
+    const m = [{ w: "her", t: s.q.q }];
+    for (let i = 0; i < s.said.length; i++) {
+      m.push({ w: "me", t: s.said[i] || "..." });
+      if (i < 3 && (i < s.round || (s.phase === "why" && i === s.round))) m.push({ w: "her", t: s.q.whys[i] });
+    }
+    return m;
+  }
+  function render(s) {
+    let log = msgs(s);
+    // a "typing" pause before each new "why"
+    if (s.phase === "why" && shownWhy !== s.round) { waiting = true; shownWhy = s.round; log = log.slice(0, -1); setTimeout(() => { waiting = false; e.emit(); }, 900); }
+    else if (waiting) log = log.slice(0, -1);
+    if (s.phase === "end") log = log.concat([{ w: "her", t: s.gaveUp ? "That's all right, dear. That's where it gets interesting." : "Well! You kept going." }]);
+    const html = log.map((m) => `<div class="m ${m.w} pop">${esc(m.t)}</div>`).join("") + (waiting ? `<div class="m her dots"><span></span><span></span><span></span></div>` : "");
+    root.innerHTML = `<span class="hint">try it</span><div class="phone"><div class="bar"><img class="face" src="../frontend/public/peep-grandma.png" width="40" height="40" alt=""><div><b>Grandma</b><small>● online</small></div>${s.phase === "clock" ? `<div class="timer ${s.left <= 3 ? "hot" : ""}">${s.left}</div>` : ""}</div><div class="log">${html}</div>${s.phase === "intro" ? `<div class="send"><button style="flex:1;padding:12px" id="d-go">Start the clock</button></div>` : s.phase === "end" ? `<div class="send"><button style="flex:1;padding:12px" id="d-again">Again</button></div>` : `<div class="send"><input id="d-in" placeholder="Type a reply..." ${waiting ? "disabled" : ""}><button id="d-send">Send</button></div>`}</div>`;
+    const bind = (id, fn) => { const x = $(id, root); if (x) x.onclick = fn; };
+    bind("#d-go", e.start); bind("#d-again", () => { shownWhy = -1; e.next(); }); bind("#d-send", () => e.submit($("#d-in", root).value));
+    const inp = $("#d-in", root); if (inp && !waiting) { inp.focus(); onEnter(inp, () => e.submit(inp.value)); }
+  }
+  e.emit();
+})();
+
+/* ---------- E: countdown theatre ---------- */
+(() => {
+  const root = $("#sE");
+  const e = engine(render);
+  function render(s) {
+    const heat = s.phase === "clock" ? 1 - s.left / 10 : 0;
+    const bg = `radial-gradient(ellipse at 30% 20%, rgba(${42 + heat * 150},${35 - heat * 10},${24 - heat * 10},1), #14130f ${62 + heat * 20}%)`;
+    let body;
+    if (s.phase === "intro") body = `<div class="eyebrow">The ten-second test</div><p class="q">${s.q.q}</p><p class="sub">Ten seconds. One line. Go.</p><div class="actions"><button class="cta" id="e-go">Start</button><button class="link" id="e-next">Another question</button></div>`;
+    else if (s.phase === "clock") body = `<div class="eyebrow">Ten seconds</div><p class="q ${s.left <= 3 ? "shake" : ""}" style="font-size:clamp(28px,4.4vw,52px)">${s.q.q}</p><input class="in" id="e-in" placeholder="Say it fast..." autocomplete="off">`;
+    else if (s.phase === "why") body = `<div class="eyebrow">Round ${s.round + 1} of 3</div><p class="q pop" style="font-size:clamp(28px,4.4vw,52px)">${s.why}</p><input class="in" id="e-in" placeholder="Because..." autocomplete="off"><div class="actions" style="margin-top:14px"><button class="link" id="e-unsure">I'm not sure</button></div>`;
+    else body = `<p class="end-head">${s.gaveUp ? "That is the gap." : "Further than most."}</p><p class="sub">${s.gaveUp ? "Knowing and explaining are different things. The second counts." : "Now try it on something real."}</p><div class="actions"><button class="cta">Meet who is listening</button><button class="link" id="e-again">Again</button></div>`;
+    root.style.background = bg;
+    root.innerHTML = `<span class="hint">try it</span><div class="giant">${s.phase === "clock" ? s.left : s.phase === "why" ? s.round + 1 : ""}</div>${body}`;
+    const bind = (id, fn) => { const x = $(id, root); if (x) x.onclick = fn; };
+    bind("#e-go", e.start); bind("#e-next", e.next); bind("#e-unsure", e.giveUp); bind("#e-again", e.next);
+    const inp = $("#e-in", root); if (inp) { inp.focus(); onEnter(inp, () => e.submit(inp.value)); }
+  }
+  e.emit();
+})();
+
+/* ---------- F: pick your question ---------- */
+(() => {
+  const root = $("#sF");
+  const e = engine(render);
+  const KINDS = ["Everyday", "Science", "Your own"];
+  function render(s) {
+    let body;
+    if (s.phase === "intro") body = `<div class="eyebrow">The ten-second test</div><p class="q" style="font-size:clamp(26px,4vw,46px)">Pick something you think you know.</p><div class="cards">${QUESTIONS.map((q, i) => `<button class="card" data-i="${i}"><small>${["Everyday", "Science", "Home"][i]}</small><b>${q.q}</b></button>`).join("")}</div><div class="own"><input class="in" id="f-own" placeholder="...or ask me about what you are studying or presenting"><button class="cta" id="f-go">Test me on it</button></div>`;
+    else if (s.phase === "clock") body = `<div class="eyebrow">${s.left} seconds</div><p class="q" style="font-size:clamp(24px,3.6vw,44px)">${esc(s.q.q)}</p><textarea class="in" id="f-in" rows="3" placeholder="It works because..."></textarea>`;
+    else if (s.phase === "why") body = `<div class="eyebrow">Round ${s.round + 1} of 3</div><p class="q pop" style="font-size:clamp(24px,3.6vw,44px)">${s.why}</p><textarea class="in" id="f-in" rows="3" placeholder="Well, because..."></textarea><div class="actions" style="margin-top:12px"><button class="cta" id="f-ans">Answer</button><button class="link" id="f-unsure">I'm not sure</button></div>`;
+    else body = `<p class="end-head">${s.gaveUp ? "That is the gap." : "Further than most."}</p><p class="sub">${s.gaveUp ? "On your own topic, that gap is what the real lesson is for." : "Now do it properly, with a real listener."}</p><div class="actions"><button class="cta">Meet who is listening</button><button class="link" id="f-again">Pick another</button></div>`;
+    root.innerHTML = `<span class="hint">try it</span>${body}`;
+    root.querySelectorAll(".card").forEach((c) => c.onclick = () => e.setIndex(+c.dataset.i));
+    const bind = (id, fn) => { const x = $(id, root); if (x) x.onclick = fn; };
+    bind("#f-go", () => { const v = $("#f-own", root).value.trim(); if (v) e.own(v); }); bind("#f-ans", () => e.submit($("#f-in", root).value)); bind("#f-unsure", e.giveUp); bind("#f-again", e.reset);
+    const own = $("#f-own", root); if (own) onEnter(own, () => { const v = own.value.trim(); if (v) e.own(v); });
+    const inp = $("#f-in", root); if (inp) { inp.focus(); onEnter(inp, () => e.submit(inp.value)); }
+  }
+  e.emit();
+})();
+</script>
+</body>
+</html>

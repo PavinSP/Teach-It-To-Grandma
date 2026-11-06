@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Session screen: design ideas</title>
+<style>
+  :root {
+    --bg: #f4f0e8; --card: #fffdf8; --ink: #24211c; --ink2: #5b564c; --ink3: #8a8478; --line: #e2dccf;
+    --good: #2f7a4f; --bad: #9c3327; --warn: #c98a2b; --info: #3b6ea5;
+    --lena: #c9bde2; --lena-deep: #8e79c4; --wood: #8a5a34; --green: #5f7f6b;
+    --shadow: 0 10px 30px rgba(40,30,10,.12);
+  }
+  :root[data-theme="dark"] {
+    --bg: #14130f; --card: #1f1d18; --ink: #f1ece1; --ink2: #c4bdae; --ink3: #8f887a; --line: #353128;
+    --good: #6fcf97; --bad: #e8806f; --warn: #e0b35a; --info: #7fb0e6;
+    --lena: #3c3552; --lena-deep: #a994df; --shadow: 0 10px 30px rgba(0,0,0,.5);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 -apple-system, "Inter", "Segoe UI", sans-serif; }
+  header.top { max-width: 1180px; margin: 0 auto; padding: 40px 24px 8px; display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+  header.top h1 { margin: 0 0 6px; font-size: 34px; letter-spacing: -.02em; }
+  header.top p { margin: 0; max-width: 62ch; color: var(--ink2); }
+  button.theme { padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); font-weight: 700; cursor: pointer; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 8px 24px 80px; }
+
+  .problem { margin: 20px 0 36px; padding: 18px 22px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); }
+  .problem h2 { margin: 0 0 8px; font-size: 16px; }
+  .problem ul { margin: 0; padding-left: 20px; color: var(--ink2); }
+
+  section.option { margin: 0 0 56px; }
+  .option-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+  .option-head .tag { padding: 2px 10px; border-radius: 999px; background: var(--ink); color: var(--bg); font-size: 12px; font-weight: 800; letter-spacing: .06em; }
+  .option-head h2 { margin: 0; font-size: 24px; letter-spacing: -.01em; }
+  .option > p { margin: 0 0 14px; color: var(--ink2); max-width: 72ch; }
+  .pros { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .pros div { padding: 12px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); font-size: 14px; color: var(--ink2); }
+  .pros strong { display: block; margin-bottom: 2px; color: var(--ink); }
+  @media (max-width: 760px) { .pros { grid-template-columns: 1fr; } }
+
+  /* the mock browser window every option is drawn in */
+  .frame { height: 540px; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--bg); box-shadow: var(--shadow); position: relative; display: flex; flex-direction: column; }
+  .chrome { display: flex; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--card); }
+  .chrome i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+  .screen { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+
+  img.face { border-radius: 50%; object-fit: cover; display: block; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); font-size: 12px; font-weight: 700; color: var(--ink2); }
+  .pill.ok { color: var(--good); border-color: color-mix(in srgb, var(--good) 40%, var(--line)); }
+  .mic { width: 64px; height: 64px; border-radius: 50%; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-size: 26px; box-shadow: 0 8px 20px rgba(0,0,0,.25); }
+  .check { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line); flex: none; }
+  .check.on { background: var(--good); border-color: var(--good); }
+  .bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .bar span { display: block; height: 100%; background: var(--good); }
+  .bubble { padding: 12px 16px; border-radius: 16px 16px 16px 4px; background: var(--card); border: 1px solid var(--line); font-size: 15px; max-width: 520px; }
+  .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--ink3); }
+  .wave { display: flex; align-items: center; gap: 3px; height: 28px; }
+  .wave i { width: 4px; border-radius: 2px; background: var(--lena-deep); }
+
+  /* the four points you must cover, named, shared by the A options */
+  .pts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .pt { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 6px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); font-size: 14px; font-weight: 600; color: var(--ink2); }
+  .pt i { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 12px; font-weight: 800; background: var(--bg); color: var(--ink3); border: 1px solid var(--line); }
+  .pt.on { border-color: var(--good); color: var(--ink); background: color-mix(in srgb, var(--good) 10%, var(--card)); }
+  .pt.on i { background: var(--good); border-color: var(--good); color: #fff; }
+  .pt.next { border-color: var(--ink); color: var(--ink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lena-deep) 25%, transparent); }
+
+  /* ---------- Option A: Stage ---------- */
+  .A .screen { display: grid; grid-template-rows: auto 1fr auto; background: radial-gradient(ellipse at 50% 38%, color-mix(in srgb, var(--lena) 70%, transparent), transparent 62%), var(--bg); }
+  .A .slim { display: flex; align-items: center; gap: 12px; padding: 14px 22px; }
+  .A .slim .grow { flex: 1; }
+  .A .slim b { font-size: 15px; }
+  .A .stage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+  .A .ring { padding: 8px; border-radius: 50%; border: 3px solid var(--lena-deep); box-shadow: 0 0 0 10px color-mix(in srgb, var(--lena-deep) 18%, transparent), 0 0 0 22px color-mix(in srgb, var(--lena-deep) 8%, transparent); }
+  .A .dock { display: flex; align-items: center; justify-content: center; gap: 28px; padding: 16px 22px 22px; }
+  .A .dots { display: flex; gap: 10px; align-items: center; }
+  .A .dots span { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font-size: 13px; font-weight: 800; color: var(--ink3); background: var(--card); }
+  .A .dots span.on { background: var(--good); border-color: var(--good); color: #fff; }
+
+
+  /* ---------- Option A2: Stage + side transcript ---------- */
+  .A2 .screen { display: grid; grid-template-columns: 1fr 360px; background: var(--bg); }
+  .A2 .left { display: grid; grid-template-rows: auto 1fr auto; background: radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--lena) 65%, transparent), transparent 64%); min-width: 0; }
+  .A2 .stage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+  .A2 .ring { padding: 7px; border-radius: 50%; border: 3px solid var(--lena-deep); box-shadow: 0 0 0 9px color-mix(in srgb, var(--lena-deep) 18%, transparent), 0 0 0 20px color-mix(in srgb, var(--lena-deep) 8%, transparent); }
+  .A2 .right { border-left: 1px solid var(--line); background: var(--card); display: flex; flex-direction: column; min-height: 0; }
+  .A2 .right header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+  .A2 .log { flex: 1; min-height: 0; overflow: hidden; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; justify-content: flex-end; }
+  .A2 .msg { max-width: 92%; font-size: 14px; padding: 10px 14px; border-radius: 14px; line-height: 1.45; }
+  .A2 .msg.her { background: var(--bg); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+  .A2 .msg.me { align-self: flex-end; background: var(--ink); color: var(--bg); border-bottom-right-radius: 4px; }
+  .A2 .msg.live { align-self: flex-end; background: transparent; color: var(--ink); border: 1px dashed var(--lena-deep); border-bottom-right-radius: 4px; }
+  .A2 .msg small { display: block; margin-bottom: 2px; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; opacity: .6; }
+  .A2 mark { background: color-mix(in srgb, var(--good) 28%, transparent); color: inherit; border-radius: 4px; padding: 0 3px; }
+  .A2 .words { padding: 12px 18px 16px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .A2 .words .eyebrow { width: 100%; }
+  .A2 .chip { padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; border: 1px solid var(--line); color: var(--ink2); }
+  .A2 .chip.hit { border-color: var(--good); color: var(--good); }
+  .A2 .caret { display: inline-block; width: 2px; height: 1em; background: var(--lena-deep); vertical-align: -2px; margin-left: 2px; }
+
+  /* ---------- Option A3: Stage + live captions ---------- */
+  .A3 .screen { display: grid; grid-template-rows: auto 1fr auto; background: radial-gradient(ellipse at 50% 34%, color-mix(in srgb, var(--lena) 70%, transparent), transparent 60%), var(--bg); }
+  .A3 .slim { display: flex; align-items: center; gap: 12px; padding: 14px 22px; }
+  .A3 .stage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+  .A3 .ring { padding: 7px; border-radius: 50%; border: 3px solid var(--lena-deep); box-shadow: 0 0 0 9px color-mix(in srgb, var(--lena-deep) 18%, transparent); }
+  .A3 .sheet { margin: 0 22px 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); box-shadow: var(--shadow); overflow: hidden; }
+  .A3 .sheet-head { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+  .A3 .sheet-head .grow { flex: 1; }
+  .A3 .caption { padding: 12px 18px; font-size: 17px; line-height: 1.5; }
+  .A3 .caption .you { color: var(--ink); }
+  .A3 .caption .her { color: var(--ink3); font-size: 14px; display: block; margin-bottom: 4px; }
+  .A3 .dots { display: flex; gap: 8px; }
+  .A3 .dots span { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font-size: 11px; font-weight: 800; color: var(--ink3); background: var(--card); }
+  .A3 .dots span.on { background: var(--good); border-color: var(--good); color: #fff; }
+  .A3 mark { background: color-mix(in srgb, var(--good) 28%, transparent); color: inherit; border-radius: 4px; padding: 0 3px; }
+  .A3 .caret { display: inline-block; width: 2px; height: 1em; background: var(--lena-deep); vertical-align: -2px; margin-left: 2px; }
+
+  /* ---------- Option B: Meeting room ---------- */
+  .B .screen { display: grid; grid-template-columns: 1fr 300px; gap: 14px; padding: 14px; background: #1b1a22; color: #f3f0fa; }
+  .B .tiles { display: grid; grid-template-rows: 1fr 150px; gap: 14px; min-height: 0; }
+  .B .tile { border-radius: 16px; position: relative; overflow: hidden; display: grid; place-items: center; }
+  .B .tile.lena { background: linear-gradient(160deg, #4a3f6b, #2a2540); }
+  .B .tile.you { background: #26242f; }
+  .B .name { position: absolute; left: 14px; bottom: 12px; padding: 3px 10px; border-radius: 8px; background: rgba(0,0,0,.45); font-size: 13px; font-weight: 700; }
+  .B .live { position: absolute; right: 14px; top: 12px; padding: 3px 10px; border-radius: 999px; background: #c0392b; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+  .B .rail { background: #25232e; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .B .rail h3 { margin: 0; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: #a9a3bd; }
+  .B .agenda { display: flex; flex-direction: column; gap: 10px; }
+  .B .agenda div { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+  .B .agenda .check { border-color: #5c566f; margin-top: 2px; }
+  .B .agenda .check.on { background: #6fcf97; border-color: #6fcf97; }
+  .B .rail .doc { margin-top: auto; padding: 10px 12px; border-radius: 10px; background: #1b1a22; font-size: 12px; color: #a9a3bd; }
+  .B .rail .doc b { color: #6fcf97; }
+  .B .controls { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 10px; }
+  .B .controls .mic { width: 50px; height: 50px; font-size: 20px; background: #f3f0fa; color: #1b1a22; }
+
+  /* ---------- Option C: Cue card ---------- */
+  .C .screen { display: grid; grid-template-columns: 1.15fr 1fr; gap: 0; }
+  .C .card { padding: 26px 30px; background: var(--card); border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  .C .card h3 { margin: 0; font-size: 26px; letter-spacing: -.02em; line-height: 1.15; }
+  .C .point { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); }
+  .C .point .n { width: 34px; height: 34px; border-radius: 10px; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-weight: 800; }
+  .C .point.on { border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, var(--bg)); }
+  .C .point.on .n { background: var(--good); color: #fff; }
+  .C .point small { color: var(--ink3); font-weight: 700; }
+  .C .talk { padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: linear-gradient(180deg, color-mix(in srgb, var(--lena) 55%, var(--bg)), var(--bg)); text-align: center; }
+
+  /* ---------- Option D: Warmer refresh ---------- */
+  .D .screen { padding: 20px 26px; display: grid; grid-template-columns: 1fr 270px; gap: 18px; background: var(--bg); }
+  .D .hero { display: flex; align-items: center; gap: 18px; padding: 18px 22px; border-radius: 22px; background: linear-gradient(120deg, color-mix(in srgb, var(--lena) 80%, var(--card)), var(--card)); border: 1px solid var(--line); grid-column: 1 / -1; }
+  .D .hero h3 { margin: 0; font-size: 28px; letter-spacing: -.02em; line-height: 1.1; }
+  .D .hero .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .D .chat { display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 20px; background: var(--card); border: 1px solid var(--line); justify-content: space-between; min-height: 0; }
+  .D .side { display: flex; flex-direction: column; gap: 12px; }
+  .D .sidecard { padding: 16px; border-radius: 18px; background: var(--card); border: 1px solid var(--line); }
+  .D .big { font-size: 40px; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+  .D details { font-size: 13px; color: var(--ink2); padding: 10px 14px; border-radius: 12px; border: 1px dashed var(--line); }
+  .D summary { cursor: pointer; font-weight: 700; color: var(--ink); }
+
+  .note { margin-top: 36px; padding: 22px; border-radius: 16px; border: 1px solid var(--line); background: var(--card); }
+  .note h2 { margin: 0 0 8px; font-size: 18px; }
+  .note ul { margin: 0; padding-left: 20px; color: var(--ink2); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>The rehearsal screen: directions to choose from</h1>
+    <p>These are mock-ups with made-up content, not the running app. Same moment in each: Lena has just said she is ready, and you are about to speak. Click the button to flip light and dark.</p>
+  </div>
+  <button class="theme" id="theme" type="button">Switch to dark</button>
+</header>
+
+<div class="wrap">
+
+  <div class="problem">
+    <h2>What feels dull today</h2>
+    <ul>
+      <li>About 700 px of information (title, description, source line, difficulty dots, three skill chips, the trap box) sit above the one thing you came to do: talk.</li>
+      <li>Everything is one flat tone, so nothing says "this is the important part". Lena is small and the microphone is far down the page.</li>
+      <li>The same layout serves a student teaching Grandma and a professional rehearsing a report, though they feel nothing alike.</li>
+    </ul>
+  </div>
+
+  <!-- A -->
+  <section class="option A">
+    <div class="option-head"><span class="tag">A</span><h2>Stage</h2></div>
+    <p>One person, one job. Lena is large in the middle with a glowing ring that pulses while she listens. Everything about the lesson folds into a slim bar on top. The four points you must cover are named in a strip above the microphone: green when covered, outlined for the one to say next.</p>
+    <div class="frame">
+      <div class="chrome"><i></i><i></i><i></i></div>
+      <div class="screen">
+        <div class="slim">
+          <span class="pill">← Teach something else</span>
+          <b>Waste Sorting by Computer Vision</b>
+          <span class="pill ok">🔒 Read on this machine</span>
+          <span class="grow"></span>
+          <span class="pill">Lesson details ▾</span>
+        </div>
+        <div class="stage">
+          <div class="ring"><img class="face" src="../frontend/public/peep-newhire.png" width="150" height="150" alt=""></div>
+          <b style="font-size:20px">Lena</b>
+          <div class="bubble" style="text-align:center">Ready when you are. Start with what the system actually does.</div>
+        </div>
+        <div class="dock" style="flex-direction:column;gap:14px">
+          <div class="pts">
+            <span class="pt on"><i>✓</i>Training the classifier</span>
+            <span class="pt on"><i>✓</i>Detecting objects</span>
+            <span class="pt next"><i>3</i>Deciding the category</span>
+            <span class="pt"><i>4</i>Handling uncertain items</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:28px"><div class="mic">🎙</div>
+          <div class="wave"><i style="height:8px"></i><i style="height:18px"></i><i style="height:26px"></i><i style="height:14px"></i><i style="height:22px"></i><i style="height:10px"></i><i style="height:6px"></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pros">
+      <div><strong>Why it could work</strong>Calm, focused, and the microphone is the obvious next action. It looks the way a quiet rehearsal feels.</div>
+      <div><strong>What it costs</strong>The transcript and the "words you are using" panel have less room. You would open details to see difficulty and skills.</div>
+    </div>
+  </section>
+
+  <!-- A2 -->
+  <section class="option A2">
+    <div class="option-head"><span class="tag">A2</span><h2>Stage with the transcript beside it</h2></div>
+    <p>The same calm stage, but the conversation lives in a panel on the right: Lena's questions, your words appearing as you speak, and the technical terms you have used lit up. The four points to cover stay named under Lena, so you always see what is next. Nothing is hidden, and the lesson details still sit in the slim bar on top.</p>
+    <div class="frame">
+      <div class="chrome"><i></i><i></i><i></i></div>
+      <div class="screen">
+        <div class="left">
+          <div class="slim" style="display:flex;align-items:center;gap:12px;padding:14px 22px">
+            <span class="pill">← Teach something else</span>
+            <b style="font-size:15px">Waste Sorting by Computer Vision</b>
+            <span class="pill ok">🔒 On this machine</span>
+            <span style="flex:1"></span>
+            <span class="pill">Details ▾</span>
+          </div>
+          <div class="stage">
+            <div class="ring"><img class="face" src="../frontend/public/peep-newhire.png" width="130" height="130" alt=""></div>
+            <b style="font-size:19px">Lena</b>
+            <span class="pill">listening…</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:6px 18px 20px">
+            <div class="pts">
+              <span class="pt on"><i>✓</i>Training the classifier</span>
+              <span class="pt on"><i>✓</i>Detecting objects</span>
+              <span class="pt next"><i>3</i>Deciding the category</span>
+              <span class="pt"><i>4</i>Handling uncertain items</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:20px"><div class="mic" style="width:54px;height:54px;font-size:22px">🎙</div><span style="font-size:13px;color:var(--ink3)">2 of 4 points covered</span></div>
+          </div>
+        </div>
+        <div class="right">
+          <header><span class="eyebrow">Conversation</span><span class="pill">Voice only</span></header>
+          <div class="log">
+            <div class="msg her"><small>Lena</small>Ready when you are. What does the system actually do?</div>
+            <div class="msg me"><small>You</small>So the camera looks at each item on the belt and the <mark>classifier</mark> decides which bin it belongs in.</div>
+            <div class="msg her"><small>Lena</small>How does it know what a plastic bottle looks like?</div>
+            <div class="msg live"><small>You</small>It was <mark>trained</mark> on thousands of labelled photos, so it learns<span class="caret"></span></div>
+          </div>
+          <div class="words">
+            <span class="eyebrow">Words you're using</span>
+            <span class="chip hit">classifier</span><span class="chip hit">trained</span><span class="chip">object detection</span><span class="chip">confidence</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pros">
+      <div><strong>Why it could work</strong>Keeps the focus of A and the usefulness of today's screen. You can glance at the transcript to recover your place, and the highlighted terms show what you have covered as you cover it.</div>
+      <div><strong>What it costs</strong>It is busier than A, and a transcript beside Lena invites reading instead of talking. On a small laptop the panel narrows.</div>
+    </div>
+  </section>
+
+  <!-- A3 -->
+  <section class="option A3">
+    <div class="option-head"><span class="tag">A3</span><h2>Stage with live captions</h2></div>
+    <p>A different way to add the transcript: it appears as captions in a card under Lena, like subtitles. Lena's last line is dim above, and your words stream in below with the covered terms highlighted. Pull the card up to open the full history. The stage stays the hero.</p>
+    <div class="frame">
+      <div class="chrome"><i></i><i></i><i></i></div>
+      <div class="screen">
+        <div class="slim">
+          <span class="pill">← Teach something else</span>
+          <b style="font-size:15px">Waste Sorting by Computer Vision</b>
+          <span class="pill ok">🔒 On this machine</span>
+          <span style="flex:1"></span>
+          <span class="pill">2 of 4</span>
+        </div>
+        <div class="stage">
+          <div class="ring"><img class="face" src="../frontend/public/peep-newhire.png" width="120" height="120" alt=""></div>
+          <b style="font-size:18px">Lena</b>
+          <div class="pts" style="margin-top:6px;padding:0 20px">
+            <span class="pt on"><i>✓</i>Training the classifier</span>
+            <span class="pt on"><i>✓</i>Detecting objects</span>
+            <span class="pt next"><i>3</i>Deciding the category</span>
+            <span class="pt"><i>4</i>Handling uncertain items</span>
+          </div>
+        </div>
+        <div class="sheet">
+          <div class="sheet-head">
+            <span class="eyebrow">Live captions</span>
+            <span class="grow"></span>
+            <span class="pill">▲ Full transcript</span>
+            <div class="mic" style="width:42px;height:42px;font-size:18px;box-shadow:none">🎙</div>
+          </div>
+          <div class="caption">
+            <span class="her">Lena: How does it know what a plastic bottle looks like?</span>
+            <span class="you">It was <mark>trained</mark> on thousands of labelled photos, so it learns what each <mark>category</mark> looks like<span class="caret"></span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pros">
+      <div><strong>Why it could work</strong>Closest to a real call with live captions: you speak to Lena, not at a page of text. The transcript is there when you want it and out of the way when you don't.</div>
+      <div><strong>What it costs</strong>History is one pull-up away, so scanning back is slower than in A2. Captions rely on the speech recogniser keeping up.</div>
+    </div>
+  </section>
+
+  <!-- B -->
+  <section class="option B">
+    <div class="option-head"><span class="tag">B</span><h2>Meeting room</h2></div>
+    <p>It looks like the call you are rehearsing for. Lena is a video tile, you are a second tile with your voice level, and the four points are the meeting's agenda ticking off as you go. Strongest for the "present to your team" story.</p>
+    <div class="frame">
+      <div class="chrome"><i></i><i></i><i></i></div>
+      <div class="screen">
+        <div class="tiles">
+          <div class="tile lena">
+            <span class="live">● REHEARSAL</span>
+            <img class="face" src="../frontend/public/peep-newhire.png" width="170" height="170" alt="">
+            <span class="name">Lena · New hire</span>
+          </div>
+          <div class="tile you">
+            <div class="wave" style="height:60px;gap:5px"><i style="height:10px;background:#8fd3b0"></i><i style="height:26px;background:#8fd3b0"></i><i style="height:44px;background:#8fd3b0"></i><i style="height:30px;background:#8fd3b0"></i><i style="height:52px;background:#8fd3b0"></i><i style="height:22px;background:#8fd3b0"></i><i style="height:12px;background:#8fd3b0"></i></div>
+            <span class="name">You</span>
+          </div>
+        </div>
+        <div class="rail">
+          <h3>Agenda</h3>
+          <div class="agenda">
+            <div><span class="check on"></span>Containment actions</div>
+            <div><span class="check on"></span>The 5-Why chain</div>
+            <div><span class="check"></span>Root cause: the process</div>
+            <div><span class="check"></span>Permanent fixes</div>
+          </div>
+          <div class="doc"><b>🔒 Local.</b> Your document is read on this machine. Nothing is sent to the cloud.</div>
+        </div>
+        <div class="controls"><div class="mic">🎙</div></div>
+      </div>
+    </div>
+    <div class="pros">
+      <div><strong>Why it could work</strong>Instantly readable to a professional audience, and it makes the demo story obvious: this is a rehearsal for that call. It would be dark in both themes.</div>
+      <div><strong>What it costs</strong>It is a different look from Grandma mode, so it means two designs to keep consistent. Tiles take space from the transcript.</div>
+    </div>
+  </section>
+
+  <!-- C -->
+  <section class="option C">
+    <div class="option-head"><span class="tag">C</span><h2>Cue card</h2></div>
+    <p>The left half is your prompt card: the topic big, the four points as numbered steps that turn green. Lena sits on the right in her own colour with the microphone below her. You always see what you must cover next.</p>
+    <div class="frame">
+      <div class="chrome"><i></i><i></i><i></i></div>
+      <div class="screen">
+        <div class="card">
+          <span class="eyebrow">Your lesson · slide 5</span>
+          <h3>Waste sorting by computer vision</h3>
+          <div class="point on"><span class="n">1</span><span>Training the classifier</span><small>slide 5</small></div>
+          <div class="point on"><span class="n">2</span><span>Detecting objects on the belt</span><small>slide 5</small></div>
+          <div class="point"><span class="n">3</span><span>Deciding the waste category</span><small>slide 6</small></div>
+          <div class="point"><span class="n">4</span><span>Handling uncertain items</span><small>slide 7</small></div>
+          <span class="pill ok" style="align-self:flex-start">🔒 Read on this machine</span>
+        </div>
+        <div class="talk">
+          <img class="face" src="../frontend/public/peep-newhire.png" width="130" height="130" alt="">
+          <div><b style="font-size:18px">Lena</b><br><span style="color:var(--ink2);font-size:14px">New hire · needs to know what changes on Monday</span></div>
+          <div class="bubble">Ready. Press the microphone and tell me what happens first.</div>
+          <div class="mic">🎙</div>
+          <span style="font-size:13px;color:var(--ink3)">2 of 4 points covered</span>
+        </div>
+      </div>
+    </div>
+    <div class="pros">
+      <div><strong>Why it could work</strong>Best for rehearsing: the structure is always visible, like notes in your hand. Good for both modes if the listener's colour changes with the character.</div>
+      <div><strong>What it costs</strong>Showing the points up front can make it feel like reading from a list rather than explaining. We could blur them until you have covered them.</div>
+    </div>
+  </section>
+
+  <!-- D -->
+  <section class="option D">
+    <div class="option-head"><span class="tag">D</span><h2>Warmer refresh of today's layout</h2></div>
+    <p>Keep the structure people already know, but fix the hierarchy. One compact hero with Lena's face and colour at the top, details tucked into a drawer, a big progress number, and a chat panel that gets the room.</p>
+    <div class="frame">
+      <div class="chrome"><i></i><i></i><i></i></div>
+      <div class="screen">
+        <div class="hero">
+          <img class="face" src="../frontend/public/peep-newhire.png" width="84" height="84" alt="">
+          <div>
+            <h3>Waste Sorting by Computer Vision</h3>
+            <div class="meta"><span class="pill">Intermediate</span><span class="pill">With Lena</span><span class="pill ok">🔒 On this machine</span><span class="pill">Slide 5</span></div>
+          </div>
+        </div>
+        <div class="chat">
+          <div>
+            <div class="eyebrow" style="margin-bottom:6px">Lena</div>
+            <div class="bubble">Lena is ready. Press the microphone and start teaching her.</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;justify-content:center">
+            <div class="mic">🎙</div>
+            <span style="color:var(--ink2)">Press the microphone and start explaining.</span>
+          </div>
+        </div>
+        <div class="side">
+          <div class="sidecard">
+            <div class="eyebrow">Points mentioned</div>
+            <div class="big">2<span style="color:var(--ink3);font-size:24px"> / 4</span></div>
+            <div class="bar" style="margin-top:10px"><span style="width:50%"></span></div>
+          </div>
+          <div class="sidecard" style="font-size:14px;display:grid;gap:8px">
+            <div style="display:flex;gap:8px"><span class="check on"></span>Training the classifier</div>
+            <div style="display:flex;gap:8px"><span class="check on"></span>Detecting objects</div>
+            <div style="display:flex;gap:8px"><span class="check"></span>Deciding the category</div>
+            <div style="display:flex;gap:8px"><span class="check"></span>Uncertain items</div>
+          </div>
+          <details><summary>About this lesson</summary>Concept density, prerequisites and the skills this needs live here, closed by default.</details>
+        </div>
+      </div>
+    </div>
+    <div class="pros">
+      <div><strong>Why it could work</strong>Lowest risk and quickest to build: the same screen with a better order, one accent colour per character, and clear weight on the one thing that matters.</div>
+      <div><strong>What it costs</strong>It is the least different. It fixes dullness by polish, not by a new idea.</div>
+    </div>
+  </section>
+
+  <div class="note">
+    <h2>Mixing the ideas</h2>
+    <ul>
+      <li><b>A + C</b>: Lena on the stage, with the four named points under her and a pull-out cue card for the full text.</li>
+      <li><b>A2 for desktop, A3 on a phone</b>: the side transcript where there is room, captions where there is not.</li>
+      <li><b>B for document mode, D for Grandma</b>: the meeting room only appears for the professional door, and the student door keeps a friendlier look.</li>
+      <li>Whatever we pick, three things hold: a collapsed "lesson details" drawer, the local-only badge always visible, and one accent colour per character.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  const root = document.documentElement, btn = document.getElementById("theme");
+  btn.addEventListener("click", () => {
+    const dark = root.dataset.theme !== "dark";
+    root.dataset.theme = dark ? "dark" : "light";
+    btn.textContent = dark ? "Switch to light" : "Switch to dark";
+  });
+</script>
+</body>
+</html>
