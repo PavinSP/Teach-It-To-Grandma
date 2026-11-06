@@ -17,7 +17,7 @@ import { useReducedMotion } from "../motion";
 
 const STEP_MS = 1600;
 
-export function Thinking({ tt, who, glyph, steps = 4 }) {
+export function Thinking({ tt, who, glyph, image, prefix = "thinkingStep", steps = 4 }) {
   const calm = useReducedMotion();
   const [step, setStep] = useState(0);
 
@@ -36,7 +36,9 @@ export function Thinking({ tt, who, glyph, steps = 4 }) {
   return (
     <div className="thinking" role="status" aria-live="polite">
       <div className="thinking-face" aria-hidden="true">
-        <span className={calm ? "" : "thinking-glyph"}>{glyph}</span>
+        <span className={calm ? "" : "thinking-glyph"}>
+          {image ? <img className="thinking-image" src={image} alt="" /> : glyph}
+        </span>
 
         {!calm && (
           <span className="thinking-pulse">
@@ -59,7 +61,7 @@ export function Thinking({ tt, who, glyph, steps = 4 }) {
               {i < step ? "✓" : i === step ? "›" : "·"}
             </span>
 
-            {tt(`thinkingStep${i + 1}`, { name: who })}
+            {tt(`${prefix}${i + 1}`, { name: who })}
           </p>
         ))}
       </div>

@@ -14,13 +14,18 @@
 // reload away.
 
 const DEFAULTS = {
+  // Teach from an uploaded document instead of a typed topic. Only ever
+  // offered against a server on this machine, which reads it with a local
+  // model; see server/documents.js.
+  documentLessons: true,
+
   // Features get added here as they are built, each defaulting to true once
   // it has passed its own test.
 
   // #9 — Grandma says back what she understood, using only the student's
   // words. Two halves, separately killable: the written analysis on the
   // recap, and the riskier live "ask her" button during the call.
-  explainBack: true,
+  explainBack: false, // removed from the notes page by choice; set true to restore
   spokenRecall: true,
 
   // #22 — a re-run targeting whatever specifically went wrong last time.
@@ -63,11 +68,11 @@ const DEFAULTS = {
 
   // #10 — the listener retells the topic with planted errors; the student
   // flags the wrong ones. Scored client-side: we know which were planted.
-  mirrorMode: true,
+  mirrorMode: false, // removed from the notes page by choice; set true to restore
 
   // #46 (student half) — your own name and face: transcript says who you
   // are, teach-off fields come pre-filled.
-  youCharacter: true,
+  youCharacter: false, // "Create your character" removed by choice; set true to restore
 
   // #4 + #43 — how she's feeling about the explanation, and the avatar
   // reacting to it. Works with no dashboard setup (keyword heuristic);
@@ -80,7 +85,7 @@ const DEFAULTS = {
 
   // Four listeners judge the same explanation by their own standards.
   // The gap between them is the finding, not the average.
-  aiJury: true,
+  aiJury: false, // removed from the notes page by choice; set true to restore
 
   // Predict how well you know it before teaching; compare afterwards.
   confidenceGap: true,
@@ -94,7 +99,7 @@ const DEFAULTS = {
 
   // The rungs from naming a thing to knowing where it breaks. One number
   // cannot say which of those you reached.
-  depthLadder: true,
+  depthLadder: false, // removed from the notes page by choice; set true to restore
 
   // The recap headline written about this lesson rather than picked from a
   // table. The score still chooses which band shows, so the line can never
@@ -104,7 +109,7 @@ const DEFAULTS = {
   // complex ideas #19 — the moments that decided the lesson, laid out in the
   // order they happened. Every quote is verified against the transcript, so
   // a marker can only sit where the student actually said something.
-  forensics: true,
+  forensics: false, // removed from the notes page by choice; set true to restore
 
   // complex ideas #22 — how it was delivered: pace, filler, hedging, sentence
   // length. Counted from the transcript, never asked from a model, and framed
@@ -113,7 +118,7 @@ const DEFAULTS = {
 
   // complex ideas #20 — the whole run as one card worth screenshotting.
   // Composed from numbers already on the page; adds no request.
-  lessonReplay: true,
+  lessonReplay: false, // removed from the notes page by choice; set true to restore
 
   // A photo sets the avatar dials as a starting point. Off leaves the manual
   // builder exactly as it was — the photo button simply isn't offered.
@@ -121,7 +126,7 @@ const DEFAULTS = {
 
   // It predicts which points trip teachers up before a word is spoken,
   // then the recap says where it was right and where you beat it.
-  difficultyPrediction: true,
+  difficultyPrediction: false, // removed from the notes page by choice; set true to restore
 
   // Bias speech recognition toward the lesson's own technical terms.
   // Needs the ASR keywords override enabled on the agent; harmless if not.

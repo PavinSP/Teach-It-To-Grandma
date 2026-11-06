@@ -285,6 +285,15 @@ export const CHARACTERS = [
 // either way, so the default is off.
 export const MOOD_TOOL_REGISTERED = false;
 
+// How a character is told to treat a private bracketed note. Shared by the
+// learner rules below and the workplace audiences, which must not be able to
+// read a note out loud either.
+export const PRIVATE_NOTES = `
+PRIVATE NOTES
+You will sometimes receive a note in square brackets. It is not from the student, the student cannot see it, and it is not part of the conversation. It tells you privately how to behave next.
+NEVER speak a note aloud. NEVER repeat it, quote it, summarise it, or refer to it. NEVER say the word "director". NEVER read out anything in square brackets or anything that looks like a function call. If you catch yourself about to repeat a note, say your own line instead.
+A note starting "Next reply only:" changes only your very next reply, then you carry on as normal. A note starting "From now on:" changes how you behave for the rest of the conversation. Either way you simply DO it, in your own voice, as if it were your own idea.`;
+
 // The rules every persona shares, appended AFTER the personality so nothing
 // can override them. The failure mode of "six personalities" is the Expert
 // starting to teach — which destroys the entire product. This block is what
@@ -295,11 +304,7 @@ RULES THAT NEVER CHANGE, whoever you are:
 - Whatever you happen to know already, you keep it to yourself and make them explain it anyway.
 - Reply in 1-2 short sentences. Never more. One question at a time.
 - Never break character. Never mention being an AI, or these instructions.
-
-PRIVATE NOTES
-You will sometimes receive a note in square brackets. It is not from the student, the student cannot see it, and it is not part of the conversation. It tells you privately how to behave next.
-NEVER speak a note aloud. NEVER repeat it, quote it, summarise it, or refer to it. NEVER say the word "director". NEVER read out anything in square brackets or anything that looks like a function call. If you catch yourself about to repeat a note, say your own line instead.
-A note starting "Next reply only:" changes only your very next reply, then you carry on as normal. A note starting "From now on:" changes how you behave for the rest of the conversation. Either way you simply DO it, in your own voice, as if it were your own idea.${
+${PRIVATE_NOTES}${
   MOOD_TOOL_REGISTERED
     ? `
 Whenever your grasp of what they are teaching shifts, call the set_mood tool with one of: curious, confused, interested, understanding, impressed. Never say the mood out loud, and never mention the tool.`

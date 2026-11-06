@@ -38,7 +38,7 @@ button {
      still exists — prose past ~75 characters a line is harder to read, and
      the hero is prose — but it now grows with the window instead of ignoring
      it. */
-  max-width: min(1320px, 94vw);
+  max-width: min(1760px, 100%);
   margin: 0 auto;
   padding: clamp(28px, 4vw, 60px) 0;
 }
@@ -88,7 +88,6 @@ h2 {
 .topic-form {
   display: flex;
   gap: 12px;
-  max-width: 780px;
   /* The submit button pushed 24px past the right edge of a 390px phone and
      gave the whole page a horizontal scrollbar. The row has to be allowed to
      wrap, and the input needs a min-width small enough to let it: a flex item
@@ -241,7 +240,7 @@ h2 {
 ----------------------------- */
 
 .session {
-  max-width: 1500px;
+  max-width: 1760px;
   margin: 0 auto;
 }
 
@@ -1557,9 +1556,8 @@ h2 {
 
 .character-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
-  max-width: 980px;
   margin-bottom: 34px;
 }
 
@@ -3993,4 +3991,1901 @@ details.misconceptions-panel .misconceptions-list {
   .grandma-message p {
     font-size: 15px;
   }
+}
+
+/* Document lessons */
+
+.document-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.document-note {
+  margin: 8px 0 0;
+  font-size: 13px;
+  opacity: 0.6;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 500;
+}
+
+.document-source {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: baseline;
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.document-file {
+  font-weight: 700;
+}
+
+.document-local {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--good) 14%, transparent);
+  color: var(--good);
+  font-weight: 700;
+}
+
+.source-ref {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.source-ref + .predict-flag {
+  margin-left: 6px;
+}
+
+/* Help for a presenter who is stuck (document lessons) */
+
+.help-button {
+  padding: 9px 16px;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-raised);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.help-button:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+
+.help-button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.help-card {
+  width: min(560px, 100%);
+  margin: 12px auto 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper-raised);
+  text-align: left;
+}
+
+.help-card.spoken {
+  border-color: var(--bad);
+}
+
+.help-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+}
+
+.help-card-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.help-card-point {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.help-card-text {
+  margin: 6px 0 8px;
+  font-size: 15px;
+}
+
+.help-card-note {
+  margin: 0 0 8px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.help-card.spoken .help-card-note {
+  color: var(--bad);
+  opacity: 1;
+  font-weight: 600;
+}
+
+.help-card-close {
+  padding: 4px 12px;
+  font-size: 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.document-roles {
+  flex-basis: 100%;
+  max-width: 620px;
+}
+
+.document-who {
+  flex-basis: 100%;
+  margin: 18px 0 4px;
+  font-size: 16px;
+}
+
+.document-cast {
+  flex-basis: 100%;
+  margin-top: 0;
+}
+
+/* Six people share the full width instead of stopping two-thirds across. */
+.character-grid.document-cast {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+/* ------------------------------------------------------------------------
+   The first choice: two doors, and the move from one page to the next.
+
+   The doors rise in on the expo curve. Choosing one swings it open and carries
+   the view through the doorway in about 1220ms (THROUGH_MS in ModeSelect.jsx),
+   then the next page's blocks rise in turn. All of it is removed under reduced
+   motion, where the choice is simply instant.
+   ------------------------------------------------------------------------ */
+
+.mode-title {
+  margin-bottom: 12px;
+}
+
+.mode-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mode-sound {
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.door-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(20px, 4vw, 64px);
+  margin-top: 30px;
+}
+
+.mode-page .mode-title,
+.mode-page .subtitle {
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.door-slot {
+  /* A door is taller than it is wide. Letting it stretch with the page made
+     it a flat square, so the width is capped and the height follows it. */
+  /* Grows with the screen, but never taller than the window can show. */
+  flex: 0 1 min(30vw, 56vh * 0.8, 520px);
+  min-width: 300px;
+  min-width: 0;
+  perspective: 1500px;
+  animation: mode-rise 520ms var(--e-out-expo) both;
+  animation-delay: calc(var(--i, 0) * 90ms + 80ms);
+  transition:
+    opacity 260ms var(--e-out-cubic),
+    transform 260ms var(--e-out-cubic);
+}
+
+/* The frame is the button. It stays put while the leaf turns on its hinge,
+   then carries the whole doorway past the camera. */
+.door-frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  min-height: 400px;
+  padding: 10px 10px 0;
+  border: 0;
+  border-radius: 10px 10px 0 0;
+  background: var(--door-frame);
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 420ms cubic-bezier(0.6, 0, 0.75, 0.3) 300ms;
+}
+
+.door-frame:focus-visible {
+  outline: 3px solid var(--info);
+  outline-offset: 4px;
+}
+
+/* What is behind the door. It is the page's own background, which is what
+   lets the next page take over with no visible cut. */
+.door-room {
+  position: absolute;
+  inset: 10px 10px 0;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.door-light {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 60%, var(--door-glow), transparent 72%);
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.door-peek {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.door-peek img {
+  width: 76px;
+  height: 76px;
+  margin: 0 -6px;
+  border-radius: 50%;
+  transform: translateY(100%);
+  transition: transform 340ms var(--e-out-expo);
+  transition-delay: calc(var(--f, 0) * 45ms + 110ms);
+}
+
+.door-leaf {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  height: 100%;
+  padding: clamp(20px, 2.4vw, 30px);
+  text-align: left;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  transition:
+    transform 430ms cubic-bezier(0.45, 0.05, 0.25, 1),
+    box-shadow 300ms ease;
+}
+
+/* The door's other side. Past 90 degrees this is what you see, in shadow,
+   and it keeps the mirrored text on the front from showing through. */
+.door-leaf::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  backface-visibility: hidden;
+  transform: translateZ(-1px) rotateY(180deg);
+}
+
+.door-frame.wood .door-leaf::after {
+  background: var(--door-wood-deep);
+}
+
+.door-frame.glass .door-leaf::after {
+  background: var(--door-glass-deep);
+}
+
+.door-frame.wood .door-leaf {
+  color: var(--door-wood-ink);
+  background: repeating-linear-gradient(
+    92deg,
+    var(--door-wood) 0 34px,
+    var(--door-wood-deep) 34px 36px
+  );
+}
+
+.door-frame.glass .door-leaf {
+  color: var(--door-glass-ink);
+  background: var(--door-glass);
+}
+
+.door-faces {
+  display: flex;
+  margin-bottom: 6px;
+}
+
+.door-faces img {
+  width: 62px;
+  height: 62px;
+  margin-left: -12px;
+  border-radius: 50%;
+}
+
+.door-faces img:first-child {
+  margin-left: 0;
+}
+
+.door-title {
+  font-size: clamp(24px, 2.4vw, 30px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.door-tag {
+  max-width: 30ch;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.door-frame.wood .door-tag {
+  color: var(--door-wood-ink-2);
+}
+
+.door-frame.glass .door-tag {
+  color: var(--door-glass-ink-2);
+}
+
+.door-note {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--paper-raised);
+  color: var(--good);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.door-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.door-arrow {
+  transition: transform 260ms var(--e-out-quart);
+}
+
+/* The handle sits on the side away from the hinge. */
+.door-handle {
+  position: absolute;
+  right: 14px;
+  top: 52%;
+}
+
+.door-frame.wood .door-handle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--door-brass);
+  box-shadow: inset -3px -3px 0 color-mix(in srgb, var(--door-frame) 40%, transparent);
+}
+
+.door-frame.glass .door-handle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--door-steel);
+  box-shadow: inset -3px -3px 0 color-mix(in srgb, var(--door-frame) 30%, transparent);
+}
+
+/* Hovering only lifts the door a little. It does not open it, so no colour
+   shows through and nothing changes until it is chosen. */
+.door-frame:hover .door-leaf,
+.door-frame:focus-visible .door-leaf {
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--ink) 22%, transparent);
+}
+
+.door-frame:hover .door-arrow,
+.door-frame:focus-visible .door-arrow {
+  transform: translateX(6px);
+}
+
+/* Through it. The leaf swings first; the delay on .door-frame's transition
+   starts the zoom while it is still moving, so the two read as one step. */
+.door-frame.open {
+  z-index: 5;
+  pointer-events: none;
+  transform: translate(var(--through-x, 0), var(--through-y, 0))
+    scale(var(--through-scale, 3));
+  transition: transform 700ms cubic-bezier(0.6, 0, 0.75, 0.3) 520ms;
+}
+
+/* Slower than the hover on purpose: this is the moment people watch. */
+.door-frame.open .door-leaf {
+  transform: rotateY(-112deg);
+  transition: transform 760ms cubic-bezier(0.45, 0.05, 0.25, 1);
+}
+
+/* The light peaks mid-way and is gone by the end: the doorway has to be
+   exactly the page's colour when the next page replaces it. */
+.door-frame.open .door-light {
+  animation: door-glow 1220ms ease-out both;
+}
+
+@keyframes door-glow {
+  0% {
+    opacity: 0.2;
+  }
+
+  45% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+.door-frame.open .door-peek img {
+  transform: translateY(8%);
+  transition: transform 560ms var(--e-out-expo);
+  transition-delay: calc(var(--f, 0) * 70ms + 200ms);
+}
+
+/* Coming back: the door you left through swings shut. */
+.door-frame.closing .door-leaf {
+  animation: door-shut 420ms cubic-bezier(0.5, 0, 0.3, 1) 120ms both;
+}
+
+@keyframes door-shut {
+  from {
+    transform: rotateY(-112deg);
+  }
+}
+
+.mode-page.is-leaving .hero-top,
+.mode-page.is-leaving .mode-title,
+.mode-page.is-leaving .subtitle {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity 220ms var(--e-out-cubic),
+    transform 220ms var(--e-out-cubic);
+}
+
+.door-slot:has(.door-frame.open) {
+  position: relative;
+  z-index: 5;
+}
+
+.door-slot.released {
+  opacity: 0;
+  transform: scale(0.97);
+  pointer-events: none;
+}
+
+@keyframes mode-rise {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.985);
+  }
+}
+
+/* The next page arrives: each block of the hero rises in turn. */
+@keyframes mode-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+.mode-enter > .hero > * {
+  animation: mode-enter 520ms var(--e-out-expo, cubic-bezier(0.19, 1, 0.22, 1)) both;
+}
+
+.mode-enter > .hero > *:nth-child(1) { animation-delay: 0ms; }
+.mode-enter > .hero > *:nth-child(2) { animation-delay: 50ms; }
+.mode-enter > .hero > *:nth-child(3) { animation-delay: 100ms; }
+.mode-enter > .hero > *:nth-child(4) { animation-delay: 150ms; }
+.mode-enter > .hero > *:nth-child(5) { animation-delay: 200ms; }
+.mode-enter > .hero > *:nth-child(6) { animation-delay: 250ms; }
+.mode-enter > .hero > *:nth-child(7) { animation-delay: 300ms; }
+.mode-enter > .hero > *:nth-child(n + 8) { animation-delay: 350ms; }
+
+.mode-back {
+  margin-right: 14px;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+  transition: border-color 160ms ease;
+}
+
+.mode-back:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+
+/* Document page: the audience, then one large place to put the file. */
+.document-block h2 {
+  margin-bottom: 14px;
+}
+
+.upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 34px 24px;
+  border: 2px dashed var(--line);
+  border-radius: 20px;
+  background: var(--paper-raised);
+  text-align: center;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 260ms var(--e-out-quart, cubic-bezier(0.165, 0.84, 0.44, 1));
+}
+
+.upload-zone.dragging {
+  border-color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 5%, var(--paper-raised));
+  transform: scale(1.01);
+}
+
+.upload-zone-icon {
+  font-size: 34px;
+}
+
+.upload-zone-title {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.upload-zone-hint {
+  font-size: 13px;
+  opacity: 0.65;
+}
+
+@media (max-width: 760px) {
+  .door-slot {
+    flex-basis: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .door-slot,
+  .door-frame.closing .door-leaf,
+  .door-frame.open .door-light,
+  .mode-enter > .hero > * {
+    animation: none;
+  }
+
+  .door-slot,
+  .door-frame,
+  .door-leaf,
+  .door-light,
+  .door-peek img,
+  .door-arrow,
+  .upload-zone {
+    transition: none;
+  }
+
+  .door-frame:hover .door-leaf,
+  .door-frame:focus-visible .door-leaf {
+    transform: none;
+  }
+}
+
+/* ------------------------------------------------------------------------
+   Choosing which part of a document to rehearse.
+   ------------------------------------------------------------------------ */
+
+.section-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--paper-raised);
+}
+
+.section-picker-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.section-picker-head h2 {
+  margin: 0 0 4px;
+}
+
+.section-picker-file,
+.section-picker-help,
+.section-picker-note {
+  margin: 0;
+  color: var(--ink-3);
+}
+
+.section-picker-help {
+  max-width: 62ch;
+}
+
+.section-picker-cancel,
+.section-picker-whole {
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.section-picker-cancel:hover:not(:disabled),
+.section-picker-whole:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+
+.section-picker-whole:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.section-picker-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.segmented button {
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.segmented button.active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 460px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.section-row {
+  display: grid;
+  grid-template-columns: auto 90px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  cursor: pointer;
+  transition: border-color 150ms ease;
+}
+
+.section-row:hover,
+.section-row:has(input:focus-visible) {
+  border-color: var(--ink-2);
+}
+
+.section-row.on {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.section-ref {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.section-title {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.section-size {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.section-picker-foot {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+
+
+
+.section-picker-note.over {
+  color: var(--bad, var(--ink));
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .section-row {
+    grid-template-columns: auto 1fr;
+  }
+
+  .section-title {
+    grid-column: 1 / -1;
+    white-space: normal;
+  }
+
+  .section-size {
+    display: none;
+  }
+}
+
+
+
+.report-open {
+  align-self: flex-start;
+  margin: 8px 0 20px;
+}
+
+/* ------------------------------------------------------------------------
+   The study report: a sheet on screen, and the same sheet when printed.
+   ------------------------------------------------------------------------ */
+
+.report-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow-y: auto;
+  background: var(--paper);
+}
+
+.report-bar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px clamp(16px, 4vw, 48px);
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.report-close {
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.report-sheet {
+  max-width: 820px;
+  margin: 28px auto 60px;
+  padding: clamp(24px, 5vw, 56px);
+  background: var(--report-paper);
+  color: var(--report-ink);
+  border: 1px solid var(--report-line);
+  border-radius: 6px;
+  line-height: 1.55;
+}
+
+.report-sheet h1 {
+  margin: 4px 0 8px;
+  font-size: clamp(26px, 4vw, 36px);
+  line-height: 1.15;
+}
+
+.report-sheet h2 {
+  margin: 30px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--report-ink);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.report-sheet p {
+  margin: 0 0 10px;
+}
+
+.report-kicker,
+.report-meta {
+  margin: 0;
+  color: var(--report-soft);
+  font-size: 14px;
+}
+
+.report-kicker {
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.report-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report-list li {
+  padding: 12px 16px;
+  border-left: 4px solid var(--report-ink);
+  background: var(--report-tint);
+  break-inside: avoid;
+}
+
+.report-sheet blockquote {
+  margin: 6px 0 0;
+  color: var(--report-soft);
+  font-size: 14px;
+  font-style: italic;
+}
+
+.report-sheet blockquote span {
+  font-style: normal;
+  font-weight: 700;
+}
+
+.report-original {
+  margin-top: 14px;
+  color: var(--report-soft);
+  font-size: 14px;
+}
+
+.report-original summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.report-foot {
+  margin-top: 36px;
+  padding-top: 12px;
+  border-top: 1px solid var(--report-line);
+  color: var(--report-soft);
+  font-size: 12px;
+}
+
+.report-wait {
+  margin-top: 24px;
+  color: var(--report-soft);
+}
+
+@media print {
+  #root {
+    display: none;
+  }
+
+  .report-overlay {
+    position: absolute;
+    inset: auto;
+    top: 0;
+    left: 0;
+    width: 100%;
+    overflow: visible;
+    background: none;
+  }
+
+  .report-bar {
+    display: none;
+  }
+
+  .report-sheet {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .report-original {
+    display: block;
+  }
+}
+
+/* The colleague who is listening, shown while their questions are prepared. */
+.thinking-image {
+  display: block;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.report-part {
+  margin: 0 0 26px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--report-line);
+}
+
+.report-part h3 {
+  margin: 0 0 8px;
+  font-size: 19px;
+}
+
+.report-part h3 span {
+  margin-left: 8px;
+  color: var(--report-soft);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-part h4 {
+  margin: 16px 0 6px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--report-soft);
+}
+
+.report-one {
+  padding: 8px 12px;
+  border-left: 4px solid var(--report-ink);
+  background: var(--report-tint);
+}
+
+.report-terms {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.report-terms div {
+  display: grid;
+  grid-template-columns: minmax(110px, 28%) 1fr;
+  gap: 12px;
+}
+
+.report-terms dt {
+  font-weight: 800;
+}
+
+.report-terms dd {
+  margin: 0;
+}
+
+.report-qa {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report-qa li {
+  break-inside: avoid;
+}
+
+.report-qa p {
+  margin: 2px 0 0;
+}
+
+@media print {
+  .report-part {
+    break-inside: auto;
+  }
+
+  .report-part h3,
+  .report-part h4 {
+    break-after: avoid;
+  }
+}
+
+.report-thin {
+  color: var(--report-soft);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* A block that opens on request: its heading is the button. */
+.recap-collapsible > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.recap-collapsible > summary::-webkit-details-marker {
+  display: none;
+}
+
+.recap-collapsible > summary::after {
+  content: "+";
+  margin-left: auto;
+  color: var(--ink-3);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.recap-collapsible[open] > summary::after {
+  content: "−";
+}
+
+.recap-collapsible[open] > summary {
+  margin-bottom: 14px;
+}
+
+.blindspot-heading {
+  margin: 18px 0 4px;
+  font-size: 15px;
+}
+
+/* ------------------------------------------------------------------------
+   The lesson as a stage: the listener large in the middle, the points you
+   must cover named beneath them, and the conversation as live captions in a
+   card at the bottom. Details and the full transcript open on request.
+   ------------------------------------------------------------------------ */
+
+.stage-session {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: calc(100vh - 2 * clamp(20px, 3.5vw, 56px));
+}
+
+.stage-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.stage-back {
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.stage-back:hover {
+  border-color: var(--ink);
+}
+
+.stage-title {
+  margin: 0;
+  font-size: clamp(18px, 2vw, 24px);
+  letter-spacing: -0.01em;
+}
+
+.stage-local {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--paper-raised);
+  border: 1px solid var(--good-edge);
+  color: var(--good);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.stage-spacer {
+  flex: 1;
+}
+
+.stage-count {
+  color: var(--ink-3);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.stage-pill {
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-raised);
+  color: var(--ink-2);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.stage-pill:hover {
+  border-color: var(--ink);
+}
+
+.stage-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 22px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper-raised);
+}
+
+.stage-description {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.stage-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 300px;
+  padding: 18px 0;
+  border-radius: 28px;
+  background: radial-gradient(
+    ellipse at 50% 36%,
+    var(--stage-glow, var(--paper-raised)),
+    transparent 62%
+  );
+}
+
+.stage-character {
+  width: clamp(150px, 18vw, 210px);
+  height: clamp(150px, 18vw, 210px);
+  padding: 8px;
+  border-radius: 50%;
+  border: 3px solid var(--stage-ring, var(--line));
+  box-shadow:
+    0 0 0 10px color-mix(in srgb, var(--stage-ring, var(--line)) 18%, transparent),
+    0 0 0 22px color-mix(in srgb, var(--stage-ring, var(--line)) 8%, transparent);
+}
+
+.stage-character.state-speaking {
+  box-shadow:
+    0 0 0 12px color-mix(in srgb, var(--stage-ring, var(--line)) 30%, transparent),
+    0 0 0 28px color-mix(in srgb, var(--stage-ring, var(--line)) 12%, transparent);
+}
+
+.stage-points {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 980px;
+  margin: 12px 0 0;
+  padding: 0 12px;
+  list-style: none;
+}
+
+.stage-point {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-raised);
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 600;
+  transition:
+    border-color 200ms ease,
+    background 200ms ease;
+}
+
+.stage-point i {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink-3);
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.stage-point small {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.stage-point.next {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.stage-point.done {
+  border-color: var(--good);
+  background: var(--good-tint);
+  color: var(--ink);
+}
+
+.stage-point.done i {
+  border-color: var(--good);
+  background: var(--good);
+  color: var(--paper);
+}
+
+.stage-confidence {
+  align-self: center;
+}
+
+.captions-card {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--paper-raised);
+  overflow: hidden;
+}
+
+.captions-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.stage-mic {
+  width: 46px;
+  height: 46px;
+  font-size: 20px;
+}
+
+.stage-mic-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.captions-body,
+.stage-transcript {
+  min-height: 96px;
+  padding: 14px 20px;
+}
+
+.stage-transcript {
+  max-height: 46vh;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.captions-before {
+  margin: 0 0 6px;
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+.captions-line {
+  margin: 0;
+  padding: 14px 20px;
+  font-size: clamp(17px, 1.6vw, 21px);
+  line-height: 1.5;
+}
+
+.captions-body .captions-line {
+  padding: 0;
+}
+
+.captions-line.mine {
+  color: var(--ink);
+}
+
+.captions-status {
+  margin: 0;
+  padding: 8px 20px 12px;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.stage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.stage-finish {
+  margin-left: auto;
+}
+
+.stage-complete {
+  align-self: center;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .stage-point small {
+    display: none;
+  }
+
+  .stage-character {
+    width: 128px;
+    height: 128px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-point {
+    transition: none;
+  }
+}
+
+.stage-label {
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stage-words {
+  padding: 10px 20px 0;
+  font-size: 13px;
+}
+
+.stage-words summary {
+  cursor: pointer;
+  color: var(--ink-3);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.stage-finish {
+  width: auto;
+}
+
+/* ------------------------------------------------------------------------
+   The arrival, beats 0 to 2: Grandma alive, the ten-second test, the room.
+   ------------------------------------------------------------------------ */
+
+.intro-split {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  align-items: center;
+  gap: clamp(24px, 5vw, 80px);
+}
+
+.intro-grandma {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  perspective: 900px;
+}
+
+.intro-grandma-tilt {
+  position: relative;
+  width: clamp(200px, 24vw, 320px);
+  aspect-ratio: 1;
+  transform-style: preserve-3d;
+  transition: transform 120ms ease-out;
+}
+
+.intro-grandma-tilt img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 4px solid var(--stage-ring, var(--line));
+  box-shadow:
+    0 0 0 14px color-mix(in srgb, var(--stage-ring, var(--line)) 14%, transparent),
+    0 28px 60px color-mix(in srgb, var(--ink) 25%, transparent);
+}
+
+.intro-grandma-mouth[data-talking="true"] {
+  animation: intro-mouth 0.22s steps(1) infinite alternate;
+}
+
+@keyframes intro-mouth {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.intro-grandma-line {
+  min-height: 3.4em;
+  margin: 0;
+  max-width: 24ch;
+  text-align: center;
+  font-size: clamp(18px, 2vw, 24px);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.intro-caret {
+  display: inline-block;
+  width: 3px;
+  height: 1em;
+  margin-left: 3px;
+  vertical-align: -3px;
+  background: var(--warn);
+  animation: intro-blink 1s steps(1) infinite;
+}
+
+@keyframes intro-blink {
+  50% { opacity: 0; }
+}
+
+.intro-title-sm {
+  font-size: clamp(30px, 5.6vw, 66px);
+  line-height: 1.04;
+}
+
+.intro-test {
+  max-width: 880px;
+}
+
+.intro-body-tight {
+  margin-bottom: 18px;
+}
+
+.intro-clock-row {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-bottom: 14px;
+}
+
+.intro-ring {
+  position: relative;
+  flex: none;
+  width: 88px;
+  height: 88px;
+}
+
+.intro-ring svg {
+  transform: rotate(-90deg);
+}
+
+.intro-ring span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.intro-ring-track,
+.intro-ring-arc {
+  fill: none;
+  stroke-width: 7;
+}
+
+.intro-ring-track {
+  stroke: var(--line);
+}
+
+.intro-ring-arc {
+  stroke: var(--warn);
+  stroke-linecap: round;
+}
+
+.intro-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper-raised);
+  color: var(--ink);
+  font: inherit;
+  font-size: 18px;
+  resize: none;
+}
+
+.intro-input:focus-visible {
+  outline: 2px solid var(--info);
+  outline-offset: 2px;
+}
+
+.intro-privacy {
+  margin: 10px 0 0;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.intro-link {
+  padding: 8px 4px;
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.intro-link:hover {
+  color: var(--ink);
+}
+
+.intro-stage-wide {
+  max-width: 1100px;
+}
+
+.intro-room {
+  position: relative;
+  padding: 6px 0 4px;
+}
+
+.intro-seats {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 10px;
+  margin: 26px 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.intro-seats li {
+  text-align: center;
+  animation:
+    intro-fly 1s cubic-bezier(0.2, 0.9, 0.25, 1.1) both,
+    intro-bob 4.2s ease-in-out 1.4s infinite;
+  animation-delay: calc(var(--i) * 110ms), calc(1.4s + var(--i) * 230ms);
+  transition: opacity 200ms ease;
+}
+
+.intro-seats img {
+  display: block;
+  width: clamp(48px, 6.4vw, 88px);
+  aspect-ratio: 1;
+  margin: 0 auto 6px;
+  border-radius: 50%;
+  object-fit: cover;
+  transition: transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+
+.intro-seats b {
+  display: block;
+  font-size: 13px;
+}
+
+/* Meeting one: the others step back. */
+.intro-seats.focus li:not(.on) {
+  opacity: 0.35;
+}
+
+.intro-seats li.on img {
+  transform: scale(1.2);
+}
+
+@keyframes intro-fly {
+  from {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) rotate(var(--spin)) scale(0.6);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes intro-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.intro-room-line {
+  min-height: 1.6em;
+  margin: 10px 0 22px;
+  color: var(--warn);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+@media (max-width: 800px) {
+  .intro-split {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .intro-seats {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .intro {
+    overflow-y: auto;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-grandma-tilt {
+    transition: none;
+  }
+
+  .intro-seats li {
+    animation: none;
+  }
+
+  .intro-caret,
+  .intro-grandma-mouth[data-talking="true"] {
+    animation: none;
+  }
+}
+
+/* The beat marks sit at the foot of the screen whichever beat is showing. */
+.intro > .intro-beats {
+  position: absolute;
+  left: 50%;
+  bottom: 4vh;
+  margin: 0;
+  transform: translateX(-50%);
+}
+
+.intro-split .intro-title {
+  font-size: clamp(40px, 6.6vw, 96px);
+}
+
+/* ------------------------------------------------------------------------
+   The ten-second test as an exam paper: always cream paper with dark ink,
+   in either theme, because it is a sheet of paper on the desk.
+   ------------------------------------------------------------------------ */
+
+.intro-paper-wrap {
+  width: min(780px, 100%);
+}
+
+.intro-paper {
+  position: relative;
+  padding: 34px 40px 36px;
+  border-radius: 6px;
+  background-color: var(--sheet);
+  background-image: repeating-linear-gradient(
+    transparent 0 33px,
+    var(--sheet-line) 33px 34px
+  );
+  background-position: 0 78px;
+  color: var(--sheet-ink);
+  box-shadow: 0 30px 60px color-mix(in srgb, var(--ink) 30%, transparent);
+  transform: rotate(-0.5deg);
+  font-family: "Bradley Hand", "Segoe Print", "Comic Sans MS", cursive;
+}
+
+.intro-fuse {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 6px;
+  border-radius: 6px 0 0 0;
+  background: var(--sheet-red);
+}
+
+.intro-paper-head {
+  margin: 0 0 4px;
+  color: var(--sheet-soft);
+  font:
+    700 13px/1.2 -apple-system,
+    "Inter",
+    sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.intro-paper-q {
+  margin: 0 0 18px;
+  font-size: clamp(26px, 3.6vw, 40px);
+  line-height: 1.15;
+  animation: intro-rise 0.4s var(--e-out-quart, ease) both;
+}
+
+.intro-paper-note {
+  margin: 0 0 14px;
+  font-size: 22px;
+  line-height: 1.3;
+}
+
+.intro-paper-input {
+  width: 100%;
+  min-height: 118px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--sheet-blue);
+  font: inherit;
+  font-size: 24px;
+  line-height: 34px;
+  resize: none;
+  outline: none;
+}
+
+.intro-paper-input::placeholder {
+  color: var(--sheet-soft);
+}
+
+.intro-paper-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-top: 12px;
+  font-family:
+    -apple-system,
+    "Inter",
+    sans-serif;
+}
+
+.intro-paper-go {
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--sheet-ink);
+  color: var(--sheet);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.intro-paper-go:focus-visible,
+.intro-paper-link:focus-visible {
+  outline: 3px solid var(--info);
+  outline-offset: 3px;
+}
+
+.intro-paper-link {
+  padding: 6px 2px;
+  border: 0;
+  background: none;
+  color: var(--sheet-soft);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.intro-paper-clock {
+  min-width: 2.2em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.intro-paper-mic {
+  color: var(--sheet-soft);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.intro-paper-mic.heard {
+  color: var(--sheet-green);
+}
+
+.intro-asking {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--sheet-soft);
+}
+
+.intro-wave {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 22px;
+}
+
+.intro-wave i {
+  width: 4px;
+  border-radius: 2px;
+  background: var(--sheet-red);
+  animation: intro-wave 0.9s ease-in-out infinite;
+}
+
+.intro-wave i:nth-child(2) { animation-delay: 0.12s; }
+.intro-wave i:nth-child(3) { animation-delay: 0.24s; }
+.intro-wave i:nth-child(4) { animation-delay: 0.36s; }
+
+@keyframes intro-wave {
+  0%, 100% { height: 5px; }
+  50% { height: 20px; }
+}
+
+.intro-stamp {
+  position: absolute;
+  right: 26px;
+  bottom: 56px;
+  padding: 8px 18px;
+  white-space: pre-line;
+  border: 5px solid currentColor;
+  border-radius: 8px;
+  font:
+    900 26px/1.1 -apple-system,
+    "Inter",
+    sans-serif;
+  letter-spacing: 0.06em;
+  color: var(--sheet-red);
+  text-align: center;
+  transform: rotate(11deg);
+  animation: intro-stamp 0.4s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+
+@keyframes intro-stamp {
+  from { transform: rotate(11deg) scale(2.4); opacity: 0; }
+  to { transform: rotate(11deg) scale(1); opacity: 1; }
+}
+
+.intro-paper-pen {
+  max-width: 58%;
+  margin: 12px 0 0;
+  color: var(--sheet-red);
+  font-size: 26px;
+  line-height: 1.25;
+}
+
+@media (max-width: 700px) {
+  .intro-paper { padding: 28px 22px 30px; }
+  .intro-stamp { right: 14px; bottom: auto; top: 14px; font-size: 22px; }
+  .intro-paper-pen { max-width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-stamp { animation: none; }
+  .intro-wave i { animation: none; height: 12px; }
+  .intro-paper { transform: none; }
 }

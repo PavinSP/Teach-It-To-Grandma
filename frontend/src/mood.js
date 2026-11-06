@@ -59,11 +59,6 @@ const MOOD_HINTS = [
       "i do not understand",
       "you lost me",
       "lost me",
-      "what does",
-      "what do you mean",
-      "what is a",
-      "what's a",
-      "what are those",
       "what in the world",
       "i'm not following",
       "not following",
@@ -73,16 +68,10 @@ const MOOD_HINTS = [
       "still confused",
       "never explained",
       "you didn't say",
-      "what exactly",
       // German
       "ich verstehe nicht",
       "ich verstehe das nicht",
       "verstehe ich nicht",
-      "was bedeutet",
-      "was heißt",
-      "was meinst du",
-      "was ist ein",
-      "was ist das",
       "ich bin verwirrt",
       "verwirrend",
       "ich komme nicht mit",
@@ -158,6 +147,16 @@ const MOOD_HINTS = [
       "really?",
       "how so",
       "keep going",
+      // A plain question about a word or a step is curiosity, not being lost:
+      // asking "what does that mean, darling?" is exactly what she is for.
+      // These sat under "confused" and labelled a good lesson "lost" the
+      // moment she asked her first follow-up.
+      "what does",
+      "what do you mean",
+      "what is a",
+      "what's a",
+      "what are those",
+      "what exactly",
       // German
       "erzähl mir mehr",
       "und dann",
@@ -166,6 +165,11 @@ const MOOD_HINTS = [
       "wie denn",
       "mach weiter",
       "und weiter",
+      "was bedeutet",
+      "was heißt",
+      "was meinst du",
+      "was ist ein",
+      "was ist das",
     ],
   ],
 ];

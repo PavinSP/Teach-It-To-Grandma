@@ -1,12 +1,12 @@
+import { useState } from "react";
 import { FEATURES } from "../features";
+import { StudyReport } from "./StudyReport";
 import { CHARACTERS } from "../characters";
 import { analyseDelivery, deliveryReadings } from "../speech";
 import {
   verdictForScore,
   bandForScore,
   headlineBandForScore,
-  loadProfile,
-  ACHIEVEMENTS,
 } from "../progression";
 
 // Kinds of turning point, labelled for whoever was listening — "Lost him"
@@ -65,9 +65,7 @@ export function Recap({
   mirrorError,
   mirrorFlags,
   mirrorSubmitted,
-  newAchievements,
   openJuror,
-  profileXp,
   progress,
   recallText,
   recap,
@@ -104,7 +102,10 @@ export function Recap({
   tt,
   uiLang,
   whoUpper,
+  gradingApi,
+  documentSource,
 }) {
+    const [reportOpen, setReportOpen] = useState(false);
     // Once Grandma has judged the explanation, her verdict is the one that
     // counts — the keyword lists only stand in until it arrives.
     const gradedClear = aiGrade?.results
@@ -210,6 +211,35 @@ export function Recap({
             <strong>{selectedTopic.name}</strong>.
           </p>
 
+          {selectedTopic.document && selectedTopic.privacy?.local && (
+            <button
+              type="button"
+              className="join-button report-open"
+              onClick={() => setReportOpen(true)}
+              disabled={isGrading}
+            >
+              📄 {tt("reportOpen")}
+            </button>
+          )}
+
+          {reportOpen && (
+            <StudyReport
+              api={gradingApi}
+              source={documentSource}
+              language={language}
+              tt={tt}
+              topic={selectedTopic}
+              listener={activeCharacter?.shortName ?? activeCharacter?.name ?? ""}
+              results={selectedTopic.points.map((point, i) =>
+                aiGrade?.results
+                  ? Boolean(aiGrade.results[i]?.understood)
+                  : Boolean(progress[i])
+              )}
+              said={recap.userMessages.join("\n")}
+              onClose={() => setReportOpen(false)}
+            />
+          )}
+
           {FEATURES.progression && isGrading && !lessonXp && (
             <section className="completion-band">
               <p className="score-pending">{tt("marking")}</p>
@@ -247,21 +277,6 @@ export function Recap({
                 <p className="score-unavailable">{tt("noMark")}</p>
               )}
 
-              <ul className="xp-list">
-                {lessonXp.events.map((event) => (
-                  <li key={event.label}>
-                    <span className="xp-amount">+{event.xp}</span>
-
-                    <span className="xp-what">
-                      {tt(event.label, event.vars)}
-                      {event.quote && (
-                        <em className="xp-quote"> — “{event.quote}”</em>
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
               {FEATURES.confidenceGap &&
                 confidence !== null &&
                 lessonXp.score !== null && (
@@ -293,38 +308,6 @@ export function Recap({
                     </span>
                   </div>
                 )}
-
-              <div className="xp-total">
-                <strong>+{lessonXp.total} XP</strong>
-                {profileXp !== null && (
-                  <span className="xp-running">
-                    {" "}· {tt("xpRunning", { xp: profileXp })}
-                  </span>
-                )}
-              </div>
-
-              {FEATURES.achievements && (
-                <div className="achievement-strip">
-                  {ACHIEVEMENTS.map((a) => {
-                    const isNew = newAchievements.includes(a.id);
-                    const owned =
-                      isNew || Boolean(loadProfile().achievements?.[a.id]);
-
-                    return (
-                      <span
-                        key={a.id}
-                        className={`achievement-chip ${
-                          owned ? "owned" : "locked"
-                        } ${isNew ? "fresh" : ""}`}
-                        title={tt(a.how)}
-                      >
-                        {a.icon} {tt(a.name)}
-                        {isNew && <em className="achievement-new">NEW</em>}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
             </section>
           )}
 
@@ -370,10 +353,22 @@ export function Recap({
                   </li>
                 ))}
               </ul>
+
+              {FEATURES.blindSpots && aiGrade.blindSpots?.length > 0 && (
+                <>
+                  <h3 className="blindspot-heading">{tt("blindTitle")}</h3>
+                  <p className="recap-sub">{tt("blindIntro")}</p>
+                  <ul className="blindspot-list">
+                    {aiGrade.blindSpots.map((b) => (
+                      <li key={b}>{b}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </section>
           )}
 
-          {ambush && aiGrade?.misconceptionHandling && (
+          {!selectedTopic.document && ambush && aiGrade?.misconceptionHandling && (
             <section className="recap-card myth-card">
               <div className="recap-head">
                 <div className="recap-head">
@@ -508,27 +503,6 @@ export function Recap({
                   <strong>{tt("nextRung")}</strong> {aiGrade.depth.next}
                 </p>
               )}
-            </section>
-          )}
-
-          {FEATURES.blindSpots && aiGrade?.blindSpots?.length > 0 && (
-            <section className="recap-card">
-              <div className="recap-head">
-                <div className="recap-head">
-                  <div className="recap-icon">🕳️</div>
-                  <h2>{tt("blindTitle")}</h2>
-                </div>
-              </div>
-
-              <p className="recap-sub">
-                {tt("blindIntro")}
-              </p>
-
-              <ul className="blindspot-list">
-                {aiGrade.blindSpots.map((b) => (
-                  <li key={b}>{b}</li>
-                ))}
-              </ul>
             </section>
           )}
 
@@ -928,13 +902,11 @@ export function Recap({
           )}
 
           {FEATURES.deliveryAnalysis && delivery && (
-            <section className="recap-card delivery-card">
-              <div className="recap-head">
-                <div className="recap-head">
-                  <div className="recap-icon">🗣️</div>
-                  <h2>{tt("deliveryTitle")}</h2>
-                </div>
-              </div>
+            <details className="recap-card delivery-card recap-collapsible">
+              <summary className="recap-head">
+                <div className="recap-icon">🗣️</div>
+                <h2>{tt("deliveryTitle")}</h2>
+              </summary>
 
               <p className="delivery-intro">
                 {tt("deliveryIntro", {
@@ -965,7 +937,7 @@ export function Recap({
                   </li>
                 ))}
               </ul>
-            </section>
+            </details>
           )}
 
           {FEATURES.mirrorMode && recap.userMessages.length > 0 && (
@@ -1098,7 +1070,7 @@ export function Recap({
             </section>
           )}
 
-          {FEATURES.teachOff && !teachoff && lessonXp?.score != null && (
+          {FEATURES.teachOff && !selectedTopic.document && !teachoff && lessonXp?.score != null && (
             <section className="recap-card teachoff-card">
               <div className="recap-head">
                 <div className="recap-head">
@@ -1129,7 +1101,7 @@ export function Recap({
             </section>
           )}
 
-          {FEATURES.teachOff && teachoff && (
+          {FEATURES.teachOff && !selectedTopic.document && teachoff && (
             <section className="recap-card teachoff-card">
               <div className="recap-head">
                 <div className="recap-head">

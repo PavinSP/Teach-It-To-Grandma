@@ -19,6 +19,34 @@ import {
   putQuizAudio,
 } from "./store.js";
 import { speak, voiceConfigured } from "./tts.js";
+import { INTRO_LINES } from "./introLines.js";
+import multer from "multer";
+import {
+  MAX_UPLOAD_BYTES,
+  MAX_DOCUMENT_CHARS,
+  DocumentError,
+  isLocalBaseUrl,
+  readDocument,
+  sectionTitle,
+  isWeakTitle,
+  TITLES_SCHEMA,
+  titlesPrompt,
+  CHECK_SCHEMA,
+  documentCheckPrompt,
+  documentLessonPrompt,
+  withSources,
+  verifySource,
+  displayName,
+  spokenTerms,
+  SPOKEN_REQUIRED,
+  passageContext,
+  HELP_SCHEMA,
+  helpPrompt,
+  REPORT_SCHEMA,
+  reportPrompt,
+  DETAIL_SCHEMA,
+  detailPrompt,
+} from "./documents.js";
 
 // The key lives in the project root .env, one level up from server/.
 dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), "..", ".env") });
@@ -58,6 +86,10 @@ const BASE_URL = process.env.AI_BASE_URL || DEFAULT_BASE_URL;
 const FAST_MODEL = process.env.FAST_MODEL || "gemini-3.1-flash-lite";
 const DEEP_MODEL = process.env.DEEP_MODEL || "claude-4.5-sonnet";
 const MODEL = FAST_MODEL;
+// The part-by-part study guide is read afterwards, not during a rehearsal, so
+// it can use a larger model that is slower but writes more precisely. Unset,
+// it uses the same model as everything else.
+const REPORT_MODEL = process.env.REPORT_MODEL || MODEL;
 
 // AI_API_KEY is the name to use; TITANOM_API_KEY still works so an existing
 // deployment does not break the moment this lands.
@@ -323,6 +355,144 @@ app.get("/health", (_req, res) => {
   });
 });
 
+// Repairs what a model gets subtly wrong in a lesson, so no screen downstream
+// has to. Shared by typed and document lessons. Mutates and returns it.
+function normaliseLesson(lesson) {
+  // A point whose `required` exceeds its keyword count could never be
+  // ticked, which would strand the progress bar for the whole lesson.
+  lesson.points = lesson.points.map((point) => {
+    const keywords = (point.keywords ?? [])
+      .map((keyword) => String(keyword).trim())
+      .filter(Boolean);
+
+    return {
+      label: point.label,
+      keywords,
+      required: Math.min(Math.max(1, point.required ?? 1), keywords.length),
+      hardFor: ["easy", "tricky", "hard"].includes(point.hardFor)
+        ? point.hardFor
+        : null,
+      hardWhy: typeof point.hardWhy === "string" ? point.hardWhy : "",
+    };
+  });
+
+  // These are additive to a screen that must never fail because of them,
+  // so a malformed or missing value degrades to "nothing to show" rather
+  // than breaking the response.
+  lesson.analysis =
+    lesson.analysis && typeof lesson.analysis === "object"
+      ? lesson.analysis
+      : null;
+
+  lesson.challenges = Array.isArray(lesson.challenges)
+    ? lesson.challenges.filter(
+        (c) => c && typeof c.label === "string" && typeof c.instruction === "string"
+      ).slice(0, 3)
+    : [];
+
+  return lesson;
+}
+
+// The shape of every lesson, typed or built from a document. Lifted out of
+// the route so document mode extends it instead of copying it.
+const LESSON_SCHEMA = {
+  type: "object",
+  properties: {
+    ok: { type: "boolean" },
+    problem: { type: "string" },
+    name: {
+      type: "string",
+      description: "The topic, tidied into a display name",
+    },
+    description: {
+      type: "string",
+      description:
+        "One sentence telling the student what to explain, e.g. 'Explain how a function can call itself.'",
+    },
+    difficulty: {
+      type: "string",
+      description: "Beginner, Intermediate or Advanced",
+    },
+    points: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          label: { type: "string" },
+          keywords: { type: "array", items: { type: "string" } },
+          required: { type: "number" },
+          hardFor: {
+            type: "string",
+            enum: ["easy", "tricky", "hard"],
+          },
+          hardWhy: { type: "string" },
+        },
+        required: ["label", "keywords", "required", "hardFor", "hardWhy"],
+        additionalProperties: false,
+      },
+    },
+    misconceptions: { type: "array", items: { type: "string" } },
+    analysis: {
+      type: "object",
+      properties: {
+        conceptDensity: {
+          type: "string",
+          enum: ["Low", "Medium", "High"],
+        },
+        prerequisites: {
+          type: "string",
+          enum: ["Low", "Medium", "High"],
+        },
+        prerequisiteNotes: {
+          type: "array",
+          items: { type: "string" },
+        },
+      },
+      required: [
+        "conceptDensity",
+        "prerequisites",
+        "prerequisiteNotes",
+      ],
+      additionalProperties: false,
+    },
+    challenges: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          kind: {
+            type: "string",
+            enum: [
+              "analogy",
+              "five_year_old",
+              "no_jargon",
+              "real_world",
+              "opposite",
+            ],
+          },
+          label: { type: "string" },
+          instruction: { type: "string" },
+        },
+        required: ["id", "kind", "label", "instruction"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: [
+    "ok",
+    "problem",
+    "name",
+    "description",
+    "difficulty",
+    "points",
+    "misconceptions",
+    "analysis",
+    "challenges",
+  ],
+  additionalProperties: false,
+};
+
 // Turns any topic the student types into a lesson: what they should cover,
 // how hard it is, and what people usually get wrong about it.
 app.post("/api/lesson", rateLimit, async (req, res) => {
@@ -374,103 +544,7 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
         type: "json_schema",
         json_schema: {
           name: "lesson",
-          schema: {
-            type: "object",
-            properties: {
-              ok: { type: "boolean" },
-              problem: { type: "string" },
-              name: {
-                type: "string",
-                description: "The topic, tidied into a display name",
-              },
-              description: {
-                type: "string",
-                description:
-                  "One sentence telling the student what to explain, e.g. 'Explain how a function can call itself.'",
-              },
-              difficulty: {
-                type: "string",
-                description: "Beginner, Intermediate or Advanced",
-              },
-              points: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    label: { type: "string" },
-                    keywords: { type: "array", items: { type: "string" } },
-                    required: { type: "number" },
-                    hardFor: {
-                      type: "string",
-                      enum: ["easy", "tricky", "hard"],
-                    },
-                    hardWhy: { type: "string" },
-                  },
-                  required: ["label", "keywords", "required", "hardFor", "hardWhy"],
-                  additionalProperties: false,
-                },
-              },
-              misconceptions: { type: "array", items: { type: "string" } },
-              analysis: {
-                type: "object",
-                properties: {
-                  conceptDensity: {
-                    type: "string",
-                    enum: ["Low", "Medium", "High"],
-                  },
-                  prerequisites: {
-                    type: "string",
-                    enum: ["Low", "Medium", "High"],
-                  },
-                  prerequisiteNotes: {
-                    type: "array",
-                    items: { type: "string" },
-                  },
-                },
-                required: [
-                  "conceptDensity",
-                  "prerequisites",
-                  "prerequisiteNotes",
-                ],
-                additionalProperties: false,
-              },
-              challenges: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    id: { type: "string" },
-                    kind: {
-                      type: "string",
-                      enum: [
-                        "analogy",
-                        "five_year_old",
-                        "no_jargon",
-                        "real_world",
-                        "opposite",
-                      ],
-                    },
-                    label: { type: "string" },
-                    instruction: { type: "string" },
-                  },
-                  required: ["id", "kind", "label", "instruction"],
-                  additionalProperties: false,
-                },
-              },
-            },
-            required: [
-              "ok",
-              "problem",
-              "name",
-              "description",
-              "difficulty",
-              "points",
-              "misconceptions",
-              "analysis",
-              "challenges",
-            ],
-            additionalProperties: false,
-          },
+          schema: LESSON_SCHEMA,
         },
       },
     });
@@ -493,37 +567,7 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
       throw new Error("Model returned no learning points");
     }
 
-    // A point whose `required` exceeds its keyword count could never be
-    // ticked, which would strand the progress bar for the whole lesson.
-    lesson.points = lesson.points.map((point) => {
-      const keywords = (point.keywords ?? [])
-        .map((keyword) => String(keyword).trim())
-        .filter(Boolean);
-
-      return {
-        label: point.label,
-        keywords,
-        required: Math.min(Math.max(1, point.required ?? 1), keywords.length),
-        hardFor: ["easy", "tricky", "hard"].includes(point.hardFor)
-          ? point.hardFor
-          : null,
-        hardWhy: typeof point.hardWhy === "string" ? point.hardWhy : "",
-      };
-    });
-
-    // These are additive to a screen that must never fail because of them,
-    // so a malformed or missing value degrades to "nothing to show" rather
-    // than breaking the response.
-    lesson.analysis =
-      lesson.analysis && typeof lesson.analysis === "object"
-        ? lesson.analysis
-        : null;
-
-    lesson.challenges = Array.isArray(lesson.challenges)
-      ? lesson.challenges.filter(
-          (c) => c && typeof c.label === "string" && typeof c.instruction === "string"
-        ).slice(0, 3)
-      : [];
+    normaliseLesson(lesson);
 
     res.json(lesson);
   } catch (err) {
@@ -536,10 +580,542 @@ If the topic is too vague to teach, or is not a real subject, set "ok" to false 
   }
 });
 
+// One uploaded file, held in memory and never written to disk: a document
+// that was never stored anywhere can't be left behind anywhere.
+const receiveDocument = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_UPLOAD_BYTES, files: 1, fields: 5 },
+}).single("file");
+
+function acceptDocument(req, res, next) {
+  receiveDocument(req, res, (err) => {
+    if (!err) {
+      return next();
+    }
+
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({
+        error: `That file is larger than ${MAX_UPLOAD_BYTES / 1024 / 1024} MB.`,
+      });
+    }
+
+    res.status(400).json({ error: "That upload couldn't be read." });
+  });
+}
+
+// The parts of an uploaded document, so the presenter can choose which to
+// rehearse. Nothing is kept: the file is read, listed and dropped, and the
+// browser sends it again with the choice. Local-only, like the lesson route.
+app.post("/api/document/outline", rateLimit, acceptDocument, async (req, res) => {
+  if (!client || !isLocalBaseUrl(BASE_URL)) {
+    return res.status(403).json({
+      error:
+        "Document mode only runs with a model on this machine, so your file never leaves it. Start the server with npm run dev:private.",
+      localOnly: true,
+    });
+  }
+
+  if (!req.file) {
+    return res.status(400).json({ error: 'Expected a file in the "file" field.' });
+  }
+
+  try {
+    const doc = await readDocument(req.file.buffer, req.file.originalname, { all: true });
+
+    const titles = doc.sections.map((section) => sectionTitle(section.text));
+
+    // Where the first line is no real title, ask the model on this machine
+    // for one. If it fails or answers the wrong length, the first line stays.
+    // A PDF has no headings, so its pages are always titled by the model.
+    const retitle = (i) => doc.kind === "pdf" || isWeakTitle(titles[i]);
+
+    if (titles.some((_, i) => retitle(i)) && doc.sections.length <= 60) {
+      try {
+        const completion = await client.chat.completions.create({
+          model: MODEL,
+          max_completion_tokens: 600,
+          messages: [{ role: "user", content: titlesPrompt(doc.sections) }],
+          response_format: {
+            type: "json_schema",
+            json_schema: { name: "titles", schema: TITLES_SCHEMA },
+          },
+        });
+
+        const given = JSON.parse(completion.choices?.[0]?.message?.content ?? "{}").titles;
+
+        if (Array.isArray(given) && given.length === titles.length) {
+          given.forEach((title, i) => {
+            const clean = String(title ?? "").replace(/\s+/g, " ").trim().slice(0, 80);
+
+            if (clean && retitle(i)) {
+              titles[i] = clean;
+            }
+          });
+        }
+      } catch {
+        // The plain first lines are still usable.
+      }
+    }
+
+    res.json({
+      fileName: displayName(req.file.originalname),
+      kind: doc.kind,
+      limit: MAX_DOCUMENT_CHARS,
+      sections: doc.sections.map((section, index) => ({
+        index,
+        ref: section.ref,
+        title: titles[index],
+        chars: section.text.length,
+      })),
+    });
+  } catch (err) {
+    if (err instanceof DocumentError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+
+    console.error("Document outline failed:", err?.message ?? err);
+
+    res.status(502).json({ error: "That document couldn't be read." });
+  }
+});
+
+// Builds a lesson from a document the student uploads instead of a topic
+// they type: the points, keywords and misconceptions all come from the file,
+// each point with the page it came from.
+//
+// It runs only against a model on this machine. The caller's own key, base
+// URL and model headers are deliberately never read here: they exist to send
+// a request to somebody else's model, which is the one thing this route must
+// never do. Nothing from the document is logged, either — not the text, and
+// not the model's reply, which quotes it.
+app.post("/api/lesson/document", rateLimit, acceptDocument, async (req, res) => {
+  if (!client || !isLocalBaseUrl(BASE_URL)) {
+    return res.status(403).json({
+      error:
+        "Document mode only runs with a model on this machine, so your file never leaves it. Start the server with npm run dev:private.",
+      localOnly: true,
+    });
+  }
+
+  const language = req.body?.language ?? "en";
+
+  if (!languageName(language)) {
+    return res.status(400).json({ error: "Unsupported language." });
+  }
+
+  if (!req.file) {
+    return res.status(400).json({ error: 'Expected a file in the "file" field.' });
+  }
+
+  try {
+    // "sections" is the chosen parts, as positions from 0 ("0,2,3"). Left out,
+    // the document is read from the start up to the usual limit.
+    const picked = req.body?.sections;
+    const select =
+      typeof picked === "string" && picked.trim()
+        ? picked
+            .split(",")
+            .slice(0, 400)
+            .map((n) => Number(n))
+        : null;
+
+    const doc = await readDocument(req.file.buffer, req.file.originalname, { select });
+
+    const completion = await client.chat.completions.create({
+      model: MODEL,
+      max_completion_tokens: 3000,
+      messages: [
+        { role: "user", content: documentLessonPrompt(doc, inLanguage(language)) },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: { name: "lesson", schema: withSources(LESSON_SCHEMA) },
+      },
+    });
+
+    const raw = completion.choices?.[0]?.message?.content;
+
+    if (!raw) {
+      throw new Error("Model returned no content");
+    }
+
+    let lesson;
+
+    try {
+      lesson = JSON.parse(raw);
+    } catch {
+      throw new Error(`Model reply was not valid JSON (${raw.length} characters)`);
+    }
+
+    if (!lesson.ok) {
+      return res.status(422).json({
+        error: lesson.problem || "That document doesn't contain enough to teach.",
+      });
+    }
+
+    if (!Array.isArray(lesson.points) || lesson.points.length === 0) {
+      throw new Error("Model returned no learning points");
+    }
+
+    // Checked before the points are tidied, because tidying keeps only the
+    // fields every lesson has.
+    const sources = lesson.points.map((point) => verifySource(point.source, doc));
+    const spoken = lesson.points.map((point, i) =>
+      spokenTerms(
+        point.spoken ?? [],
+        point.keywords ?? [],
+        point.label ?? "",
+        sources[i].verified ? sources[i].quote : ""
+      )
+    );
+
+    normaliseLesson(lesson);
+
+    lesson.points = lesson.points.map((point, i) => ({
+      ...point,
+      source: { ...sources[i], context: passageContext(doc, sources[i]) },
+      spoken: spoken[i],
+      spokenRequired: Math.min(SPOKEN_REQUIRED, spoken[i].length),
+    }));
+
+    // A smaller local model drifts on the small things: "medium" instead of
+    // one of the three levels, and numbered misconceptions.
+    const level = String(lesson.difficulty ?? "").toLowerCase();
+    lesson.difficulty = /adv|hard|high/.test(level)
+      ? "Advanced"
+      : /inter|medium|mid/.test(level)
+        ? "Intermediate"
+        : "Beginner";
+
+    for (const field of ["name", "description"]) {
+      const text = String(lesson[field] ?? "").trim();
+      lesson[field] = text.charAt(0).toUpperCase() + text.slice(1);
+    }
+
+    lesson.misconceptions = (lesson.misconceptions ?? [])
+      .map((m) => String(m).replace(/^\s*(misconception\s*)?\d+\s*[:.)-]\s*/i, "").trim())
+      .filter(Boolean);
+
+    lesson.document = {
+      fileName: displayName(req.file.originalname),
+      kind: doc.kind,
+      sectionsRead: doc.sections.length,
+      totalSections: doc.totalSections,
+      truncated: doc.truncated,
+      readUpTo: doc.lastRef,
+      partial: Boolean(doc.partial),
+      parts: doc.sections.map((section) => section.ref),
+    };
+
+    lesson.privacy = { local: true, model: MODEL };
+
+    res.json(lesson);
+  } catch (err) {
+    if (err instanceof DocumentError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+
+    console.error("Document lesson failed:", err?.message ?? err);
+
+    res.status(502).json({ error: "Could not build a lesson from that document." });
+  }
+});
+
+// The study report: a plain summary written from the document, the presenter's
+// own words tidied, and what they missed. Local model only, for the same
+// reason as the lesson: the passages and the words said both come from a
+// private document. Nothing is stored or logged.
+app.post("/api/report", rateLimit, async (req, res) => {
+  if (!client || !isLocalBaseUrl(BASE_URL)) {
+    return res.status(403).json({
+      error: "The study report can only be written by a model on this machine.",
+      localOnly: true,
+    });
+  }
+
+  const language = req.body?.language ?? "en";
+
+  if (!languageName(language)) {
+    return res.status(400).json({ error: "Unsupported language." });
+  }
+
+  const text = (value, max) => String(value ?? "").slice(0, max);
+  const points = Array.isArray(req.body?.points)
+    ? req.body.points.slice(0, 8).map((p) => ({
+        label: text(p?.label, 200),
+        understood: Boolean(p?.understood),
+        passage: text(p?.passage, 1200),
+      }))
+    : [];
+
+  if (!points.length || points.some((p) => !p.label)) {
+    return res.status(400).json({ error: "Expected the lesson's points." });
+  }
+
+  try {
+    const completion = await client.chat.completions.create({
+      model: MODEL,
+      max_completion_tokens: 2000,
+      messages: [
+        {
+          role: "user",
+          content: reportPrompt(
+            {
+              lessonName: text(req.body?.lessonName, 200),
+              points,
+              said: text(req.body?.said, 12000),
+            },
+            inLanguage(language)
+          ),
+        },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: { name: "report", schema: REPORT_SCHEMA },
+      },
+    });
+
+    const raw = completion.choices?.[0]?.message?.content;
+    const report = JSON.parse(raw ?? "{}");
+
+    // Only the points that were missed get a fix, matched by name; anything
+    // the model made up is dropped.
+    const missed = new Set(points.filter((p) => !p.understood).map((p) => p.label));
+
+    res.json({
+      summary: (report.summary ?? []).map((l) => String(l).trim()).filter(Boolean).slice(0, 8),
+      tidied: String(report.tidied ?? "").trim(),
+      fixes: (report.fixes ?? [])
+        .filter((f) => missed.has(String(f?.point ?? "")) && String(f?.sayIt ?? "").trim())
+        .map((f) => ({ point: String(f.point), sayIt: String(f.sayIt).trim() })),
+    });
+  } catch (err) {
+    console.error("Report failed:", err?.message ?? err);
+
+    res.status(502).json({ error: "Could not write the report." });
+  }
+});
+
+// The detailed, part-by-part guide for the study report. The browser sends the
+// file again with the parts it rehearsed (the server keeps nothing), and the
+// answer streams back one part per line as each is written, so the report
+// fills in while the model works. Local model only.
+app.post("/api/report/detail", rateLimit, acceptDocument, async (req, res) => {
+  if (!client || !isLocalBaseUrl(BASE_URL)) {
+    return res.status(403).json({
+      error: "The study report can only be written by a model on this machine.",
+      localOnly: true,
+    });
+  }
+
+  const language = req.body?.language ?? "en";
+
+  if (!languageName(language)) {
+    return res.status(400).json({ error: "Unsupported language." });
+  }
+
+  if (!req.file) {
+    return res.status(400).json({ error: 'Expected a file in the "file" field.' });
+  }
+
+  let doc;
+
+  try {
+    const picked = req.body?.sections;
+    const select =
+      typeof picked === "string" && picked.trim()
+        ? picked.split(",").slice(0, 400).map((n) => Number(n))
+        : null;
+
+    doc = await readDocument(req.file.buffer, req.file.originalname, { select });
+  } catch (err) {
+    if (err instanceof DocumentError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+
+    return res.status(502).json({ error: "That document couldn't be read." });
+  }
+
+  res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  res.flushHeaders?.();
+
+  let closed = false;
+  res.on("close", () => {
+    closed = true;
+  });
+
+  const lessonName = String(req.body?.lessonName ?? "").slice(0, 200);
+  const audience = String(req.body?.audience ?? "").slice(0, 120);
+  const line = (value) => res.write(`${JSON.stringify(value)}\n`);
+  let reportModel = REPORT_MODEL;
+
+  line({ total: doc.sections.length });
+
+  for (const [index, section] of doc.sections.entries()) {
+    if (closed) {
+      return;
+    }
+
+    // A few words is a caption, not a part worth a guide.
+    if (section.text.length < 80) {
+      line({ index, ref: section.ref, skipped: true });
+      continue;
+    }
+
+    try {
+      const ask = (model) =>
+        client.chat.completions.create({
+        model,
+        max_completion_tokens: 1800,
+        messages: [
+          {
+            role: "user",
+            content: detailPrompt(
+              { lessonName, ref: section.ref, text: section.text, audience, thin: section.text.length < 500 },
+              inLanguage(language)
+            ),
+          },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: { name: "detail", schema: DETAIL_SCHEMA },
+        },
+      });
+
+      // If the larger model is not installed or fails to load, fall back to the
+      // everyday one for the rest of the report rather than lose the guide.
+      let completion;
+
+      try {
+        completion = await ask(reportModel);
+      } catch (err) {
+        if (reportModel === MODEL) {
+          throw err;
+        }
+
+        console.error("Report model failed, using the everyday model:", err?.message ?? err);
+        reportModel = MODEL;
+        completion = await ask(reportModel);
+      }
+
+      const part = JSON.parse(completion.choices?.[0]?.message?.content ?? "{}");
+      const list = (items) => (Array.isArray(items) ? items : []);
+      const str = (v) => String(v ?? "").trim();
+
+      line({
+        index,
+        ref: section.ref,
+        title: str(part.title) || sectionTitle(section.text),
+        inPlainWords: list(part.inPlainWords).map(str).filter(Boolean).slice(0, 8),
+        terms: list(part.terms)
+          .map((t) => ({ term: str(t?.term), meaning: str(t?.meaning) }))
+          .filter((t) => t.term && t.meaning)
+          .slice(0, 12),
+        questions: list(part.questions)
+          .map((q) => ({ question: str(q?.question), answer: str(q?.answer) }))
+          .filter((q) => q.question && q.answer)
+          .slice(0, 5),
+        oneSentence: str(part.oneSentence),
+        thin: section.text.length < 500,
+      });
+    } catch (err) {
+      console.error("Report detail failed:", err?.message ?? err);
+      line({ index, ref: section.ref, failed: true });
+    }
+  }
+
+  line({ done: true });
+  res.end();
+});
+
+// Help for a presenter who is stuck on a point of a document lesson: a hint
+// first, and if that was not enough, the idea in plain words. Written from
+// the passage behind the point, by the model on this machine, and held to the
+// same rule as the upload and the grade: no local model, no answer, and a
+// visitor's own key and provider are never consulted.
+app.post("/api/hint", rateLimit, async (req, res) => {
+  if (!client || !isLocalBaseUrl(BASE_URL)) {
+    return res.status(403).json({
+      error: "Hints for a document lesson can only come from a model on this machine.",
+      localOnly: true,
+    });
+  }
+
+  const { topicName, point, passage, said } = req.body ?? {};
+  const level = Number(req.body?.level);
+  const language = req.body?.language ?? "en";
+
+  if (!languageName(language)) {
+    return res.status(400).json({ error: "Unsupported language." });
+  }
+
+  if (![1, 2].includes(level) || !topicName || !point || !passage) {
+    return res.status(400).json({ error: "Expected { level, topicName, point, passage }." });
+  }
+
+  try {
+    const completion = await client.chat.completions.create({
+      model: MODEL,
+      max_completion_tokens: 300,
+      temperature: 0.3,
+      messages: [
+        {
+          role: "user",
+          content: helpPrompt(
+            {
+              level,
+              topicName: String(topicName).slice(0, 200),
+              point: String(point).slice(0, 200),
+              passage,
+              said,
+            },
+            inLanguage(language)
+          ),
+        },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: { name: "help", schema: HELP_SCHEMA },
+      },
+    });
+
+    const text = String(
+      JSON.parse(completion.choices?.[0]?.message?.content ?? "{}").text ?? ""
+    ).trim();
+
+    if (!text) {
+      throw new Error("Model returned no help text");
+    }
+
+    res.json({ level, text });
+  } catch (err) {
+    console.error("Help failed:", err?.message ?? err);
+
+    res.status(502).json({ error: "Could not write a hint just now." });
+  }
+});
+
 // Judges whether the student genuinely explained each learning point,
 // as opposed to merely saying the right keywords.
 app.post("/api/grade", rateLimit, async (req, res) => {
-  const ai = clientFor(req);
+  // A grade that carries passages from an uploaded document is held to the
+  // same rule as the upload: it runs on this machine's model or not at all.
+  // The caller's own key and provider would send those passages elsewhere,
+  // so they are not consulted for it.
+  const documentGrade =
+    Array.isArray(req.body?.sources) &&
+    req.body.sources.some((source) => typeof source?.quote === "string" && source.quote);
+
+  if (documentGrade && (!client || !isLocalBaseUrl(BASE_URL))) {
+    return res.status(403).json({
+      error: "A document lesson can only be graded by a model on this machine.",
+      localOnly: true,
+    });
+  }
+
+  const ai = documentGrade ? client : clientFor(req);
+  const gradeModel = documentGrade ? MODEL : modelFor(req);
 
   if (!ai) {
     return noKey(res);
@@ -602,7 +1178,25 @@ app.post("/api/grade", rateLimit, async (req, res) => {
     });
   }
 
-  const pointList = points.map((point, i) => `${i + 1}. ${point}`).join("\n");
+  // A lesson built from a document sends the passage behind each point, so
+  // "explained" is judged against what the document says rather than against
+  // what the model happens to believe. Topic lessons send none.
+  const sources = Array.isArray(req.body?.sources) ? req.body.sources : [];
+
+  const pointList = points
+    .map((point, i) => {
+      const quote =
+        typeof sources[i]?.quote === "string" ? sources[i].quote.slice(0, 400) : "";
+
+      return quote
+        ? `${i + 1}. ${point}\n   The source document says: "${quote}"`
+        : `${i + 1}. ${point}`;
+    })
+    .join("\n");
+
+  const groundingLine = sources.some((source) => source?.quote)
+    ? "\nWhere a point quotes the source document, also judge whether what the student said agrees with it. A confident explanation that contradicts the document does not count as explained.\n"
+    : "";
 
   const prompt = `A student tried to explain "${topicName}" to ${audience}.
 
@@ -612,7 +1206,7 @@ ${studentText}
 ---
 
 For each learning point below, decide whether the student GENUINELY explained the idea in a way that listener could follow. Saying a keyword is not enough — they must actually convey the concept.
-${stanceLine}
+${stanceLine}${groundingLine}
 ${pointList}
 
 Also report three teaching moments, each with the student's exact words as evidence:
@@ -690,7 +1284,7 @@ Respond with JSON only, in exactly this shape:
 
   try {
     const completion = await ai.chat.completions.create({
-      model: modelFor(req),
+      model: gradeModel,
       // Note: TitanomGPT silently ignores max_tokens — it wants this name.
       max_completion_tokens: 1700,
       messages: [{ role: "user", content: prompt }],
@@ -857,6 +1451,61 @@ Respond with JSON only, in exactly this shape:
     }
 
     const graded = JSON.parse(raw);
+
+    // One result per point, in the lesson's order and under the lesson's own
+    // wording. A smaller model sometimes writes the student's sentence where
+    // the point belongs, which would put words on the recap that were never
+    // a learning point.
+    graded.results = points.map((point, i) => ({
+      point,
+      understood: Boolean(graded.results?.[i]?.understood),
+      reason: String(graded.results?.[i]?.reason ?? ""),
+    }));
+
+    if (documentGrade) {
+      try {
+        const check = await ai.chat.completions.create({
+          model: gradeModel,
+          max_completion_tokens: 700,
+          temperature: 0,
+          messages: [
+            {
+              role: "user",
+              content: documentCheckPrompt(studentText, points, req.body.sources),
+            },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: { name: "check", schema: CHECK_SCHEMA },
+          },
+        });
+
+        const verdicts = JSON.parse(check.choices?.[0]?.message?.content ?? "{}").verdicts;
+
+        if (Array.isArray(verdicts)) {
+          graded.results = graded.results.map((result, i) => {
+            const verdict = verdicts[i]?.verdict;
+
+            if (verdict === "contradicts") {
+              return {
+                ...result,
+                understood: false,
+                reason: `That isn't what the document says. ${verdicts[i].reason ?? ""}`.trim(),
+              };
+            }
+
+            if (verdict === "missing") {
+              return { ...result, understood: false };
+            }
+
+            return result;
+          });
+        }
+      } catch (err) {
+        // The ordinary grade still stands without it.
+        console.error("Document check failed:", err?.message ?? err);
+      }
+    }
 
     // A moment's quote is shown to the student as their own words, so it has
     // to actually be their own words. A paraphrase the model invented gets
@@ -1075,7 +1724,7 @@ Finally, in "unexplainedTerms", list every word the student used but never expla
       // The closed world is the hard part: she must reproduce only what
       // she was told, and a weaker model quietly repairs the gaps.
       model: modelFor(req, "deep"),
-      max_completion_tokens: 1200,
+      max_completion_tokens: 2000,
       messages: [{ role: "user", content: prompt }],
       response_format: {
         type: "json_schema",
@@ -1117,7 +1766,14 @@ Finally, in "unexplainedTerms", list every word the student used but never expla
       throw new Error("Model returned no content");
     }
 
-    const parsed = JSON.parse(raw);
+    let parsed;
+
+    try {
+      parsed = JSON.parse(raw);
+    } catch (parseErr) {
+      console.error("Explain-back completion was not valid JSON:", raw);
+      throw parseErr;
+    }
 
     // Every term she claims the student left undefined has to actually be a
     // word the student said. Anything else is the model inventing evidence,
@@ -1807,7 +2463,7 @@ If the topic is too vague or is not a real subject, set "ok" to false and say wh
 
   const completion = await ai.chat.completions.create({
     model,
-    max_completion_tokens: 3000,
+    max_completion_tokens: 6000,
     messages: [{ role: "user", content: prompt }],
     response_format: {
       type: "json_schema",
@@ -1856,7 +2512,19 @@ If the topic is too vague or is not a real subject, set "ok" to false and say wh
     throw new Error("Model returned no content");
   }
 
-  const quiz = JSON.parse(raw);
+  let quiz;
+
+  try {
+    quiz = JSON.parse(raw);
+  } catch (err) {
+    // A truncated or malformed completion throws a bare SyntaxError here,
+    // which used to reach the generic catch-all in the route with no clue
+    // what actually happened. Logging the raw content is the only way to
+    // tell a token-limit cutoff apart from the model just misbehaving.
+    console.error("Quiz completion was not valid JSON:", raw);
+
+    throw new Error("Model response was not valid JSON");
+  }
 
   if (!quiz.ok) {
     const err = new Error(
@@ -2568,6 +3236,55 @@ app.get("/api/quiz/:code/state", async (req, res) => {
 //
 // Generated here too if a voicing batch missed it, so a game is never stuck
 // waiting for audio that failed once.
+// Grandma's voice for the opening screen's test. Only the fixed lines in
+// introLines.js can be spoken, each made once per language and then kept in
+// memory, so the screen costs a few short clips however many people load it.
+// No key, no quota or any failure is a plain 404 and the page carries on in
+// text. The default is "Grandma Rachel", the grandmother voice in the
+// account; it is overridable (INTRO_VOICE_ID), because taste is not worth a
+// redeploy.
+const introAudio = new Map();
+const INTRO_VOICE_ID = () => process.env.INTRO_VOICE_ID || "0rEo3eAjssGDUCXHYENf";
+
+app.get("/api/intro/audio/:lang/:id", rateLimit, async (req, res) => {
+  const { lang, id } = req.params;
+  const text = Object.hasOwn(INTRO_LINES, id) ? INTRO_LINES[id][lang] : null;
+
+  if (!text) {
+    return res.status(404).json({ error: "No such line." });
+  }
+
+  if (!voiceConfigured()) {
+    return res.status(404).json({ error: "Voice is not configured." });
+  }
+
+  const key = `${lang}:${id}`;
+
+  try {
+    if (!introAudio.has(key)) {
+      introAudio.set(key, speak(text, INTRO_VOICE_ID()));
+    }
+
+    const { b64 } = await introAudio.get(key);
+    const bytes = Buffer.from(b64, "base64");
+
+    res.set({
+      "Content-Type": "audio/mpeg",
+      "Content-Length": bytes.length,
+      "Cache-Control": "public, max-age=86400",
+    });
+
+    res.send(bytes);
+  } catch (err) {
+    // A failed attempt must not be remembered, or one blip would silence the
+    // screen until the server restarted.
+    introAudio.delete(key);
+    console.error(`Could not voice intro line ${key}:`, err.message);
+
+    res.status(404).json({ error: "That line has no audio." });
+  }
+});
+
 app.get("/api/quiz/:code/audio/:index", async (req, res) => {
   const code = req.params.code.toUpperCase();
   const index = Number(req.params.index);

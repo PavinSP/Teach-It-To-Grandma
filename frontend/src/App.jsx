@@ -13,6 +13,13 @@ import {
   evaluateAchievements,
 } from "./progression";
 import { CHARACTERS, buildPersonaPrompt, DIRECTOR } from "./characters";
+import {
+  WORKPLACE_CAST,
+  DEFAULT_WORKPLACE_ID,
+  workplaceCharacter,
+  buildWorkplacePrompt,
+  HELP,
+} from "./workplace";
 import { loadSnapshot, saveSnapshot } from "./snapshot";
 import { storedLanguage } from "./theme";
 import { keyHeaders } from "./apikey";
@@ -29,6 +36,7 @@ import {
 } from "./you";
 import { Intro } from "./views/Intro";
 import { Landing } from "./views/Landing";
+import { ModeSelect } from "./views/ModeSelect";
 import { Quiz } from "./views/Quiz";
 import { Recap } from "./views/Recap";
 import { Session } from "./views/Session";
@@ -48,6 +56,13 @@ const GRADING_API =
   import.meta.env.VITE_GRADING_API ??
   (import.meta.env.DEV ? "http://localhost:3001" : "");
 
+// Document lessons only exist when the app talks to a server on this
+// machine. The server enforces that too; hiding the button keeps a hosted
+// copy from offering something it would only refuse.
+const DOCUMENTS_AVAILABLE =
+  FEATURES.documentLessons &&
+  /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?(\/|$)/.test(GRADING_API);
+
 
 
 // The server returns points as objects; the rest of the app wants the
@@ -61,6 +76,10 @@ function toLesson(generated) {
     checks: generated.points.map((point) => ({
       keywords: point.keywords,
       required: point.required,
+      // Document lessons only: plain words the bar listens for instead.
+      ...(Array.isArray(point.spoken) && point.spoken.length
+        ? { spoken: point.spoken, spokenRequired: point.spokenRequired ?? 1 }
+        : {}),
     })),
     predictions: generated.points.map((point) => ({
       hardFor: point.hardFor ?? null,
@@ -69,6 +88,13 @@ function toLesson(generated) {
     misconceptions: generated.misconceptions ?? [],
     analysis: generated.analysis ?? null,
     challenges: generated.challenges ?? [],
+    // Document lessons only: the passage behind each point, which file it
+    // came from, and proof it was read by a model on this machine.
+    sources: generated.document
+      ? generated.points.map((point) => point.source ?? null)
+      : null,
+    document: generated.document ?? null,
+    privacy: generated.privacy ?? null,
   };
 }
 
@@ -165,6 +191,17 @@ function calculateProgress(topic, messages) {
     .toLowerCase();
 
   return topic.checks.map((check) => {
+    // A document lesson listens for everyday words instead: its keywords are
+    // the document's jargon, which a good plain-language explanation avoids.
+    // See spokenTerms on the server.
+    if (check.spoken) {
+      const heard = check.spoken.filter((term) =>
+        studentText.includes(term.toLowerCase())
+      );
+
+      return heard.length >= (check.spokenRequired ?? 1);
+    }
+
     const matchedKeywords = check.keywords.filter((keyword) =>
       studentText.includes(keyword.toLowerCase())
     );
@@ -260,7 +297,14 @@ function App() {
   const [isGrading, setIsGrading] = useState(false);
   const [topicInput, setTopicInput] = useState(snap?.topicInput ?? "");
   const [isBuildingLesson, setIsBuildingLesson] = useState(false);
+  const [buildingDocument, setBuildingDocument] = useState("");
   const [lessonError, setLessonError] = useState("");
+  // A file that has been read and listed, waiting for the presenter to pick
+  // which of its parts to rehearse. Held here, in memory, and nowhere else.
+  const [pendingDocument, setPendingDocument] = useState(null);
+  // The file and the parts chosen from it, held in memory only so the study
+  // report can walk through them. Lost on a reload, which the report allows for.
+  const [documentSource, setDocumentSource] = useState(null);
 
   // Set when the server reports that neither it nor this visitor has a usable
   // key. Surfaces the paste-your-own panel rather than a dead end.
@@ -283,9 +327,6 @@ function App() {
     snap?.newAchievements ?? []
   );
   const [displayScore, setDisplayScore] = useState(null);
-  const [profileXp, setProfileXp] = useState(() =>
-    FEATURES.progression ? loadProfile().xp : null
-  );
   // Deliberately NOT reset when the topic changes — a student who picked the
   // Expert stays with the Expert across lessons until they choose otherwise.
   const [character, setCharacter] = useState(
@@ -394,10 +435,28 @@ function App() {
     snap?.lessonDurationMs ?? null
   );
   const [replayCopied, setReplayCopied] = useState(false);
+  // Which door was chosen on the first screen. Without document support (a
+  // hosted copy) there is only one door, so the question is never asked.
+  const [landingMode, setLandingMode] = useState(() =>
+    DOCUMENTS_AVAILABLE ? snap?.landingMode ?? "choose" : "topic"
+  );
+  const [returningFrom, setReturningFrom] = useState(null);
+  const [workplaceId, setWorkplaceId] = useState(
+    snap?.workplaceId ?? DEFAULT_WORKPLACE_ID
+  );
+  const [helpLevels, setHelpLevels] = useState({});
+  const [helpCard, setHelpCard] = useState(null);
+  const [isHelping, setIsHelping] = useState(false);
 
   // With the picker off, every derived name resolves to Grandma and the app
   // reads exactly as it did before characters existed.
-  const activeCharacter = FEATURES.characterPicker ? character : CHARACTERS[0];
+  const pickedCharacter = FEATURES.characterPicker ? character : CHARACTERS[0];
+  // In document mode the listener comes from the workplace cast instead: a
+  // colleague with a role, who asks what that role needs and is graded to
+  // that role's standard.
+  const activeCharacter = selectedTopic?.document
+    ? workplaceCharacter(workplaceId)
+    : pickedCharacter;
   const who = activeCharacter.shortName;
   const whoUpper = who.toUpperCase();
   const obj = activeCharacter.obj;
@@ -406,7 +465,10 @@ function App() {
   // Deduplicated, single words first (multi-word phrases help ASR least),
   // capped because the boost list is a hint, not a dictionary.
   const asrKeywords = (() => {
-    if (!selectedTopic) {
+    // A document lesson's keywords are words from the document, and the boost
+    // list goes to the voice provider. The promise is that only the title and
+    // one-line description ever leave this machine, so it sends none.
+    if (!selectedTopic || selectedTopic.document) {
       return [];
     }
 
@@ -453,6 +515,27 @@ function App() {
     box?.scrollTo({ top: box.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  // A new page starts at its top. The notes page used to open wherever the
+  // lesson had been scrolled to, which is partway down it.
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [
+    showRecap,
+    selectedTopic,
+    pendingDocument,
+    landingMode,
+    introDone,
+    quizOpen,
+  ]);
+
+  // Left to itself the browser remembers where each page was scrolled to and
+  // puts it back on a refresh, which is how a page could open halfway down.
+  useEffect(() => {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+  }, []);
+
   // Refresh restores this exact page: every meaningful piece of state is
   // snapshotted per tab. The pay-once ids ride along so a reloaded recap
   // can never award its XP twice.
@@ -480,6 +563,8 @@ function App() {
       confidence,
       jury,
       characterId: character.id,
+      workplaceId,
+      landingMode,
       lessonId: lessonIdRef.current,
       committedId: committedRef.current,
       sessionStartedAt: sessionStartedAtRef.current,
@@ -506,6 +591,8 @@ function App() {
     voiceOnly,
     topicInput,
     character,
+    workplaceId,
+    landingMode,
     confidence,
     jury,
     lessonDurationMs,
@@ -694,6 +781,79 @@ function App() {
     );
   };
 
+  // Help for a presenter who is stuck, in two steps. The first nudge is
+  // spoken but carries nothing from the document; the specific hint is shown
+  // on screen, written by the model on this machine. Only if they ask again
+  // for the same point does the character explain it out loud, and that is the
+  // one time document text goes through the voice service, so the screen says
+  // so. Which point: the first one the coverage bar has not picked up yet.
+  const requestHelp = async () => {
+    if (!isConnected || !selectedTopic?.document || isHelping) {
+      return;
+    }
+
+    const progressNow = calculateProgress(selectedTopic, messages);
+    const target = progressNow.findIndex((done) => !done);
+
+    if (target === -1) {
+      setHelpCard({ none: true });
+      return;
+    }
+
+    const level = Math.min(2, (helpLevels[target] ?? 0) + 1);
+    const source = selectedTopic.sources?.[target];
+    const passage = source?.context || source?.quote;
+
+    if (!passage) {
+      setHelpCard({ failed: true });
+      return;
+    }
+
+    setIsHelping(true);
+
+    try {
+      const response = await fetch(`${GRADING_API}/api/hint`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          level,
+          topicName: selectedTopic.name,
+          point: selectedTopic.points[target],
+          passage,
+          said: messages
+            .filter((m) => m.source === "user" && m.meta !== "prompt")
+            .map((m) => m.message || "")
+            .join(" "),
+          ...(FEATURES.multilingual ? { language } : {}),
+        }),
+      });
+
+      const body = await response.json();
+
+      if (!response.ok) {
+        setHelpCard({ failed: true });
+        return;
+      }
+
+      setHelpLevels((levels) => ({ ...levels, [target]: level }));
+      setHelpCard({
+        level,
+        text: body.text,
+        point: selectedTopic.points[target],
+        spoken: level === 2,
+      });
+
+      conversation.sendContextualUpdate(
+        level === 1 ? HELP.nudge : HELP.explain(body.text)
+      );
+    } catch (err) {
+      console.error("Could not get help:", err);
+      setHelpCard({ failed: true });
+    } finally {
+      setIsHelping(false);
+    }
+  };
+
   const resetRecall = () => {
     setExplainBack(null);
     setIsExplaining(false);
@@ -834,13 +994,13 @@ function App() {
 
     setNewAchievements(earned);
 
-    setProfileXp(
-      commitLessonXp(xp.total, {
-        hadAnalogy: Boolean(aiGrade?.moments?.usedGoodAnalogy?.happened),
-        strongScore: score !== null && score >= 75,
-        newAchievements: earned,
-      }).xp
-    );
+    // The running total is still kept in the browser; the notes page no
+    // longer shows it.
+    commitLessonXp(xp.total, {
+      hadAnalogy: Boolean(aiGrade?.moments?.usedGoodAnalogy?.happened),
+      strongScore: score !== null && score >= 75,
+      newAchievements: earned,
+    });
 
     if (FEATURES.teachOff && teachoff && score !== null) {
       postTeachoffRun(teachoff.code, teachoff.player, score);
@@ -1004,7 +1164,9 @@ function App() {
               overrides: {
                 agent: {
                   prompt: {
-                    prompt: buildPersonaPrompt(
+                    prompt: (selectedTopic.document
+                      ? buildWorkplacePrompt
+                      : buildPersonaPrompt)(
                       activeCharacter,
                       selectedTopic,
                       FEATURES.multilingual ? language : "en"
@@ -1126,13 +1288,26 @@ function App() {
     try {
       const response = await fetch(`${GRADING_API}/api/grade`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...keyHeaders() },
+        // A document lesson is graded on this machine only, so a saved key
+        // has nowhere to go and is not sent.
+        headers: {
+          "Content-Type": "application/json",
+          ...(selectedTopic.document ? {} : keyHeaders()),
+        },
         body: JSON.stringify({
           topicName: selectedTopic.name,
           points: selectedTopic.points,
           transcript: messages.filter(
             (m) => m.meta !== "prompt" && m.source !== "system"
           ),
+          // Lets the grader judge each point against what the document says.
+          ...(selectedTopic.sources
+            ? {
+                sources: selectedTopic.sources.map((source) =>
+                  source?.verified ? { quote: source.quote } : null
+                ),
+              }
+            : {}),
           ...(FEATURES.characterPicker
             ? {
                 character: {
@@ -1599,6 +1774,29 @@ function App() {
     }
   };
 
+  // Everything a new lesson starts from, whether it was typed or uploaded.
+  const beginLesson = (generated) => {
+    setHelpLevels({});
+    setHelpCard(null);
+    setNeedsKey(false);
+
+    setSelectedTopic(toLesson(generated));
+    setMessages([]);
+    setError("");
+    setAiGrade(null);
+    setShowRecap(false);
+    resetRecall();
+    resetChallenge();
+    resetChallengeCards();
+    resetAmbush();
+    resetTeachoff();
+    resetMirror();
+    resetMood();
+    resetJury();
+    setConfidence(null);
+    resetProgression();
+  };
+
   // Any topic the student types becomes a lesson: the server decides what
   // has to be covered for a beginner to actually follow it.
   const startLesson = async (topic) => {
@@ -1629,23 +1827,7 @@ function App() {
         return;
       }
 
-      setNeedsKey(false);
-
-      setSelectedTopic(toLesson(body));
-      setMessages([]);
-      setError("");
-      setAiGrade(null);
-      setShowRecap(false);
-      resetRecall();
-      resetChallenge();
-      resetChallengeCards();
-      resetAmbush();
-      resetTeachoff();
-      resetMirror();
-      resetMood();
-      resetJury();
-      setConfidence(null);
-      resetProgression();
+      beginLesson(body);
     } catch (err) {
       console.error("Could not build lesson:", err);
 
@@ -1654,6 +1836,105 @@ function App() {
       );
     } finally {
       setIsBuildingLesson(false);
+    }
+  };
+
+  // A lesson built from a file the student uploads. The server reads it with
+  // a model on this machine and refuses outright if it isn't configured
+  // that way, so no key headers are sent: there is no one else to send to.
+  // First step: list the file's parts. The server keeps nothing, so the file
+  // stays here and is sent again with the choice.
+  const startDocumentLesson = async (file) => {
+    if (!file || isBuildingLesson) {
+      return;
+    }
+
+    setIsBuildingLesson(true);
+    setBuildingDocument(file.name);
+    setLessonError("");
+
+    try {
+      const form = new FormData();
+      form.append("file", file);
+
+      const response = await fetch(`${GRADING_API}/api/document/outline`, {
+        method: "POST",
+        body: form,
+      });
+
+      const body = await response.json();
+
+      if (!response.ok) {
+        setLessonError(body.error || "That document couldn't be read.");
+        return;
+      }
+
+      // One part has nothing to choose between.
+      if (body.sections.length < 2) {
+        setIsBuildingLesson(false);
+        await buildDocumentLesson(file, null);
+        return;
+      }
+
+      setPendingDocument({ file, outline: body });
+    } catch (err) {
+      console.error("Could not read document:", err);
+
+      setLessonError(
+        "Could not reach the lesson server. Is it running with npm run dev:private?"
+      );
+    } finally {
+      setIsBuildingLesson(false);
+      setBuildingDocument("");
+    }
+  };
+
+  // Second step: build the lesson from the parts that were chosen.
+  const buildDocumentLesson = async (file, sections) => {
+    if (!file) {
+      return;
+    }
+
+    setIsBuildingLesson(true);
+    setBuildingDocument(file.name);
+    setLessonError("");
+
+    try {
+      const form = new FormData();
+      form.append("file", file);
+
+      if (sections?.length) {
+        form.append("sections", sections.join(","));
+      }
+
+      if (FEATURES.multilingual) {
+        form.append("language", language);
+      }
+
+      const response = await fetch(`${GRADING_API}/api/lesson/document`, {
+        method: "POST",
+        body: form,
+      });
+
+      const body = await response.json();
+
+      if (!response.ok) {
+        setLessonError(body.error || "Could not build a lesson from that document.");
+        return;
+      }
+
+      setPendingDocument(null);
+      setDocumentSource({ file, sections: sections?.length ? sections : null });
+      beginLesson(body);
+    } catch (err) {
+      console.error("Could not build document lesson:", err);
+
+      setLessonError(
+        "Could not reach the lesson server. Is it running with npm run dev:private?"
+      );
+    } finally {
+      setIsBuildingLesson(false);
+      setBuildingDocument("");
     }
   };
 
@@ -1671,12 +1952,31 @@ function App() {
   }
 
   if (!introDone) {
-    return <Intro tt={tt} onDone={() => setIntroDone(true)} />;
+    return <Intro tt={tt} uiLang={uiLang} api={GRADING_API} onDone={() => setIntroDone(true)} />;
+  }
+
+  if (!selectedTopic && landingMode === "choose") {
+    return (
+      <ModeSelect
+        tt={tt}
+        onChoose={setLandingMode}
+        returningFrom={returningFrom}
+      />
+    );
   }
 
   if (!selectedTopic) {
     return (
       <Landing
+        mode={landingMode}
+        onChangeMode={
+          DOCUMENTS_AVAILABLE
+            ? () => {
+                setReturningFrom(landingMode);
+                setLandingMode("choose");
+              }
+            : null
+        }
         character={character}
         isBuildingLesson={isBuildingLesson}
         isJoining={isJoining}
@@ -1705,6 +2005,17 @@ function App() {
         setYouDraftParams={setYouDraftParams}
         showYouEditor={showYouEditor}
         startLesson={startLesson}
+        startDocumentLesson={DOCUMENTS_AVAILABLE ? startDocumentLesson : null}
+        pendingDocument={pendingDocument}
+        chooseSections={(sections) => buildDocumentLesson(pendingDocument?.file, sections)}
+        cancelPending={() => {
+          setPendingDocument(null);
+          setLessonError("");
+        }}
+        workplaceCast={WORKPLACE_CAST}
+        workplaceId={workplaceId}
+        setWorkplaceId={setWorkplaceId}
+        buildingDocument={buildingDocument}
         stepYouParam={stepYouParam}
         taglineName={taglineName}
         teachoffName={teachoffName}
@@ -1762,6 +2073,8 @@ function App() {
   if (showRecap) {
     return (
       <Recap
+        gradingApi={GRADING_API}
+        documentSource={documentSource}
         activeCharacter={activeCharacter}
         aiGrade={aiGrade}
         ambush={ambush}
@@ -1784,9 +2097,7 @@ function App() {
         mirrorError={mirrorError}
         mirrorFlags={mirrorFlags}
         mirrorSubmitted={mirrorSubmitted}
-        newAchievements={newAchievements}
         openJuror={openJuror}
-        profileXp={profileXp}
         progress={progress}
         recallText={recallText}
         recap={recap}
@@ -1865,6 +2176,10 @@ function App() {
       stopConversation={stopConversation}
       sv={sv}
       togglePause={togglePause}
+      requestHelp={selectedTopic.document ? requestHelp : null}
+      isHelping={isHelping}
+      helpCard={helpCard}
+      dismissHelp={() => setHelpCard(null)}
       totalCount={totalCount}
       transcriptEndRef={transcriptEndRef}
       tt={tt}

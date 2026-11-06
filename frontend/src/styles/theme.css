@@ -48,6 +48,29 @@
   --warn: #c98a2b;           /* partial, tricky, caution */
   --info: #3388aa;           /* links, neutral emphasis */
 
+  /* the two doors on the first screen */
+  --door-frame: #5b4532;
+  --door-wood: #8a5a34;
+  --door-wood-deep: #6f4526;
+  --door-wood-ink: #fdf6ea;
+  --door-wood-ink-2: #f3e4cf;
+  --door-glass: #5f7f6b;
+  --door-glass-deep: #4a6757;
+  --door-glass-ink: #f4f8f4;
+  --door-glass-ink-2: #e1ebe3;
+  --door-brass: #d2aa52;
+  --door-steel: #c9d4cc;
+  --door-glow: rgba(255, 205, 120, 0.75);
+  --stage-glow: rgba(150, 125, 215, 0.22);
+  --stage-ring: #8e79c4;
+  --sheet: #f6efe0;
+  --sheet-ink: #2b2619;
+  --sheet-soft: #7a705a;
+  --sheet-line: #d9cfb8;
+  --sheet-blue: #1c3a8a;
+  --sheet-red: #b4452f;
+  --sheet-green: #2f7a4f;
+
   /* tints of those, for backgrounds rather than text */
   --good-tint: rgba(47, 122, 79, 0.08);
   --good-edge: rgba(47, 122, 79, 0.3);
@@ -100,6 +123,29 @@
   --bad: #ef7d6d;
   --warn: #e5b566;
   --info: #6fc2e0;
+
+  /* the two doors on the first screen */
+  --door-frame: #3e2f22;
+  --door-wood: #8a5a34;
+  --door-wood-deep: #6f4526;
+  --door-wood-ink: #fdf6ea;
+  --door-wood-ink-2: #f3e4cf;
+  --door-glass: #3f5b4b;
+  --door-glass-deep: #344d3f;
+  --door-glass-ink: #f1f7f2;
+  --door-glass-ink-2: #d7e5da;
+  --door-brass: #d2aa52;
+  --door-steel: #c9d4cc;
+  --door-glow: rgba(255, 205, 120, 0.4);
+  --stage-glow: rgba(150, 125, 215, 0.2);
+  --stage-ring: #a994df;
+  --sheet: #f6efe0;
+  --sheet-ink: #2b2619;
+  --sheet-soft: #7a705a;
+  --sheet-line: #d9cfb8;
+  --sheet-blue: #1c3a8a;
+  --sheet-red: #b4452f;
+  --sheet-green: #2f7a4f;
 
   --good-tint: rgba(110, 201, 141, 0.13);
   --good-edge: rgba(110, 201, 141, 0.38);
@@ -698,4 +744,15 @@ body,
   .keyprompt-model {
     flex-basis: 100%;
   }
+}
+
+
+/* The study report is a page to print, so it is always dark ink on white,
+   whatever theme the app is in. */
+.report-sheet {
+  --report-ink: #1b1a17;
+  --report-soft: #5a564e;
+  --report-line: #d8d3c8;
+  --report-paper: #ffffff;
+  --report-tint: #f4f1ea;
 }

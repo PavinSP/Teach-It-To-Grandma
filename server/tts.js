@@ -58,7 +58,7 @@ let quotaDeadUntil = 0;
 // Returns { b64, ms }, or throws. Callers treat a throw as "this question
 // has no audio yet", never as a dead game — the question is on screen in
 // text, so a silent round is a worse round rather than a broken one.
-export async function speak(text) {
+export async function speak(text, voice = voiceId()) {
   const key = process.env.ELEVENLABS_API_KEY;
 
   if (!key) {
@@ -78,7 +78,7 @@ export async function speak(text) {
 
     try {
       const response = await fetch(
-        `${ENDPOINT}/${voiceId()}?output_format=${OUTPUT_FORMAT}`,
+        `${ENDPOINT}/${voice}?output_format=${OUTPUT_FORMAT}`,
         {
           method: "POST",
           headers: {

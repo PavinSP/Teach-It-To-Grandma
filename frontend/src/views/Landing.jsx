@@ -6,6 +6,7 @@ import { rememberLanguage } from "../theme";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { Thinking } from "../components/Thinking";
 import { KeyPrompt } from "../components/KeyPrompt";
+import { SectionPicker } from "./SectionPicker";
 import {
   YOU_OPTIONS,
   YOU_PRESETS,
@@ -70,6 +71,16 @@ export function Landing({
   setYouDraftParams,
   showYouEditor,
   startLesson,
+  startDocumentLesson,
+  pendingDocument,
+  chooseSections,
+  cancelPending,
+  workplaceCast,
+  workplaceId,
+  setWorkplaceId,
+  mode,
+  onChangeMode,
+  buildingDocument,
   stepYouParam,
   taglineName,
   teachoffName,
@@ -81,6 +92,18 @@ export function Landing({
   youDraftParams,
 }) {
   const photoInputRef = useRef(null);
+  const documentInput = useRef(null);
+  const topicField = useRef(null);
+
+  // Ready to type, without the browser scrolling the page down to the box:
+  // that is what made this page open halfway down.
+  useEffect(() => {
+    if (mode === "topic") {
+      topicField.current?.focus({ preventScroll: true });
+    }
+  }, [mode]);
+  const listener = workplaceCast?.find((c) => c.id === workplaceId);
+  const [dragging, setDragging] = useState(false);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -147,26 +170,49 @@ export function Landing({
   };
 
   return (
-      <main className="app">
+      <main className="app mode-enter">
         <section className="hero">
           <div className="hero-top">
-            <div className="eyebrow">TEACH IT TO GRANDMA</div>
+            <div className="eyebrow">
+              {onChangeMode && (
+                <button
+                  type="button"
+                  className="mode-back"
+                  onClick={onChangeMode}
+                  disabled={isBuildingLesson}
+                >
+                  {tt("modeBack")}
+                </button>
+              )}
+              {mode === "document" ? "TEACH IT TO YOUR TEAM" : "TEACH IT TO GRANDMA"}
+            </div>
 
             <ThemeToggle tt={tt} />
           </div>
 
           <h1>
-            {tt("heroLine1")}
+            {tt(mode === "document" ? "docHero1" : "heroLine1")}
             <br />
-            <span>{tt("heroLine2", { name: taglineName })}</span>
+            <span>
+              {mode === "document"
+                ? tt("docHero2")
+                : tt("heroLine2", { name: taglineName })}
+            </span>
             <br />
-            {tt("heroLine3")}
+            {mode === "document"
+              ? tt("docHero3", {
+                  name:
+                    workplaceCast?.find((c) => c.id === workplaceId)?.shortName ?? "",
+                })
+              : tt("heroLine3")}
           </h1>
 
           <p className="subtitle">
-            {tt("heroSub")}
+            {tt(mode === "document" ? "docHeroSub" : "heroSub")}
           </p>
 
+          {mode === "topic" && (
+            <>
           {FEATURES.youCharacter && (
             <div className="you-widget">
               {you ? (
@@ -466,7 +512,40 @@ export function Landing({
             </>
           )}
 
-          <h2>{tt("whatTeach")}</h2>
+            </>
+          )}
+
+          {mode === "document" && startDocumentLesson && (
+            <div className="document-block">
+              <h2>{tt("docWho")}</h2>
+
+              <div className="character-grid document-cast">
+                {workplaceCast.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`character-card ${workplaceId === c.id ? "selected" : ""}`}
+                    onClick={() => setWorkplaceId(c.id)}
+                    disabled={isBuildingLesson}
+                  >
+                    <img className="character-card-face" src={c.image} alt="" />
+
+                    <span className="character-card-name">{c.shortName}</span>
+                    <span className="character-card-level">
+                      {uiLang === "de" ? c.roleDe ?? c.role : c.role}
+                    </span>
+                    <span className="character-card-hook">
+                      {uiLang === "de" ? c.hookDe ?? c.hook : c.hook}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <h2>{tt("docYours")}</h2>
+            </div>
+          )}
+
+          {mode === "topic" && <h2>{tt("whatTeach")}</h2>}
 
           {FEATURES.multilingual && (
             <div className="language-row">
@@ -487,6 +566,7 @@ export function Landing({
             </div>
           )}
 
+          {mode === "topic" && (
           <form
             className="topic-form"
             onSubmit={(event) => {
@@ -500,7 +580,7 @@ export function Landing({
               onChange={(event) => setTopicInput(event.target.value)}
               placeholder={tt("topicPlaceholder")}
               disabled={isBuildingLesson}
-              autoFocus
+              ref={topicField}
             />
 
             <button
@@ -511,9 +591,89 @@ export function Landing({
               {isBuildingLesson ? tt("preparing") : tt("teachIt")}
             </button>
           </form>
+          )}
+
+          {mode === "document" && pendingDocument && (
+            <SectionPicker
+              outline={pendingDocument.outline}
+              tt={tt}
+              busy={isBuildingLesson}
+              onStart={chooseSections}
+              onCancel={cancelPending}
+            />
+          )}
+
+          {mode === "document" && startDocumentLesson && !pendingDocument && (
+            <div
+              className={`upload-zone ${dragging ? "dragging" : ""}`}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragging(true);
+              }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(event) => {
+                event.preventDefault();
+                setDragging(false);
+
+                const file = event.dataTransfer.files?.[0];
+
+                if (file && !isBuildingLesson) {
+                  startDocumentLesson(file);
+                }
+              }}
+            >
+              <span className="upload-zone-icon" aria-hidden="true">
+                📄
+              </span>
+
+              <span className="upload-zone-title">{tt("docDrop")}</span>
+
+              <button
+                type="button"
+                className="join-button"
+                onClick={() => documentInput.current?.click()}
+                disabled={isBuildingLesson}
+              >
+                {tt("docBrowse")}
+              </button>
+
+              <input
+                ref={documentInput}
+                type="file"
+                accept=".pdf,.pptx,.docx,.txt,.md,.markdown"
+                hidden
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  // Cleared so choosing the same file again still fires.
+                  event.target.value = "";
+
+                  if (file) {
+                    startDocumentLesson(file);
+                  }
+                }}
+              />
+
+              <span className="upload-zone-hint">{tt("docHint")}</span>
+            </div>
+          )}
 
           {isBuildingLesson && (
-            <Thinking tt={tt} who={taglineName} glyph={character?.glyph ?? "👵"} />
+            mode === "document" ? (
+              <Thinking
+                tt={tt}
+                who={listener?.shortName ?? ""}
+                image={listener?.image}
+                prefix="docThinkingStep"
+              />
+            ) : (
+              <Thinking tt={tt} who={taglineName} glyph={character?.glyph ?? "👵"} />
+            )
+          )}
+
+          {isBuildingLesson && buildingDocument && (
+            <p className="document-note">
+              {tt("docReading", { file: buildingDocument })}
+            </p>
           )}
 
           {lessonError && (
@@ -522,6 +682,8 @@ export function Landing({
 
           {needsKey && <KeyPrompt tt={tt} onSaved={onKeySaved} />}
 
+          {mode === "topic" && (
+            <>
           {FEATURES.teachOff && (
             <div className="teachoff-join">
               <span className="topic-suggestions-label">
@@ -593,6 +755,8 @@ export function Landing({
               </button>
             ))}
           </div>
+            </>
+          )}
 
           <div className="reset-row">
             <button
