@@ -21,3 +21,11 @@ npm-debug.log*
 !.vscode/extensions.json
 .idea
 server/data/
+
+# Presentation materials — not part of the app
+*.pptx
+*.ppt
+
+# Pitch materials for the call — kept local
+pitch/
+bmwscript.md
