@@ -48,11 +48,12 @@ const DOORS = [
   },
 ];
 
-export function ModeSelect({ tt, onChoose, returningFrom }) {
+export function ModeSelect({ tt, onChoose, returningFrom, teamAvailable = true }) {
   const reduced = useReducedMotion();
   const [leaving, setLeaving] = useState(null);
   const [sound, setSound] = useState(doorSoundOn);
   const [through, setThrough] = useState(null);
+  const [lockedShown, setLockedShown] = useState(false);
   const timer = useRef(null);
 
   // Coming back through a door closes it behind you.
@@ -83,6 +84,13 @@ export function ModeSelect({ tt, onChoose, returningFrom }) {
 
   const choose = (door, event) => {
     if (leaving) {
+      return;
+    }
+
+    // A hosted copy cannot read documents: that needs the model on your own
+    // machine. The door stays, closed, and says why.
+    if (door.mode === "document" && !teamAvailable) {
+      setLockedShown(true);
       return;
     }
 
@@ -175,7 +183,15 @@ export function ModeSelect({ tt, onChoose, returningFrom }) {
                     <span className="door-title">{tt(door.title)}</span>
                     <span className="door-tag">{tt(door.tag)}</span>
 
-                    {door.note && <span className="door-note">{tt(door.note)}</span>}
+                    {door.note && teamAvailable && (
+                      <span className="door-note">{tt(door.note)}</span>
+                    )}
+
+                    {door.note && !teamAvailable && (
+                      <span className={`door-note locked ${lockedShown ? "shown" : ""}`}>
+                        {tt("modeTeamLocked")}
+                      </span>
+                    )}
 
                     <span className="door-cta">
                       {tt(door.cta)}

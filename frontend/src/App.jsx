@@ -438,7 +438,11 @@ function App() {
   // Which door was chosen on the first screen. Without document support (a
   // hosted copy) there is only one door, so the question is never asked.
   const [landingMode, setLandingMode] = useState(() =>
-    DOCUMENTS_AVAILABLE ? snap?.landingMode ?? "choose" : "topic"
+    !FEATURES.documentLessons
+      ? "topic"
+      : snap?.landingMode === "document" && !DOCUMENTS_AVAILABLE
+        ? "choose"
+        : snap?.landingMode ?? "choose"
   );
   const [returningFrom, setReturningFrom] = useState(null);
   const [workplaceId, setWorkplaceId] = useState(
@@ -1961,6 +1965,7 @@ function App() {
         tt={tt}
         onChoose={setLandingMode}
         returningFrom={returningFrom}
+        teamAvailable={DOCUMENTS_AVAILABLE}
       />
     );
   }
@@ -1970,7 +1975,7 @@ function App() {
       <Landing
         mode={landingMode}
         onChangeMode={
-          DOCUMENTS_AVAILABLE
+          FEATURES.documentLessons
             ? () => {
                 setReturningFrom(landingMode);
                 setLandingMode("choose");

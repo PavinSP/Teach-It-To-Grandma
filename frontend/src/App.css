@@ -4364,6 +4364,18 @@ details.misconceptions-panel .misconceptions-list {
   font-weight: 700;
 }
 
+.door-note.locked {
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.35;
+  border-radius: 12px;
+}
+
+.door-note.locked.shown {
+  background: var(--ink-wash-1);
+  outline: 2px solid currentColor;
+}
+
 .door-cta {
   display: inline-flex;
   align-items: center;
